@@ -1,0 +1,279 @@
+-- =======================================================
+-- DP-ADMINMENU | BASE DE DATOS PRINCIPAL (FULL)
+-- =======================================================
+
+-- 1. TABLA DE REPORTES
+CREATE TABLE IF NOT EXISTS `dp_reports` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `citizenid` varchar(50) DEFAULT NULL COMMENT 'CitizenID del jugador que reporta',
+  `steam_name` varchar(50) DEFAULT NULL COMMENT 'Nombre de Steam/FiveM del jugador',
+  `sender_name` varchar(50) DEFAULT NULL COMMENT 'Nombre IC del jugador',
+  `title` varchar(255) DEFAULT NULL COMMENT 'Asunto del reporte',
+  `description` text DEFAULT NULL COMMENT 'Descripción detallada',
+  `type` varchar(50) DEFAULT 'player' COMMENT 'Tipo: player o support',
+  `status` varchar(50) DEFAULT 'open' COMMENT 'Estado: open, assigned, closed',
+  `assigned_to` varchar(50) DEFAULT NULL COMMENT 'Nombre del Admin que tomó el reporte',
+  `created_at` timestamp NULL DEFAULT current_timestamp() COMMENT 'Fecha de creación',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- DATOS DE EJEMPLO PARA REPORTES
+INSERT INTO `dp_reports` (`citizenid`, `steam_name`, `sender_name`, `title`, `description`, `type`, `status`, `assigned_to`) VALUES
+('VRC12345', 'KikeGamer', 'Enrique Pastor', 'Bug en el garage central', 'No puedo sacar mi coche, me dice que no soy el dueño pero tengo las llaves.', 'support', 'open', NULL),
+('VRC67890', 'LaPili_RP', 'Pilar Rubio', 'RDM en Plaza', 'El ID 45 me ha matado sin rol previo mientras estaba hablando con el mecánico.', 'player', 'open', NULL),
+('VRC54321', 'El_Bolas', 'Amador Rivas', 'Duda sobre normativa', '¿Se puede robar a la policía si son menos de 3 conectados?', 'support', 'assigned', 'DonMaderos'),
+('VRC98765', 'Coque_Vip', 'Jorge Calatrava', 'Coche desaparecido', 'Aparqué mi Sultan RS detrás del badulaque y ya no está, creo que se bugueó.', 'support', 'open', NULL),
+('VRC11111', 'Recio_Mayorista', 'Antonio Recio', 'Antirol ID 12', 'Me ha chocado a 200km/h y se ha ido como si nada sin rolear heridas.', 'player', 'open', NULL);
+
+-- =======================================================
+-- 2. TABLA DE BANEOS (VERSIÓN COMPATIBLE SQL ANTIGUO)
+-- =======================================================
+
+-- 1. CREAR TABLA 'bans' (SI NO EXISTE, SE CREA YA CON TODAS LAS COLUMNAS)
+CREATE TABLE IF NOT EXISTS `bans` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) DEFAULT NULL,
+  `license` varchar(50) DEFAULT NULL,
+  `discord` varchar(50) DEFAULT NULL,
+  `ip` varchar(50) DEFAULT NULL,
+  `reason` text DEFAULT NULL,
+  `expire` int(11) DEFAULT NULL,
+  `bannedby` varchar(50) DEFAULT 'Sistema',
+  `status` varchar(50) DEFAULT 'active',          
+  `created_at` timestamp NULL DEFAULT current_timestamp(), 
+  PRIMARY KEY (`id`),
+  KEY `license` (`license`),
+  KEY `discord` (`discord`),
+  KEY `ip` (`ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. INTENTAR AÑADIR COLUMNAS (POR SI LA TABLA YA EXISTÍA DE ANTES)
+-- NOTA: Si esto da error "#1060 Duplicate column", IGNÓRALO, es que ya las tienes.
+-- Simplemente hemos quitado el "IF NOT EXISTS" que te daba problemas.
+
+SET @dbname = DATABASE();
+SET @tablename = "bans";
+SET @columnname = "status";
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      (table_name = @tablename)
+      AND (table_schema = @dbname)
+      AND (column_name = @columnname)
+  ) > 0,
+  "SELECT 1",
+  "ALTER TABLE bans ADD status varchar(50) DEFAULT 'active';"
+));
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
+
+SET @columnname = "created_at";
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      (table_name = @tablename)
+      AND (table_schema = @dbname)
+      AND (column_name = @columnname)
+  ) > 0,
+  "SELECT 1",
+  "ALTER TABLE bans ADD created_at timestamp NULL DEFAULT current_timestamp();"
+));
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
+
+
+-- 3. INSERTAR DATOS DE EJEMPLO
+INSERT INTO `bans` (`name`, `license`, `discord`, `ip`, `reason`, `bannedby`, `expire`, `status`) VALUES
+('Troll_Maximo', 
+ 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'discord:48291058291023', 'ip:192.168.0.15',
+ 'Uso de Mod Menu en zona segura', 'DonMaderos', 0, 'active'),
+('Juan_Hacker', 
+ 'license:9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k', 'discord:99988877766655', 'ip:203.0.113.45',
+ 'Aimbot detectado por Anticheat', 'DonMaderos', 0, 'active'),
+('Pepito_Grief', 
+ 'license:5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c', 'discord:11223344556677', 'ip:10.0.0.99',
+ 'Insultos OOC graves a administración', 'Admin_Luis', 1798750000, 'active'),
+('Maria_FailRP', 
+ 'license:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6', 'discord:55667788990011', 'ip:172.16.254.1',
+ 'Combat Log reiterado en rol policial', 'Admin_Ana', 1792000000, 'active'),
+('Test_Revocado', 
+ 'license:0p9o8i7u6y5t4r3e2w1q0p9o8i7u6y5t', 'discord:12312312312312', 'ip:8.8.8.8',
+ 'Baneo por error (Ya revocado)', 'DonMaderos', 0, 'revoked'),
+('Harry_Potter_Hacendado', 
+ 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'discord:1122334455667788', 'ip:192.168.1.101',
+ 'Volar con la escoba del barrendero por encima de comisaría gritando hechizos (Noclip)', 'Hagrid_Staff', 0, 'active'),
+('Aquaman_De_Barrio', 
+ 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'discord:9988776655443322', 'ip:10.0.0.55',
+ 'Rolear ser un pez fuera del agua en medio de la autopista durante 2 horas', 'Poseidon_Admin', 1798750000, 'active'),
+('Elon_Musk_AliExpress', 
+ 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'discord:5544332211009988', 'ip:172.16.0.23',
+ 'Spawnear 50 Teslas en el hospital para "regalarlos" (Mass Spawn / Crash Server)', 'Economy_Guard', 0, 'active'),
+('DJ_Paquirrin_Earrape', 
+ 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'discord:6677889900112233', 'ip:192.168.100.12',
+ 'Poner "Despacito" versión saturada en zona segura con un altavoz invisible', 'Music_Police', 1789000000, 'active'),
+('Matrix_Reloaded_V3', 
+ 'license:6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u', 'discord:1234123412341234', 'ip:80.50.20.10',
+ 'Esquivar balas de la policía haciendo el limbo (Godmode descarado)', 'Neo_Admin', 0, 'active'),
+('Senor_Patata', 
+ 'license:7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v', 'discord:4321432143214321', 'ip:200.100.50.25',
+ 'Insultar a la administración usando código morse con el claxon', 'Morse_Decoder', 1893456000, 'active'),
+('Invisibiliman', 
+ 'license:8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w', 'discord:9876543210987654', 'ip:127.0.0.1',
+ 'Atropellar a toda la plaza siendo invisible y escribiendo "FANTASMA" en el chat', 'Ghostbuster', 0, 'active'),
+('Dr_Strange_Bug', 
+ 'license:9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x', 'discord:1111222233334444', 'ip:1.1.1.1',
+ 'Teletransportar patrullas de policía al Monte Chiliad sin motivo aparente', 'Admin_Supremo', 0, 'active'),
+('Naruto_Runner', 
+ 'license:0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y', 'discord:5555666677778888', 'ip:8.8.4.4',
+ 'Hacer Powergaming corriendo hacia el Area 51 esquivando misiles con animaciones de anime', 'Anime_Hater', 1787000000, 'revoked'),
+('Vaca_Burra', 
+ 'license:1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z', 'discord:9999000011112222', 'ip:192.168.0.254',
+ 'Usar skin de animal para conducir camiones y atropellar EMS', 'PETA_Gaming', 0, 'active'),
+('Zombie_Vegano', 
+ 'license:2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a', 'discord:3333444455556666', 'ip:10.10.10.10',
+ 'Morder a la gente roleando ser zombie pero robando solo sus plantas de marihuana (MetaGaming)', 'Walking_Dead_Fan', 1795000000, 'active'),
+('Speedy_Gonzales_Fake', 
+ 'license:3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b', 'discord:7777888899990000', 'ip:172.20.10.5',
+ 'Usar speedhack para repartir pizzas en 2 segundos (literalmente)', 'AntiCheat_System', 0, 'active'),
+('Admin_Impostor', 
+ 'license:4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c', 'discord:1212121212121212', 'ip:90.80.70.60',
+ 'Hacerse pasar por dueño del servidor y intentar "banear" a un Admin real', 'The_Real_Owner', 0, 'active'),
+('Terminator_LowCost', 
+ 'license:5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d', 'discord:2323232323232323', 'ip:192.168.8.1',
+ 'Entrar a comisaría desnudo diciendo "Necesito tu ropa, tus botas y tu motocicleta"', 'Cinema_Mod', 1790000000, 'active'),
+('Baneado_Por_Feo', 
+ 'license:6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e', 'discord:3434343434343434', 'ip:203.0.113.1',
+ 'Baneo de prueba revocable (El usuario se quejó de que su PJ era demasiado guapo)', 'Admin_Envidioso', 0, 'active');
+
+-- =======================================================
+-- 3. TABLA DE CHAT DE ADMINISTRACIÓN
+-- =======================================================
+
+-- 1. CREAR TABLA 'dp_admin_chat'
+DROP TABLE IF EXISTS `dp_admin_chat`;
+CREATE TABLE `dp_admin_chat` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sender_name` varchar(50) DEFAULT NULL,
+  `license` varchar(255) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `image_url` text DEFAULT NULL COMMENT 'JSON Array de imagenes',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. DATOS DE EJEMPLO PARA CHAT DE ADMINISTRACIÓN
+INSERT INTO `dp_admin_chat` (`sender_name`, `license`, `message`, `image_url`, `created_at`) VALUES
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Don, tenemos un problema grave con el garaje de Sandy Shores. Los coches spawnean uno encima de otro y explotan.', NULL, '2025-10-05 16:30:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Voy. Seguramente sea el radio de spawn que se ha desconfigurado con el último reinicio. Dadme 5 minutos.', NULL, '2025-10-05 16:35:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Mientras miras eso... el ID 494 está haciendo VDM masivo en la central con un camión de basura.', NULL, '2025-10-05 16:55:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'Lo estoy specteando yo. Confirmado. Se ha llevado a 3 EMS por delante. ¿Le meto perma directa o le aviso?', NULL, '2025-10-05 16:57:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Perma. No quiero gente así en el servidor. El garaje ya está parcheado, probad a sacar coches ahora.', NULL, '2025-10-05 17:05:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Probado. Funciona fino. Gracias jefe.', NULL, '2025-10-05 17:07:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'Don, hemos estado hablando los del staff alto. La economía de la meta está muy rota. Los usuarios farmearon demasiado el fin de semana.', NULL, '2025-10-12 10:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Lo sé. Estoy reescribiendo el script de "qb-drugs" desde cero. Quiero meter un sistema de pureza, que si no lo cocinan bien, la droga valga menos.', NULL, '2025-10-12 10:05:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'Uff, eso suena increíble para el rol. ¿Cuándo crees que estará?', NULL, '2025-10-12 10:07:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Soy yo solo picando código y además tengo que arreglar el menú de admin viejo que crashea. Dadme una semana. Prioridad ahora mismo: optimización.', NULL, '2025-10-12 10:10:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', '¡Feliz Halloween equipo! El mapa del garaje central con las calabazas ha quedado brutal Don, dale las gracias de nuestra parte a Patri.', NULL, '2025-10-31 23:58:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Acabo de subir al repo el nuevo panel de administración. Necesito feedback urgente.', NULL, '2025-11-05 15:00:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', '¡Madre mía! El modo oscuro es precioso. Adiós a quedarme ciega por las noches.', NULL, '2025-11-05 15:02:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'Oye, el botón de "Noclip" va super fluido, mucho mejor que el txAdmin. Pero veo un fallo: en la lista de jugadores, si el nombre es muy largo, se sale del cuadro.', NULL, '2025-11-05 15:05:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Anotado. Le meteré un "text-overflow: ellipsis" al CSS ahora mismo. ¿Qué tal veis la pestaña de reportes?', NULL, '2025-11-05 15:08:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Los reportes van bien, pero estaría bien poder asignárnoslos para que no vayamos dos admins al mismo aviso.', NULL, '2025-11-05 15:10:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Hecho. Mañana tendréis un botón de "ASIGNARME" que cambia el estado en la base de datos.', NULL, '2025-11-05 15:15:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Genial. Así evitamos pisarnos el trabajo. Gracias Don.', NULL, '2025-11-05 15:17:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Chicos, necesito que me probéis otra cosa. El servidor está yendo muy lento últimamente y quiero ver si el nuevo script de optimización ayuda.', NULL, '2025-11-15 18:00:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'Chicos, el server va a pedales. Hay 120 personas conectadas y el resmon se ha disparado.', NULL, '2025-11-15 18:01:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Estoy mirando el profiler. Es el script de las matrículas personalizadas, está haciendo demasiadas consultas SQL por segundo. Voy a fixearlo ahora mismo, y a otimizarlo.', NULL, '2025-11-15 18:03:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Mientras tanto, ojo con el ID 12. Me han llegado 4 reportes de que es inmortal. Le he vaciado un cargador y no baja la vida.', NULL, '2025-11-15 18:10:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Script de matrículas parcheado. El lag debería bajar ya. Ana, pásame la licencia del ID 12 por privado, voy a checkear si está inyectando algo o es lag.', NULL, '2025-11-15 18:15:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Enviada. Dice por OOC que se le ha bugeado el chaleco, pero no me fío.', NULL, '2025-11-15 18:17:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Es mod menu. Los logs dicen que se ha curado 5000 de vida en 1 segundo. Ban más que merecido. Encargate tu Ana porfas...', NULL, '2025-11-15 18:25:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'Jefe, una pregunta tonta... ¿Podríamos tener emojis en este chat? A veces quiero mandar un "ok" rápido o una manita y me siento como en los años 90 escribiendo texto plano xD', NULL, '2025-12-01 09:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Jajaja, no es mala idea. Estaba pensando en mejorar el chat de admins. Estoy mirando librerías de JS para meter un picker de emojis integrado.', NULL, '2025-12-01 10:00:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Y ya que estás... ¿sería posible mandar fotos? A veces para enseñarte un bug tengo que subirla a imgur y pasarte el link, es un rollo.', NULL, '2025-12-01 11:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Eso es más complejo por el tema de Base64 en la base de datos, peta si la cadena es muy larga. Pero puedo intentar hacer un puente con un Webhook de Discord. Lo investigo esta noche.', NULL, '2025-12-01 11:10:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'Buenos días equipo. ¿Cómo se presenta el viernes?', NULL, '2025-12-05 16:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Tranquilo. Estoy terminando el módulo de emojis y fotos en el chat. Luego me pondré con el resto de los apartados del script.', NULL, '2025-12-05 16:30:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Perfecto Don. Avísanos cuando esté listo para probarlo.', NULL, '2025-12-05 16:45:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', '¡Gracias Don! Eres un crack.', NULL, '2025-12-05 17:00:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', '¿Alguna novedad con el chat Don?', NULL, '2025-12-08 11:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Sí, ya lo tengo casi listo. Esta tarde subo una preview para que lo probéis, haber que tal... como vas tu Ana con los pesados de los reportes y bugs?', NULL, '2025-12-08 11:15:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Tranquila de momento. He atendido un par de dudas de whitelist y poco más.', NULL, '2025-12-08 12:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Chicos, acabo de subir la actualización del chat. Probad a darle al icono de la carita que sale abajo. ¡Ya tenemos emojis nativos!', NULL, '2025-12-08 14:00:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', '¡Funciona perfecto! Me acabo de tirar 10 minutos mirando los emojis de perros y gatos jajajaja.', NULL, '2025-12-08 14:15:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'P^robando su funcionamiento. Muy guay el set de emojis que has puesto. Gracias Don! 🥹😥🧙🏻‍♂️😙😘😚😏😮😝😯', NULL, '2025-12-08 14:30:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Genial. Ahora probad a mandar una imagen pegándola directamente (Ctrl+V) en el chat. Debería subirse sola a un canal de Discord y aparecer aquí.', NULL, '2025-12-10 18:00:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', '', '["https://cdn.discordapp.com/attachments/1394902797396213770/1459440201754476648/screenshot.png?ex=696f269b&is=696dd51b&hm=fbae189619b049b7aa4572b668057d686e5154c370d1b2c0579255e60246b1f4"]', '2025-12-10 18:15:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'También probado. Acabo de mandar una captura de pantalla del resmon. Va de lujo.', NULL, '2025-12-10 18:30:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Perfecto. Me alegro que os guste el nuevo chat. Ahora me pondré con el resto de los apartados del script.', NULL, '2025-12-10 18:45:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', '🔥 Va finísimo Don! Se ve super profesional todo.', NULL, '2025-12-10 18:50:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', '😂😂😂 Me encanta. Eres un crack. Por cierto, ¿has mirado lo de las fotos?', NULL, '2025-12-12 21:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Sí, ya lo eh dicho, pero habian fallos... Ahora probad a pegar una imagen del portapapeles (Ctrl+V) de nuevo por favor. Debería ir mejor ahora con la funcion de que si le dais clic, se ve en pantalla completa...', NULL, '2025-12-12 21:15:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'A mi me deja ver la foto que subio Hagrid_Staff hace dos dias, y es la leche el que se haga grande con la X para cerrarlo. Genial Don, eres un puñetero crack ahhaha 🥰💞💘.', NULL, '2025-12-12 21:30:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', '', '["https://cdn.discordapp.com/attachments/1394902797396213770/1459428691431002123/screenshot.png?ex=696f1be2&is=696dca62&hm=0441eec58ecf1c85ca370eb6fe8851a8b20d433b3004142f05b841bb7990da1d"]', '2025-12-12 21:40:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'Lol, funciona perfecto. Acabo de mandar una captura de un coche mal aparcado en comisaría. NO ME LO PUEDO CREEEEEEEER QUE WAPO TAH ETA MONDA!', NULL, '2025-12-12 21:45:00'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'Como mieldas a aparcado ese ahi de esa manera teniendo los pibotes esos?', NULL, '2025-12-12 21:47:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'Jajaja, me parto. Esto va a revolucionar la administración. Gracias Don!', NULL, '2025-12-12 21:50:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', '', '["https://cdn.discordapp.com/attachments/1394902797396213770/1459429488893886653/screenshot.png?ex=696f1ca1&is=696dcb21&hm=1af70f1e81bdf77bd5f71acff091e5e1646614f84fa21b6892c05e9da2292190"]', '2025-12-28 12:00:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Probado también lo de pegar imágenes. Te has superado esta vez. DEBO DE ADMITIRLO, cuando haces cosas que nadie tiene ni P**A idea de como hacerlo hahahahahahhaha. PD: me encanta el mapeado tanto de la comisaria como los 2 parques de delante, fomenta MUCHISIMO el rol por esta zona y me parece una GRAN LOCURA PAPITOOO!', NULL, '2025-12-28 12:20:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Genial. Pues ya estaría el módulo de chat terminado al 100%. Ahora me voy a poner con el resto del script, que me queda MUCHO en mi cabecita loca... que me está dando guerra la cámara acrobatica y resto de funciones que tengo pensadas me sobre cargan el resmon y me estoy tilteando que fipais...', NULL, '2025-12-28 12:30:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Os aviso cuando tenga algo más listo para testear. Admin_Luis esos mapeados son la putisima P***A son 3 mapeados separados que de por sí no eran compatibles y tube que modificarlos YO (que no tengo ni p***a idea de modelar mapeados ni modelar nada en general... Eh roto muchas colisiones, luces, el mapa dejaba de funciona sin tocar nada, el server se sobre cargaba) hasta que lo logré despues de 3/4 dias solo centrao en esos mapeados, solo por el capricho de que me encantaban los 3 y me negaba a que fueran incompatibles por que son en la misma zona...', NULL, '2025-12-28 12:32:00'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'Eres un crack Don. De verdad, gracias por todo el curro que te estás pegando.', NULL, '2025-12-28 12:34:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Dale duro jefe. Nosotros nos encargamos de los tickets mientras programas. 💪', NULL, '2025-12-28 12:35:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Gracias por el currazo Don. Este menú es una pasada, con lo "poco" que llevas. Si quierers mas ideas dinoslo que nosotros con tal de dar por culo y hacerte trabajar, lo que sea ahhahha 💘💞🥰 (ILUSM)', NULL, '2025-12-28 12:38:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Gracias por el apoyo moral pedazo de maricon@s. Sois los peores admins que he tenido nunca. SUS APRESIO ❤️ (ILUSMTOO)', NULL, '2025-12-28 12:40:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Buenas gente. Acabo de subir el Hotfix del chat 2.0. Ahora podéis mezclar texto con imágenes, subir hasta 5 de golpe y borrar la preview si os equivocáis.', NULL, '2026-01-05 18:00:57'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', '¡Por fin! El otro día intenté pasar 3 fotos de un reporte y tuve que spamear el chat linea a linea.', NULL, '2026-01-05 18:05:20'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Yo estoy liado con un CK en la mafia, luego lo miro. Por cierto el ID 20 lleva 3 warnings por "funny driving", echadle un ojo.', NULL, '2026-01-05 18:10:45'),
+('Hagrid_Staff', 'license:4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s', 'Voy yo. Funny driving es mi especialidad xD. ¿El chat nuevo soporta gifs?', NULL, '2026-01-05 18:12:10'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Sí, soporta todo lo que soporte el webhook de Discord. Pero no abuséis de los gifs que os conozco...', NULL, '2026-01-05 18:15:30'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', '¿Alguien ha probado el multi-upload ya? Necesito confirmar que no peta la DB si mandáis 5 fotos juntas.', NULL, '2026-01-06 10:00:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Voy yo Don. Justo tengo un CALVO con un coche tuneado, perfecto para probarlo.', NULL, '2026-01-06 10:15:00'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Mira esto Don, se sube al techo, luego sale corriendo por la carretera y luego atraviesa el edificio:', '["https://cdn.discordapp.com/attachments/1394902797396213770/1462842248440844328/image.png?ex=696fa982&is=696e5802&hm=fc87df5623cccdc0c1d7a825fa014fe07247447053daecbeb12042a6d19bfd33", "https://cdn.discordapp.com/attachments/1394902797396213770/1462843024299003984/image.png?ex=696faa3b&is=696e58bb&hm=5b688d8510ae2800e7d0e99cc9b4d7721254a564ab88cf00e607e9a6574d3b63", "https://cdn.discordapp.com/attachments/1394902797396213770/1462843196030845018/image.png?ex=696faa64&is=696e58e4&hm=5f69446d655160123ddb6a5a1a88f2266ffad88141ce2ae0d165e32756dbe423"]', '2026-01-06 10:20:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Perfecto Ana. Veo las 3 fotos y el texto arriba perfectamente alineado. ¿La preview te dejó borrarlas antes de enviar?', NULL, '2026-01-06 10:22:15'),
+('Admin_Ana', 'license:3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r', 'Sip, metí una cuarta sin querer que no era, le di a la X roja y se quitó suave. 10/10 el sistema.', NULL, '2026-01-06 10:23:40'),
+('Poseidon_Admin', 'license:5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t', 'Oye, habéis visto al EMS nuevo? Rolea genial, deberíamos darle puntos de rol.', NULL, '2026-01-06 10:25:00'),
+('Admin_Luis', 'license:2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q', 'Visto. Ayer me reanimó y me tiró 15 minutos de /me. Un crack.', NULL, '2026-01-07 09:00:00'),
+('DonMaderos', 'license:1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p', 'Anotado para la reunión semanal. Bueno, doy el módulo de chat por FINALIZADO. Me vuelvo a la cueva a programar el sistema de robos. No me etiquetéis a no ser que se queme el server.', NULL, '2026-01-07 09:10:00');
+
+-- =======================================================
+-- 4. TABLA DE LOGS DE ADMINISTRACIÓN
+-- =======================================================
+
+CREATE TABLE IF NOT EXISTS `dp_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `admin_name` varchar(255) DEFAULT 'Sistema',
+  `admin_identifier` varchar(50) DEFAULT NULL,
+  `action` varchar(50) DEFAULT NULL COMMENT 'Ej: BAN, KICK, SPAWN_CAR',
+  `details` text DEFAULT NULL COMMENT 'Descripción de lo que hizo',
+  `date` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =======================================================
+-- 5. TABLA DE ESTADÍSTICAS DE ADMINISTRACIÓN
+-- =======================================================
+
+CREATE TABLE IF NOT EXISTS `dp_stats` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `player_count` int(11) DEFAULT 0,
+  `admin_count` int(11) DEFAULT 0,
+  `report_count` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `dp_stats` (`player_count`, `admin_count`, `report_count`, `created_at`) VALUES 
+(12, 1, 0, DATE_SUB(NOW(), INTERVAL 29 DAY)),
+(25, 2, 1, DATE_SUB(NOW(), INTERVAL 25 DAY)),
+(40, 4, 5, DATE_SUB(NOW(), INTERVAL 21 DAY)),
+(18, 1, 0, DATE_SUB(NOW(), INTERVAL 18 DAY)),
+(55, 5, 12, DATE_SUB(NOW(), INTERVAL 14 DAY)),
+(30, 3, 2, DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(45, 4, 6, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(62, 6, 15, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(20, 2, 0, DATE_SUB(NOW(), INTERVAL 2 DAY));

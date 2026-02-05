@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DP-AdminMenu</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div id="global-announce-bar" style="display: none;">
+        <div class="announce-label">SISTEMA</div>
+        <div class="announce-content">
+            <div class="marquee" id="announce-marquee"></div>
+        </div>
+    </div>
+
+    <div id="hud-container">
+        <div id="speed-ui" class="hud-element" style="display: none;">
+            <div class="hud-title">⚡ FLASH MODE</div>
+            <div class="hud-value"><span id="speed-number">1.0</span>x</div>
+            <div class="hud-hint">Rueda 🖱️ ajusta</div>
+        </div>
+
+        <div id="jump-ui" class="hud-element" style="display: none;">
+            <div class="hud-title">🦘 KANGAROO</div>
+            <div class="hud-value"><span id="jump-number">1.0</span>x</div>
+            <div class="hud-hint">Rueda 🖱️ ajusta</div>
+        </div>
+
+        <div id="tags-ui" class="hud-element" style="display: none; min-width: 180px; text-align: left;">
+            <div class="hud-title">👁️ VISIÓN DE ADMIN</div>
+            <div class="tags-list">
+                <div class="tag-item"><span class="key-badge">Num 9</span> IDs</div>
+                <div class="tag-item"><span class="key-badge">Num 8</span> Nombres</div>
+                <div class="tag-item"><span class="key-badge">Num 7</span> Cuenta</div>
+                <div class="tag-item"><span class="key-badge">Num 6</span> Vida</div>
+                <div class="tag-item"><span class="key-badge">Num 5</span> Escudo</div>
+                <div class="tag-item"><span class="key-badge">Num 4</span> Hambre</div>
+                <div class="tag-item"><span class="key-badge">Num +</span> Sed</div>
+            </div>
+            <div class="hud-hint">Usa el Teclado Numérico</div>
+        </div>
+
+        <div id="noclip-ui" class="hud-element" style="display: none; min-width: 200px;">
+            <div class="hud-title">👻 NOCLIP MODE</div>
+
+            <div class="hud-value"
+                style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px;">
+                <span id="noclip-number">1.0</span>x
+            </div>
+
+            <div class="tags-list">
+                <div class="tag-item"><span class="key-badge">W A S D</span> Moverse</div>
+                <div class="tag-item"><span class="key-badge">SHIFT</span> Turbo</div>
+                <div class="tag-item"><span class="key-badge">ESPACIO</span> Subir</div>
+                <div class="tag-item"><span class="key-badge">CTRL</span> Bajar</div>
+                <div class="tag-item"><span class="key-badge">Rueda 🖱️</span> Velocidad (+/- 0.2)</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="entity-info-hud" class="hud-element"
+        style="display: none; position: absolute; right: 50px; top: 50%; transform: translateY(-50%); width: 350px; text-align: left; z-index: 50;">
+        <div class="hud-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>INFORMACIÓN DE ENTIDADES</span>
+            <button class="btn-mini btn-details" onclick="copyEntityData()" title="Copiar JSON"
+                style="width: 32px; height: 32px;">
+                <span class="iconify" data-icon="mdi:content-copy"></span>
+            </button>
+        </div>
+
+        <div class="entity-data-grid">
+            <div class="ed-row"><span class="ed-label">Modelo (Hash):</span> <span class="ed-val" id="ei-hash">0</span>
+            </div>
+            <div class="ed-row"><span class="ed-label">Nombre:</span> <span class="ed-val" id="ei-name">PRUEBAS</span>
+            </div>
+
+            <div class="ed-sep"></div>
+
+            <div class="ed-row"><span class="ed-label">ID Entidad:</span> <span class="ed-val" id="ei-id">0</span></div>
+            <div class="ed-row"><span class="ed-label">Net ID:</span> <span class="ed-val" id="ei-netid">0</span></div>
+            <div class="ed-row"><span class="ed-label">Propietario (Server ID):</span> <span class="ed-val"
+                    id="ei-owner">0</span></div>
+
+            <div class="ed-sep"></div>
+
+            <div class="ed-row"><span class="ed-label">Coords:</span> <span class="ed-val" id="ei-coords">0, 0, 0</span>
+            </div>
+            <div class="ed-row"><span class="ed-label">Distancia:</span> <span class="ed-val" id="ei-dist">0m</span>
+            </div>
+            <div class="ed-row"><span class="ed-label">Rotación (H):</span> <span class="ed-val" id="ei-rot">0</span>
+            </div>
+            <div class="ed-row"><span class="ed-label">Velocidad:</span> <span class="ed-val" id="ei-speed">0
+                    km/h</span></div>
+
+            <div class="ed-sep"></div>
+
+            <div class="ed-row"><span class="ed-label">Vida:</span> <span class="ed-val" id="ei-health">0</span></div>
+            <div class="ed-row"><span class="ed-label">Vida Máx:</span> <span class="ed-val" id="ei-maxhealth">0</span>
+            </div>
+            <div class="ed-row"><span class="ed-label">Armadura:</span> <span class="ed-val" id="ei-armour">0</span>
+            </div>
+            <div class="ed-row"><span class="ed-label">Relación (Hash):</span> <span class="ed-val"
+                    id="ei-rel-hash">0</span></div>
+        </div>
+
+        <div class="ed-actions" style="margin-top: 15px; border-top: 1px solid var(--bg-border); padding-top: 10px;">
+            <div class="tag-item"><span class="key-badge">E</span> ELIMINAR</div>
+            <div class="tag-item"><span class="key-badge">G</span> CONGELAR</div>
+            <div class="tag-item"><span class="key-badge">J</span> MODO CURSOR</div>
+        </div>
+    </div>
+
+    <div class="container" id="admin-menu">
+
+        <div class="header">
+            <div class="header-title">ADMINISTRADOR</div>
+            <div class="header-tabs">
+                <div class="tab active" data-tab="home" title="Menú Principal">
+                    <span class="iconify" data-icon="fa-solid:user-shield"></span>
+                </div>
+                <div class="tab" data-tab="actions" title="Acciones Generales">
+                    <span class="iconify" data-icon="mdi:wand"></span>
+                </div>
+                <div class="tab" data-tab="reports" title="Reportes">
+                    <span class="iconify" data-icon="ic:round-warning"></span>
+                </div>
+                <div class="tab" data-tab="bans" title="Lista de Baneados">
+                    <span class="iconify" data-icon="material-symbols:block-outline"></span>
+                </div>
+                <div class="tab" data-tab="chat" title="Chat Admin">
+                    <span class="iconify" data-icon="material-symbols:chat-rounded"></span>
+                </div>
+                <div class="tab" data-tab="jobs" title="Trabajos">
+                    <span class="iconify" data-icon="fa-solid:user-md"></span>
+                </div>
+                <div class="tab" data-tab="gangs" title="Bandas">
+                    <span class="iconify" data-icon="fa:group"></span>
+                </div>
+                <div class="tab" data-tab="vehicles" title="Vehículos">
+                    <span class="iconify" data-icon="fa:car"></span>
+                </div>
+                <div class="tab" data-tab="items" title="Ítems">
+                    <span class="iconify" data-icon="fa-solid:box-open"></span>
+                </div>
+                <div class="tab" data-tab="status" title="Estado del Servidor">
+                    <span class="iconify" data-icon="mdi:server"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <div class="page" id="home">
+                <div class="page-header">
+                    <div class="section-title">JUGADORES (<span id="total-players">0</span>)</div>
+                    <div class="search-bar">
+                        <input type="text" placeholder="Buscar por Nombre o ID...">
+                        <button class="clear-btn"><span class="iconify" data-icon="mdi:close"></span></button>
+                    </div>
+                </div>
+                <div class="scroll-list">
+                </div>
+            </div>
+
+            <div class="page" id="actions" style="display: none;">
+
+                <div class="sub-section">
+                    <div class="page-header">
+                        <div class="section-title">OPCIONES PRINCIPALES</div>
+                    </div>
+                    <div class="grid-2">
+                        <button id="btn-noclip" onclick="toggleAction('noclip')">NOCLIP</button>
+                        <button id="btn-revive" onclick="triggerAction('revive')">REVIVE</button>
+                        <button id="btn-godmode" onclick="toggleAction('godmode')">GODMODE</button>
+                        <button id="btn-invisible" onclick="toggleAction('invisible')">INVISIBLE</button>
+                        <button id="btn-superspeed" onclick="toggleAction('superspeed')">SUPER VELOCIDAD</button>
+                        <button id="btn-superjump" onclick="toggleAction('superjump')">SUPER SALTO</button>
+                        <button id="btn-stamina" onclick="toggleAction('stamina')">NO RESISTENCIA</button>
+                        <button id="btn-blips" onclick="toggleAction('blips')">BLIPS</button>
+                        <button id="btn-clothing" onclick="triggerAction('clothing')">MENÚ DE ROPA</button>
+                        <button id="btn-tags" onclick="toggleAction('tags')">TAGS / NOMBRES</button>
+                        <button id="btn-tpm" onclick="triggerAction('tpm')">TPM</button>
+                        <button id="btn-back" onclick="triggerAction('back')">BACK</button>
+                        <button id="btn-cuffs" onclick="toggleAction('cuffs')" class="full-width">PONERSE / QUITARSE
+                            ESPOSAS</button>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <div class="page-header">
+                        <div class="section-title">OPCIONES SERVIDOR</div>
+                    </div>
+                    <div class="grid-2">
+                        <button id="btn-announce" onclick="openAnnounceModal()">ANUNCIO</button>
+                        <button id="btn-reviveall" onclick="triggerAction('reviveall')">REVIVE ALL</button>
+                        <button class="btn-danger" onclick="triggerAction('delete_nearby_veh')">BORRAR VEHÍCULOS
+                            CERCANOS</button>
+                        <button class="btn-danger" onclick="triggerAction('delete_all_veh')">BORRAR TODOS LOS
+                            VEHÍCULOS</button>
+                        <button class="btn-danger" onclick="triggerAction('delete_nearby_peds')">BORRAR PEATONES
+                            CERCANOS</button>
+                        <button class="btn-danger" onclick="triggerAction('delete_all_peds')">BORRAR TODOS LOS
+                            PEATONES</button>
+                        <button class="btn-danger" onclick="triggerAction('delete_nearby_objects')">BORRAR OBJETOS
+                            CERCANOS</button>
+                        <button class="btn-danger" onclick="triggerAction('delete_all_objects')">BORRAR TODOS LOS
+                            OBJETOS</button>
+                        <button id="btn-weather" onclick="openWeatherModal()" class="full-width">CLIMA</button>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <div class="page-header">
+                        <div class="section-title">OPCIONES VEHÍCULOS</div>
+                    </div>
+                    <div class="grid-2">
+                        <button onclick="triggerAction('repair_vehicle')">REPARAR</button>
+                        <button onclick="openRefuelModal()">LLENAR DEPÓSITO</button>
+                        <button class="btn-danger" onclick="openPerformanceModal()">MEJORAR VEHÍCULO</button>
+                        <button class="btn-danger" onclick="triggerAction('random_visuals')">ESTÉTICAS
+                            ALEATORIAS</button>
+                        <button onclick="openPaintModal()">ESTABLECER COLOR</button>
+                        <button onclick="openLiveryModal()">ESTABLECER CALCOMANÍA</button>
+                        <button class="btn-danger" onclick="triggerAction('force_unlock')">FORZAR DESBLOQUEO</button>
+                        <button class="btn-danger" onclick="triggerAction('force_lock')">FORZAR BLOQUEO</button>
+                        <button class="full-width" onclick="triggerAction('wash_vehicle')">LAVAR VEHÍCULO</button>
+                    </div>
+                </div>
+
+                <div class="sub-section">
+                    <div class="page-header">
+                        <div class="section-title">HERRAMIENTAS DE DESARROLLO</div>
+                    </div>
+                    <div class="grid-2">
+                        <button onclick="copyCoords('vec3')">COORDENADAS VEC3</button>
+                        <button onclick="copyCoords('vector3')">COORDENADAS VECTOR3</button>
+                        <button onclick="copyCoords('vec4')">COORDENADAS VEC4</button>
+                        <button onclick="copyCoords('vector4')">COORDENADAS VECTOR4</button>
+                        <button onclick="copyCoords('xyz')">COORDENADAS X, Y, Z</button>
+                        <button onclick="copyCoords('xyzh')">COORDENADAS X, Y, Z, H</button>
+                        <button class="full-width" id="btn-entity_info"
+                            onclick="toggleAction('entity_info')">INFORMACIÓN DE ENTIDADES</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="reports" style="display: none;">
+                <div class="page-header">
+                    <div class="section-title">REPORTES ACTIVOS</div>
+                </div>
+                <div class="report-list"></div>
+            </div>
+
+            <div class="page" id="bans" style="display: none;">
+                <div class="page-header">
+                    <div class="section-title">LISTA DE BANEADOS</div>
+                    <div class="search-bar">
+                        <input type="text" id="ban-search" placeholder="Buscar por ID, Nombre, Licencia, Motivo...">
+                        <button class="clear-btn" id="btn-clear-bans">
+                            <span class="iconify" data-icon="mdi:close"></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>JUGADOR</th>
+                                <th>LICENCIA</th>
+                                <th>MOTIVO</th>
+                                <th>BANEADO POR</th>
+                                <th>EXPIRA</th>
+                                <th>ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ban-list-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="page" id="chat" style="display: none;">
+                <div class="page-header">
+                    <div class="section-title">CHAT DE ADMINISTRADORES</div>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages-list"></div>
+
+                    <div class="chat-input-wrapper">
+
+                        <div id="chat-attachments-area" class="attachments-preview" style="display: none;">
+                        </div>
+
+                        <div class="chat-input-area">
+                            <div class="emoji-picker" id="emoji-picker-menu">
+                                <div class="emoji-nav" id="emoji-nav"></div>
+                                <div class="emoji-scroll-area" id="emoji-list"></div>
+                            </div>
+
+                            <button class="chat-emoji-btn" id="btn-emoji-toggle">
+                                <span class="iconify" data-icon="mdi:emoticon-happy-outline"></span>
+                            </button>
+
+                            <input type="text" id="chat-input-text"
+                                placeholder="Escribir mensaje (o pega una imagen)..." autocomplete="off">
+
+                            <button class="chat-send-btn" id="btn-chat-send">
+                                <span class="iconify" data-icon="iconoir:send-solid"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="jobs" style="display: none;">
+                <div class="page-header">
+                    <div class="section-title">LISTA DE TRABAJOS (<span id="total-jobs">0</span>)</div>
+
+                    <div class="search-bar">
+                        <input type="text" id="job-search-input" placeholder="Buscar por Nombre o ID del trabajo...">
+                        <button class="clear-btn" id="btn-clear-jobs">
+                            <span class="iconify" data-icon="mdi:close"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="scroll-list" id="job-list-container">
+                    <div style="padding:15px; color:#888; text-align:center;">Cargando trabajos...</div>
+                </div>
+            </div>
+
+            <div class="page" id="gangs" style="display: none;">
+                <div class="page-header">
+                    <div class="section-title">LISTA DE BANDAS (<span id="total-gangs">0</span>)</div>
+
+                    <div class="search-bar">
+                        <input type="text" id="gang-search-input" placeholder="Buscar por Nombre o ID de la banda...">
+                        <button class="clear-btn" id="btn-clear-gangs">
+                            <span class="iconify" data-icon="mdi:close"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="scroll-list" id="gang-list-container">
+                    <div style="padding:15px; color:#888; text-align:center;">Cargando bandas...</div>
+                </div>
+            </div>
+
+            <div class="page" id="vehicles" style="display: none;">
+                <div class="page-header">
+                    <div class="section-title">CATÁLOGO DE VEHÍCULOS</div>
+
+                    <div class="search-bar">
+                        <input type="text" id="veh-search-input" placeholder="Buscar por Nombre, Marca, Categoría..."
+                            style="flex:1;">
+                        <button class="clear-btn" id="btn-clear-veh">
+                            <span class="iconify" data-icon="mdi:close"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="vehicle-list-container" class="vehicle-grid">
+                    <div
+                        style="grid-column: 1/-1; text-align:center; color:#666; padding:40px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                        <span class="iconify" data-icon="mdi:loading" data-rotate="360deg"
+                            style="font-size:30px; color:var(--primary);"></span>
+                        <span>Cargando catálogo...</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="page" id="items" style="display: none;">
+                <div class="page-header">
+                    <div class="section-title">GESTOR DE ÍTEMS Y ARMAS</div>
+                    <div class="search-bar">
+                        <input type="text" id="item-search-input"
+                            placeholder="Buscar por Nombre, Código, Descripción..." style="flex:1;">
+                        <button class="clear-btn" id="btn-clear-items">
+                            <span class="iconify" data-icon="mdi:close"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="item-list-container" class="vehicle-grid">
+                    <div
+                        style="grid-column: 1/-1; text-align:center; color:#666; padding:40px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                        <span class="iconify" data-icon="mdi:loading" data-rotate="360deg"
+                            style="font-size:30px; color:var(--primary);"></span>
+                        <span>Cargando inventario global...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="status" style="display: none;">
+
+                <div class="status-dashboard">
+
+                    <div class="stat-card active-metric" onclick="switchMetric('players', this)"
+                        style="cursor: pointer;">
+                        <div class="stat-icon" style="background: rgba(13, 0, 255, 0.2); color: rgb(0, 123, 255);">
+                            <span class="iconify" data-icon="mdi:account-group"></span>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-players">0 / 64</h3>
+                            <p>JUGADORES</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="switchMetric('admins', this)" style="cursor: pointer;">
+                        <div class="stat-icon" style="background: rgba(255, 165, 0, 0.2); color: orange;">
+                            <span class="iconify" data-icon="mdi:shield-account"></span>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-admins">0</h3>
+                            <p>ADMINS ON</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(46, 204, 113, 0.2); color: #2ecc71;">
+                            <span class="iconify" data-icon="mdi:server-network"></span>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-uptime">00:00</h3>
+                            <p>TIEMPO</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="switchMetric('reports', this)" style="cursor: pointer;">
+                        <div class="stat-icon" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c;">
+                            <span class="iconify" data-icon="mdi:bug"></span>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-reports">0</h3>
+                            <p>REPORTES</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-middle-section">
+
+                    <div class="chart-container-box">
+                        <div class="chart-header">
+                            <h3>
+                                <span class="iconify" id="chart-header-icon" data-icon="mdi:chart-line"></span>
+                                <span id="chart-header-text">FLUJO DE JUGADORES</span>
+                            </h3>
+
+                            <div class="chart-controls">
+                                <button class="chart-btn active" onclick="updateChart('daily', this)">DIARIO</button>
+                                <button class="chart-btn" onclick="updateChart('weekly', this)">SEMANAL</button>
+                                <button class="chart-btn" onclick="updateChart('monthly', this)">MENSUAL</button>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="playerActivityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="quick-dashboard-box">
+                        <h3>
+                            <span class="iconify" data-icon="mdi:console-network"></span> GESTIÓN DE SERVIDOR
+                        </h3>
+
+                        <div
+                            style="display: grid; grid-template-columns: 1fr; gap: 10px; height: 100%; overflow-y: auto;">
+
+                            <div class="control-item" style="border: 1px solid rgba(var(--primary-rgb), 0.3);">
+                                <div class="ci-info">
+                                    <span style="color: var(--primary);">Staff Mode</span>
+                                    <small>Entrar de servicio</small>
+                                </div>
+                                <label class="switch small">
+                                    <input type="checkbox" id="dash-staffmode" checked
+                                        onchange="toggleServerOption('staff_mode', this.checked)">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <div class="control-item">
+                                <div class="ci-info">
+                                    <span>Whitelist</span>
+                                    <small>Acceso restringido</small>
+                                </div>
+                                <label class="switch small">
+                                    <input type="checkbox" id="dash-whitelist"
+                                        onchange="toggleServerOption('whitelist', this.checked)">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <div class="control-item">
+                                <div class="ci-info">
+                                    <span>Mantenimiento</span>
+                                    <small>Cerrar conexión</small>
+                                </div>
+                                <label class="switch small">
+                                    <input type="checkbox" id="dash-maintenance"
+                                        onchange="toggleServerOption('maintenance', this.checked)">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <div class="control-item">
+                                <div class="ci-info">
+                                    <span>Logs Discord</span>
+                                    <small>Sincronización</small>
+                                </div>
+                                <label class="switch small">
+                                    <input type="checkbox" id="dash-discord"
+                                        onchange="toggleServerOption('discord_logs', this.checked)">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="logs-section">
+                    <div class="logs-header">
+                        <h3><span class="iconify" data-icon="mdi:history"></span> REGISTRO DE ACTIVIDAD</h3>
+                        <button class="btn-small" onclick="refreshLogs()">
+                            <span class="iconify" data-icon="mdi:refresh"></span>
+                        </button>
+                    </div>
+
+                    <div class="logs-container">
+                        <table class="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>ADMIN</th>
+                                    <th>ACCIÓN</th>
+                                    <th>DETALLES</th>
+                                    <th style="text-align: right;">HORA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-footer">
+            <div class="footer-action">
+                <span class="key-badge">J</span>
+                <span>MODO CURSOR</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="report-container" id="report-menu" style="display: none;">
+        <div class="report-box">
+            <div class="report-header">ENVIAR UN REPORTE</div>
+
+            <div class="report-body">
+                <div class="input-group">
+                    <label>ASUNTO</label>
+                    <input type="text" id="report-title"
+                        placeholder="Ej: Bug en el trabajo de policía / RDM en plaza...">
+                </div>
+
+                <div class="input-group">
+                    <label>INFORMACIÓN / DESCRIPCIÓN</label>
+                    <textarea id="report-desc" rows="6"
+                        placeholder="Explica detalladamente qué ha sucedido..."></textarea>
+                </div>
+
+                <div class="report-footer">
+                    <div class="radio-group">
+                        <div class="radio-btn active" data-type="support" onclick="selectReportType('support')">
+                            <span class="iconify" data-icon="bx:support"></span> SOPORTE
+                        </div>
+                        <div class="radio-btn" data-type="player" onclick="selectReportType('player')">
+                            <span class="iconify" data-icon="fa-solid:user-ninja"></span> REPORTE JUGADOR
+                        </div>
+                    </div>
+                    <button class="send-btn" id="btn-send-report">¡ENVIAR REPORTE!</button>
+                </div>
+            </div>
+
+            <div class="close-report" onclick="closeReportMenu()">
+                <span class="iconify" data-icon="mdi:close"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirm-modal" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">CONFIRMACIÓN</div>
+            <div class="modal-body" id="modal-message">
+                ¿Estás seguro de realizar esta acción?
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-confirm-action">CONFIRMAR</button>
+                <button class="btn-cancel" onclick="closeConfirmation()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="extend-modal" style="display: none;">
+        <div class="modal-box" style="width: 450px;">
+            <div class="modal-header">GESTIONAR DURACIÓN DEL BANEO</div>
+            <div class="modal-body" style="text-align: left;">
+                <div class="time-section">
+                    <label>EXPIRACIÓN ACTUAL</label>
+                    <div class="time-display" id="ext-current-date">Cargando...</div>
+                </div>
+                <div class="time-controls-row">
+                    <div class="add-time-box">
+                        <label>AÑADIR TIEMPO</label>
+                        <div class="input-row">
+                            <input type="number" id="ext-add-value" placeholder="0" min="0">
+                            <div class="custom-select-wrapper">
+                                <input type="hidden" id="ext-add-unit" value="86400">
+                                <div class="custom-select-trigger" id="custom-trigger">
+                                    <span>Días</span>
+                                    <div class="arrow"></div>
+                                </div>
+                                <div class="custom-options">
+                                    <span class="custom-option" data-value="3600">Horas</span>
+                                    <span class="custom-option selected" data-value="86400">Días</span>
+                                    <span class="custom-option" data-value="604800">Semanas</span>
+                                    <span class="custom-option" data-value="2592000">Meses</span>
+                                    <span class="custom-option" data-value="31536000">Años</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="perm-switch-box">
+                        <label>PERMANENTE</label>
+                        <label class="switch">
+                            <input type="checkbox" id="ext-perm-check">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="time-section" style="margin-top: 15px; border-color: #007bff;">
+                    <label style="color: #007bff;">NUEVA FECHA DE EXPIRACIÓN</label>
+                    <div class="time-display highlight" id="ext-new-date">Calculando...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-save-extend">GUARDAR CAMBIOS</button>
+                <button class="btn-cancel" onclick="closeExtendModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="announce-modal" style="display: none;">
+        <div class="modal-box" style="width: 600px; overflow: visible;">
+            <div class="modal-header" style="border-bottom-color: #f1c40f; color: #f1c40f;">
+                📢 NUEVO ANUNCIO GLOBAL
+            </div>
+            <div class="modal-body" style="text-align: left;">
+                <div class="input-group">
+                    <label style="color: #f1c40f;">MENSAJE DEL SISTEMA</label>
+                    <textarea id="announce-text" rows="6"
+                        placeholder="Escribe aquí el comunicado oficial..."></textarea>
+                </div>
+                <div class="input-group" style="margin-top: 15px;">
+                    <label style="color: #aaa;">DURACIÓN EN PANTALLA (Máx. 5 min)</label>
+                    <div class="input-row">
+                        <input type="number" id="announce-value" placeholder="10" min="1" value="10"
+                            style="text-align: center;">
+                        <div class="custom-select-wrapper" id="announce-unit-wrapper">
+                            <input type="hidden" id="announce-unit" value="1000">
+                            <div class="custom-select-trigger" id="announce-unit-trigger">
+                                <span>Segundos</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option selected" data-value="1000">Segundos</span>
+                                <span class="custom-option" data-value="60000">Minutos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-send-announce"
+                    style="background-color: #f1c40f; color: #000; font-weight: 900;">ENVIAR AVISO</button>
+                <button class="btn-cancel" onclick="closeAnnounceModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-modal" class="image-modal">
+        <span class="close-modal-btn">&times;</span>
+        <img class="modal-content" id="full-image">
+    </div>
+
+    <div class="modal-overlay" id="weather-modal" style="display: none;">
+        <div class="modal-box weather-box-custom">
+            <div class="modal-header">CONTROL CLIMÁTICO</div>
+
+            <div class="time-header-section">
+                <div class="weather-section-title">HORARIO DEL SERVIDOR</div>
+                <div class="time-display" id="weather-time-display">12:00</div>
+                <input type="range" min="0" max="23" value="12" class="range-slider" id="weather-time-slider">
+                <div class="live-game-clock">
+                    <span class="iconify" data-icon="mdi:watch-later"></span>
+                    Hora Actual: <span id="live-clock-text">--:--</span>
+                </div>
+            </div>
+
+            <div class="modal-body weather-grid-container">
+                <div class="weather-section-title">CONDICIONES ATMOSFÉRICAS</div>
+                <div class="weather-grid" id="weather-grid">
+                    <div class="weather-option active" data-weather="EXTRASUNNY"><span class="iconify"
+                            data-icon="mdi:white-balance-sunny"></span><span class="weather-lbl">Extra Soleado</span>
+                    </div>
+                    <div class="weather-option" data-weather="DESPEJADO"> <span class="iconify"
+                            data-icon="mdi:weather-sunny"></span><span class="weather-lbl">Despejado</span></div>
+                    <div class="weather-option" data-weather="NEUTRAL"><span class="iconify"
+                            data-icon="mdi:weather-hazy"></span><span class="weather-lbl">Neutral</span></div>
+                    <div class="weather-option" data-weather="SMOG"><span class="iconify"
+                            data-icon="mdi:smog"></span><span class="weather-lbl">Smog</span></div>
+                    <div class="weather-option" data-weather="FOGGY"><span class="iconify"
+                            data-icon="mdi:weather-fog"></span><span class="weather-lbl">Niebla</span></div>
+                    <div class="weather-option" data-weather="CLOUDS"><span class="iconify"
+                            data-icon="mdi:weather-partly-cloudy"></span><span class="weather-lbl">Nubes</span></div>
+                    <div class="weather-option" data-weather="OVERCAST"><span class="iconify"
+                            data-icon="mdi:weather-cloudy"></span><span class="weather-lbl">Nublado</span></div>
+                    <div class="weather-option" data-weather="CLEARING"><span class="iconify"
+                            data-icon="mdi:weather-sunset-up"></span><span class="weather-lbl">Aclarándose</span></div>
+                    <div class="weather-option" data-weather="RAIN"><span class="iconify"
+                            data-icon="mdi:weather-pouring"></span><span class="weather-lbl">Lluvia</span></div>
+                    <div class="weather-option" data-weather="THUNDER"><span class="iconify"
+                            data-icon="mdi:weather-lightning"></span><span class="weather-lbl">Tormenta</span></div>
+                    <div class="weather-option" data-weather="SNOWLIGHT"><span class="iconify"
+                            data-icon="mdi:weather-snowy"></span><span class="weather-lbl">Nieve Ligera</span></div>
+                    <div class="weather-option" data-weather="SNOW"><span class="iconify"
+                            data-icon="mdi:snowflake"></span><span class="weather-lbl">Nieve</span></div>
+                    <div class="weather-option" data-weather="BLIZZARD"><span class="iconify"
+                            data-icon="mdi:weather-snowy-heavy"></span><span class="weather-lbl">Ventisca</span></div>
+                    <div class="weather-option" data-weather="XMAS"><span class="iconify"
+                            data-icon="mdi:pine-tree"></span><span class="weather-lbl">Navidad</span></div>
+                    <div class="weather-option" data-weather="HALLOWEEN"><span class="iconify"
+                            data-icon="mdi:ghost"></span><span class="weather-lbl">Halloween FX</span></div>
+                </div>
+                <div style="width: 100%; display: flex; justify-content: center; margin-top: 15px; margin-bottom: 5px;">
+                    <div class="live-game-clock">
+                        <span class="iconify" data-icon="mdi:weather-cloudy-alert"></span>
+                        Clima Actual: <span id="live-weather-text">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="weather-extras-container">
+                <div class="weather-section-title">EFECTOS Y CONTROL</div>
+                <div class="extras-grid">
+                    <label class="switch-card">
+                        <div class="switch-info"><span class="iconify"
+                                data-icon="mdi:clock-remove-outline"></span><span>Congelar Hora</span></div>
+                        <div class="switch-control"><input type="checkbox" id="chk-freeze-time"><span
+                                class="slider"></span></div>
+                    </label>
+                    <label class="switch-card">
+                        <div class="switch-info"><span class="iconify"
+                                data-icon="mdi:weather-lock"></span><span>Congelar Clima</span></div>
+                        <div class="switch-control"><input type="checkbox" id="chk-freeze-weather"><span
+                                class="slider"></span></div>
+                    </label>
+                    <label class="switch-card">
+                        <div class="switch-info"><span class="iconify"
+                                data-icon="mdi:lightbulb-off-outline"></span><span>Apagón (Blackout)</span></div>
+                        <div class="switch-control"><input type="checkbox" id="chk-blackout"><span
+                                class="slider"></span></div>
+                    </label>
+                    <label class="switch-card">
+                        <div class="switch-info"><span class="iconify" data-icon="mdi:weather-windy"></span><span>Viento
+                                Fuerte</span></div>
+                        <div class="switch-control"><input type="checkbox" id="chk-wind"><span class="slider"></span>
+                        </div>
+                    </label>
+                    <label class="switch-card">
+                        <div class="switch-info"><span class="iconify" data-icon="mdi:waves"></span><span>Olas
+                                Gigantes</span></div>
+                        <div class="switch-control"><input type="checkbox" id="chk-waves"><span class="slider"></span>
+                        </div>
+                    </label>
+                    <div style="opacity: 0.3; pointer-events: none;"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-apply-weather">APLICAR CAMBIOS</button>
+                <button class="btn-cancel" onclick="closeWeatherModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="refuel-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 600px; overflow: visible;">
+            <div class="modal-header">GESTIONAR COMBUSTIBLE</div>
+            <div class="modal-body" style="text-align: center;">
+                <div class="input-group">
+                    <p style="color: #aaa;">Introduce el porcentaje de gasolina deseado para el vehículo actual</p>
+                    <div class="input-row" style="justify-content: center;">
+                        <input type="number" id="refuel-amount" min="0" max="100" placeholder="Ej: 50"
+                            style="text-align: center;">
+                        <div class="custom-select-trigger"> LITROS </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: center; gap: 15px;">
+                <button class="btn-confirm" id="btn-confirm-refuel">ESTABLECER</button>
+                <button class="btn-cancel" onclick="closeRefuelModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="performance-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 600px; overflow: visible;">
+            <div class="modal-header">MEJORAS DE RENDIMIENTO</div>
+            <div class="modal-body" style="text-align: center;">
+                <div style="margin-bottom: 25px;">
+                    <p style="color: #aaa; margin-bottom: 15px; line-height: 1.6;">
+                        Modifica el vehículo a tu gusto.<br>
+                        <small>(Nota: Pon -- NO TOCAR -- para dejarlo como está)</small>
+                    </p>
+                </div>
+                <div class="tuning-list" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="tuning-row" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: bold; color: #ddd;">MOTOR (ECU)</label>
+                        <div class="custom-select-wrapper" id="wrap-engine" style="width: 200px;">
+                            <input type="hidden" id="val-engine" value="-1">
+                            <div class="custom-select-trigger" id="trig-engine"><span>-- NO TOCAR --</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option selected" data-value="-1">-- NO TOCAR --</span>
+                                <span class="custom-option" data-value="0">De Serie</span>
+                                <span class="custom-option" data-value="1">Nivel 1</span>
+                                <span class="custom-option" data-value="2">Nivel 2</span>
+                                <span class="custom-option" data-value="3">Nivel 3</span>
+                                <span class="custom-option" data-value="max">Nivel 4</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tuning-row" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: bold; color: #ddd;">FRENOS</label>
+                        <div class="custom-select-wrapper" id="wrap-brakes" style="width: 200px;">
+                            <input type="hidden" id="val-brakes" value="-1">
+                            <div class="custom-select-trigger" id="trig-brakes"><span>-- NO TOCAR --</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option selected" data-value="-1">-- NO TOCAR --</span>
+                                <span class="custom-option" data-value="0">De Serie</span>
+                                <span class="custom-option" data-value="1">Calle</span>
+                                <span class="custom-option" data-value="2">Deportivos</span>
+                                <span class="custom-option" data-value="max">Competición</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tuning-row" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: bold; color: #ddd;">TRANSMISIÓN</label>
+                        <div class="custom-select-wrapper" id="wrap-transmission" style="width: 200px;">
+                            <input type="hidden" id="val-transmission" value="-1">
+                            <div class="custom-select-trigger" id="trig-transmission"><span>-- NO TOCAR --</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option selected" data-value="-1">-- NO TOCAR --</span>
+                                <span class="custom-option" data-value="0">De Serie</span>
+                                <span class="custom-option" data-value="1">Calle</span>
+                                <span class="custom-option" data-value="2">Deportiva</span>
+                                <span class="custom-option" data-value="max">Carreras</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tuning-row" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: bold; color: #ddd;">SUSPENSIÓN</label>
+                        <div class="custom-select-wrapper" id="wrap-suspension" style="width: 200px;">
+                            <input type="hidden" id="val-suspension" value="-1">
+                            <div class="custom-select-trigger" id="trig-suspension"><span>-- NO TOCAR --</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option selected" data-value="-1">-- NO TOCAR --</span>
+                                <span class="custom-option" data-value="0">De Serie</span>
+                                <span class="custom-option" data-value="1">Calle</span>
+                                <span class="custom-option" data-value="2">Rebajada</span>
+                                <span class="custom-option" data-value="3">Deportiva</span>
+                                <span class="custom-option" data-value="max">Competición</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tuning-row" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: bold; color: #ddd;">BLINDAJE</label>
+                        <div class="custom-select-wrapper" id="wrap-armor" style="width: 200px;">
+                            <input type="hidden" id="val-armor" value="-1">
+                            <div class="custom-select-trigger" id="trig-armor"><span>-- NO TOCAR --</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option selected" data-value="-1">-- NO TOCAR --</span>
+                                <span class="custom-option" data-value="0">Sin Blindaje</span>
+                                <span class="custom-option" data-value="1">40% Blindaje</span>
+                                <span class="custom-option" data-value="2">60% Blindaje</span>
+                                <span class="custom-option" data-value="3">80% Blindaje</span>
+                                <span class="custom-option" data-value="max">100% BLINDAJE</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tuning-row" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-weight: bold; color: #ddd;">TURBO</label>
+                        <div class="custom-select-wrapper" id="wrap-turbo" style="width: 200px;">
+                            <input type="hidden" id="val-turbo" value="-1">
+                            <div class="custom-select-trigger" id="trig-turbo"><span>-- NO TOCAR --</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options">
+                                <span class="custom-option selected" data-value="-1">-- NO TOCAR --</span>
+                                <span class="custom-option" data-value="off">❌ SIN TURBO</span>
+                                <span class="custom-option" data-value="on">✅ INSTALAR</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btn-max-preset" class="btn-preset">APLICAR LO MEJOR</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-confirm-performance">INSTALAR MEJORAS</button>
+                <button class="btn-cancel" onclick="closePerformanceModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="paint-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 600px; overflow: visible;">
+            <div class="modal-header">GESTIONAR PINTURAS</div>
+            <div class="modal-body" style="text-align: center;">
+                <div class="input-group">
+                    <p style="color: #aaa; margin-bottom: 20px;">
+                        Elige el acabado y haz clic en el color para editarlo. <br>
+                        <small>Nota: El acabado "Cromado" ignora el color seleccionado.</small>
+                    </p>
+
+                    <div class="paint-grid">
+                        <div class="modal-section-title">CARROCERÍA</div>
+
+                        <div class="paint-row">
+                            <label>COLOR PRINCIPAL</label>
+                            <div class="paint-controls">
+                                <div class="custom-select-wrapper" id="wrap-primary-type" style="width: 130px;">
+                                    <input type="hidden" id="val-primary-type" value="normal">
+                                    <div class="custom-select-trigger" id="trig-primary-type"><span>Normal (RGB)</span>
+                                        <div class="arrow"></div>
+                                    </div>
+                                    <div class="custom-options">
+                                        <span class="custom-option selected" data-value="normal">Normal (RGB)</span>
+                                        <span class="custom-option" data-value="classic">Clásico</span>
+                                        <span class="custom-option" data-value="metallic">Metalizado</span>
+                                        <span class="custom-option" data-value="matte">Mate</span>
+                                        <span class="custom-option" data-value="metals">Metales</span>
+                                        <span class="custom-option" data-value="chameleon">Camaleón</span>
+                                        <span class="custom-option" data-value="worn">Desgastado</span>
+                                        <span class="custom-option" data-value="util">Utilidad</span>
+                                    </div>
+                                </div>
+                                <div class="color-preview-btn" id="btn-col-primary"
+                                    onclick="openColorPicker('primary')">
+                                    <div class="color-sample" id="sample-primary" style="background-color: #000000;">
+                                    </div>
+                                </div>
+                                <input type="hidden" id="val-col-primary" value="#000000">
+
+                                <div class="custom-select-wrapper" id="wrap-primary-list"
+                                    style="width: 150px; display: none;">
+                                    <input type="hidden" id="val-primary-id" value="0">
+                                    <div class="custom-select-trigger" id="trig-primary-list"><span>Negro</span>
+                                        <div class="arrow"></div>
+                                    </div>
+                                    <div class="custom-options" id="opts-primary-list"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="paint-row">
+                            <label>COLOR SECUNDARIO</label>
+                            <div class="paint-controls">
+                                <div class="custom-select-wrapper" id="wrap-secondary-type" style="width: 130px;">
+                                    <input type="hidden" id="val-secondary-type" value="normal">
+                                    <div class="custom-select-trigger" id="trig-secondary-type"><span>Normal
+                                            (RGB)</span>
+                                        <div class="arrow"></div>
+                                    </div>
+                                    <div class="custom-options">
+                                        <span class="custom-option selected" data-value="normal">Normal (RGB)</span>
+                                        <span class="custom-option" data-value="classic">Clásico</span>
+                                        <span class="custom-option" data-value="metallic">Metalizado</span>
+                                        <span class="custom-option" data-value="matte">Mate</span>
+                                        <span class="custom-option" data-value="metals">Metales</span>
+                                        <span class="custom-option" data-value="chameleon">Camaleón</span>
+                                        <span class="custom-option" data-value="worn">Desgastado</span>
+                                        <span class="custom-option" data-value="util">Utilidad</span>
+                                    </div>
+                                </div>
+                                <div class="color-preview-btn" id="btn-col-secondary"
+                                    onclick="openColorPicker('secondary')">
+                                    <div class="color-sample" id="sample-secondary" style="background-color: #000000;">
+                                    </div>
+                                </div>
+                                <input type="hidden" id="val-col-secondary" value="#000000">
+
+                                <div class="custom-select-wrapper" id="wrap-secondary-list"
+                                    style="width: 150px; display: none;">
+                                    <input type="hidden" id="val-secondary-id" value="0">
+                                    <div class="custom-select-trigger" id="trig-secondary-list"><span>Negro</span>
+                                        <div class="arrow"></div>
+                                    </div>
+                                    <div class="custom-options" id="opts-secondary-list"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="paint-row">
+                            <label>REFLEJO NACARADO</label>
+                            <div class="paint-controls">
+                                <div class="custom-select-wrapper" id="wrap-pearl" style="width: 250px;">
+                                    <input type="hidden" id="val-pearl" value="0">
+                                    <div class="custom-select-trigger" id="trig-pearl"><span>Sin Nacarado (Negro)</span>
+                                        <div class="arrow"></div>
+                                    </div>
+                                    <div class="custom-options" id="opts-pearl"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-section-title" style="margin-top: 15px;">RUEDAS Y HUMO</div>
+
+                        <div class="paint-row">
+                            <label>COLOR RUEDAS</label>
+                            <div class="paint-controls">
+                                <div class="color-preview-btn" id="btn-col-wheels" onclick="openColorPicker('wheels')">
+                                    <div class="color-sample" id="sample-wheels" style="background-color: #000000;">
+                                    </div>
+                                </div>
+                                <input type="hidden" id="val-col-wheels" value="#000000">
+                            </div>
+                        </div>
+                        <div class="paint-row">
+                            <label>HUMO DE RUEDAS</label>
+                            <div class="paint-controls">
+                                <div class="color-preview-btn" id="btn-col-smoke" onclick="openColorPicker('smoke')">
+                                    <div class="color-sample" id="sample-smoke" style="background-color: #000000;">
+                                    </div>
+                                </div>
+                                <input type="hidden" id="val-col-smoke" value="#000000">
+                            </div>
+                        </div>
+
+                        <div class="modal-section-title" style="margin-top: 15px;">LUCES Y NEONES</div>
+
+                        <div class="paint-row">
+                            <label>NEONES</label>
+                            <div class="paint-controls">
+                                <span style="color:#666; font-size: 0.8rem; margin-right: 10px;">(4 lados)</span>
+                                <div class="color-preview-btn" id="btn-col-neon" onclick="openColorPicker('neon')">
+                                    <div class="color-sample" id="sample-neon" style="background-color: #000000;"></div>
+                                </div>
+                                <input type="hidden" id="val-col-neon" value="#000000">
+                            </div>
+                        </div>
+                        <div class="paint-row">
+                            <label>LUCES (XENÓN)</label>
+                            <div class="paint-controls">
+                                <div class="custom-select-wrapper" id="wrap-xenon" style="width: 200px;">
+                                    <input type="hidden" id="val-xenon" value="-1">
+                                    <div class="custom-select-trigger" id="trig-xenon"><span>-- NO TOCAR --</span>
+                                        <div class="arrow"></div>
+                                    </div>
+                                    <div class="custom-options">
+                                        <span class="custom-option selected" data-value="-1">-- NO TOCAR --</span>
+                                        <span class="custom-option" data-value="0">Blanco (Stock)</span>
+                                        <span class="custom-option" data-value="1">Azul</span>
+                                        <span class="custom-option" data-value="2">Azul Eléctrico</span>
+                                        <span class="custom-option" data-value="3">Verde Menta</span>
+                                        <span class="custom-option" data-value="4">Verde Lima</span>
+                                        <span class="custom-option" data-value="5">Amarillo</span>
+                                        <span class="custom-option" data-value="6">Dorado</span>
+                                        <span class="custom-option" data-value="7">Naranja</span>
+                                        <span class="custom-option" data-value="8">Rojo</span>
+                                        <span class="custom-option" data-value="9">Rosa Pony</span>
+                                        <span class="custom-option" data-value="10">Rosa Fuerte</span>
+                                        <span class="custom-option" data-value="11">Morado</span>
+                                        <span class="custom-option" data-value="12">Luz Negra</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="btn-random-paint" class="btn-preset" style="margin-top: 20px;">APLICAR
+                            ALEATORIEDAD</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-apply-paint">APLICAR CAMBIOS</button>
+                <button class="btn-cancel" onclick="closePaintModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="picker-modal" class="modal-overlay" style="display: none; z-index: 9999;">
+        <div class="modal-box" style="width: 350px;">
+            <div class="modal-header">SELECCIONAR COLOR</div>
+            <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; align-items: center;">
+                <div id="iro-color-picker"></div>
+                <div class="dp-presets-box">
+                    <div class="dp-presets-title">COLORES POR DP-Scripts</div>
+                    <div class="dp-presets-grid">
+                        <div class="dp-swatch" style="background: #00FA9A;" data-hex="#00FA9A" title="Azul Brillante">
+                        </div>
+                        <div class="dp-swatch" style="background: #029939;" data-hex="#029939" title="Verde Joker">
+                        </div>
+                        <div class="dp-swatch" style="background: #ddff03;" data-hex="#ddff03" title="Amarillo Tóxico">
+                        </div>
+                        <div class="dp-swatch" style="background: #ff69b4;" data-hex="#ff69b4" title="Rosa Neón"></div>
+                        <div class="dp-swatch" style="background: #603e94;" data-hex="#603e94" title="Morado Brillante">
+                        </div>
+                        <div class="dp-swatch" style="background: #e3be46;" data-hex="#e3be46" title="Dorado Brillante">
+                        </div>
+                        <div class="dp-swatch" style="background: #ffffff;" data-hex="#ffffff" title="Blanco Puro">
+                        </div>
+                    </div>
+                </div>
+                <div class="picker-tabs">
+                    <button class="tab-btn active" onclick="switchColorMode('rgb')">RGB</button>
+                    <button class="tab-btn" onclick="switchColorMode('hex')">HEX</button>
+                </div>
+                <div class="picker-panels">
+                    <div id="panel-rgb" class="color-panel active">
+                        <div class="rgb-horizontal-group">
+                            <div class="rgb-row"><label>R</label><input type="number" id="in-r" min="0" max="255"></div>
+                            <div class="rgb-row"><label>G</label><input type="number" id="in-g" min="0" max="255"></div>
+                            <div class="rgb-row"><label>B</label><input type="number" id="in-b" min="0" max="255"></div>
+                        </div>
+                    </div>
+                    <div id="panel-hex" class="color-panel">
+                        <div class="hex-wrapper" style="margin-top: 10px;">
+                            <span class="hex-hash">#</span>
+                            <input type="text" id="in-hex" maxlength="6">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-save-color">CONFIRMAR</button>
+                <button class="btn-cancel" onclick="closeColorPickerModal()">VOLVER</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="livery-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 500px; overflow: visible;">
+            <div class="modal-header">GESTIONAR CALCOMANÍAS</div>
+            <div class="modal-body" style="text-align: center;">
+                <div class="input-group">
+                    <p style="color: #aaa; margin-bottom: 20px;">
+                        Selecciona el diseño (Livery) del vehículo.
+                    </p>
+                    <div class="paint-row" style="justify-content: center;">
+                        <label style="margin-right: 15px;">DISEÑO</label>
+                        <div class="custom-select-wrapper" id="wrap-livery" style="width: 250px;">
+                            <input type="hidden" id="val-livery" value="-1">
+                            <div class="custom-select-trigger" id="trig-livery"><span>Cargando...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-livery"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: center; gap: 15px;">
+                <button class="btn-confirm" id="btn-apply-livery">APLICAR</button>
+                <button class="btn-cancel" onclick="closeLiveryModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="job-manage-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 600px; overflow: visible;">
+            <div class="modal-header">GESTIONAR EMPLEADO</div>
+            <div class="modal-body">
+                <p style="color:#aaa; margin-bottom:20px; text-align:center;">
+                    Gestionando a: <span id="jm-player-name" style="color:white; font-weight:bold;"></span>
+                </p>
+
+                <div style="display: flex; gap: 20px;">
+
+                    <div class="input-group" style="flex: 1;">
+                        <label>TRABAJO</label>
+                        <div class="custom-select-wrapper" id="wrap-jm-job" style="width: 100%;">
+                            <input type="hidden" id="val-jm-job">
+                            <div class="custom-select-trigger" id="trig-jm-job">
+                                <span>Seleccionar...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-jm-job" style="max-height: 200px; overflow-y: auto;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="flex: 1;">
+                        <label>RANGO</label>
+                        <div class="custom-select-wrapper" id="wrap-jm-grade" style="width: 100%;">
+                            <input type="hidden" id="val-jm-grade" value="0">
+                            <div class="custom-select-trigger" id="trig-jm-grade">
+                                <span>Esperando trabajo...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-jm-grade" style="max-height: 200px; overflow-y: auto;">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-set-job" style="flex: 2;">GUARDAR CAMBIOS</button>
+                <button class="btn-cancel" onclick="closeJobManageModal()" style="flex: 1;">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="job-rank-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 450px;">
+            <div class="modal-header">CAMBIAR RANGO</div>
+            <div class="modal-body">
+                <p style="color:#aaa;">Ajusta el rango de <span id="jr-player-name"
+                        style="color:var(--primary);"></span></p>
+                <div class="input-group" style="margin-top:15px;">
+                    <label>NIVEL DE RANGO (NÚMERO)</label>
+                    <input type="number" id="jr-grade-input" placeholder="Ej: 0, 1, 2...">
+                </div>
+
+                <div style="margin-top:15px; padding:10px; background:rgba(255,255,255,0.05); border-radius:5px;">
+                    <label style="font-size:10px; color:#888;">NOMBRE DEL RANGO:</label>
+                    <div id="jr-grade-preview" style="color:var(--text-main); font-weight:bold; font-size:16px;">
+                        Esperando número...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-confirm-rank">ESTABLECER</button>
+                <button class="btn-cancel" onclick="closeJobRankModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gang-manage-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 600px; overflow: visible;">
+            <div class="modal-header">GESTIONAR MIEMBRO DE BANDA</div>
+            <div class="modal-body">
+                <p style="color:#aaa; margin-bottom:20px; text-align:center;">
+                    Gestionando a: <span id="gm-player-name" style="color:white; font-weight:bold;"></span>
+                </p>
+
+                <div style="display: flex; gap: 20px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>BANDA</label>
+                        <div class="custom-select-wrapper" id="wrap-gm-gang" style="width: 100%;">
+                            <input type="hidden" id="val-gm-gang">
+                            <div class="custom-select-trigger" id="trig-gm-gang">
+                                <span>Seleccionar...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-gm-gang" style="max-height: 200px; overflow-y: auto;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="flex: 1;">
+                        <label>RANGO</label>
+                        <div class="custom-select-wrapper" id="wrap-gm-grade" style="width: 100%;">
+                            <input type="hidden" id="val-gm-grade" value="0">
+                            <div class="custom-select-trigger" id="trig-gm-grade">
+                                <span>Esperando banda...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-gm-grade" style="max-height: 200px; overflow-y: auto;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-set-gang" style="flex: 2;">GUARDAR CAMBIOS</button>
+                <button class="btn-danger" id="btn-fire-gang" style="flex: 1;">EXPULSAR</button>
+                <button class="btn-cancel" onclick="closeGangManageModal()" style="flex: 1;">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gang-rank-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 450px;">
+            <div class="modal-header">CAMBIAR RANGO DE BANDA</div>
+            <div class="modal-body">
+                <p style="color:#aaa;">Ajusta el rango de <span id="gr-player-name"
+                        style="color:var(--primary);"></span></p>
+                <div class="input-group" style="margin-top:15px;">
+                    <label>NIVEL DE RANGO (NÚMERO)</label>
+                    <input type="number" id="gr-grade-input" placeholder="Ej: 0, 1, 2...">
+                </div>
+                <div style="margin-top:15px; padding:10px; background:rgba(255,255,255,0.05); border-radius:5px;">
+                    <label style="font-size:10px; color:#888;">NOMBRE DEL RANGO:</label>
+                    <div id="gr-grade-preview" style="color:var(--text-main); font-weight:bold; font-size:16px;">
+                        Esperando número...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-confirm-gang-rank">CONFIRMAR</button>
+                <button class="btn-cancel" onclick="closeGangRankModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="give-item-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 550px; overflow: visible;">
+            <div class="modal-header">ENVIAR OBJETO</div>
+
+            <div class="modal-body">
+                <p style="color:#aaa; margin-bottom:20px; text-align:center;">
+                    Vas a enviar: <span id="gi-item-name"
+                        style="color:var(--primary); font-weight:bold; font-size: 18px;">...</span>
+                </p>
+
+                <div style="display: flex; gap: 15px;">
+
+                    <div class="input-group" style="flex: 3;"> <label>JUGADOR DESTINO</label>
+                        <div class="custom-select-wrapper" id="wrap-gi-player" style="width: 100%;">
+                            <input type="hidden" id="val-gi-player">
+                            <div class="custom-select-trigger" id="trig-gi-player">
+                                <span>Seleccionar Jugador...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-gi-player"
+                                style="max-height: 200px; overflow-y: auto;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="flex: 1;"> <label>CANTIDAD</label>
+                        <input type="number" id="gi-amount" placeholder="1" value="1" min="1">
+                    </div>
+                </div>
+
+                <div class="input-group" id="gi-ammo-group" style="margin-top: 15px; display: none;">
+
+                    <div class="switch-card" id="ammo-switch-card">
+
+                        <div class="switch-info">
+                            <span class="iconify" data-icon="mdi:ammunition"></span>
+                            <span>INCLUIR CARGADORES (+5 Cargadores)</span>
+                        </div>
+
+                        <label class="switch">
+                            <input type="checkbox" id="gi-ammo-check">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-confirm-give">ENVIAR</button>
+                <button class="btn-cancel" onclick="closeGiveItemModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="give-vehicle-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="width: 550px; overflow: visible;">
+            <div class="modal-header">REGALAR VEHÍCULO</div>
+
+            <div class="modal-body">
+                <p style="color:#aaa; margin-bottom:20px; text-align:center;">
+                    <span id="gv-vehicle-name" class="veh-name">NOMBRE DEL VEHÍCULO</span>
+                    <br>
+                    <span id="gv-vehicle-model" class="veh-model">nombre_modelo</span>
+                </p>
+
+                <div style="display: flex; gap: 15px;">
+
+                    <div class="input-group" style="flex: 2;"> <label>JUGADOR DESTINO</label>
+                        <div class="custom-select-wrapper" id="wrap-gv-player" style="width: 100%;">
+                            <div class="custom-select-trigger" id="trig-gv-player">
+                                <input type="hidden" id="val-gv-player">
+                                <span>Seleccionar Jugador...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-gv-player">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="flex: 2;"> <label>GARAJE DESTINO</label>
+                        <div class="custom-select-wrapper" id="wrap-gv-garage" style="width: 100%;">
+                            <div class="custom-select-trigger" id="trig-gv-garage">
+                                <input type="hidden" id="val-gv-garage">
+                                <span>Seleccionar Garaje...</span>
+                                <div class="arrow"></div>
+                            </div>
+                            <div class="custom-options" id="opts-gv-garage">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div
+                    style="margin-top: 15px; padding: 10px; background: rgba(255,165,0,0.1); border: 1px dashed orange; border-radius: 4px; font-size: 11px; color: orange; display: flex; align-items: center; gap: 8px;">
+                    <span class="iconify" data-icon="mdi:information-outline"></span>
+                    <span>El vehículo se guardará directamente en el garaje seleccionado.</span>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-confirm" id="btn-confirm-give-vehicle">CONFIRMAR</button>
+                <button class="btn-cancel" onclick="closeGiveVehicleModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
