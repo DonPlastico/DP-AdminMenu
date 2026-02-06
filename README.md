@@ -1,22 +1,16 @@
 CAMBIAR EL CSS
 
 Cosas que no van:
-- CREAR UN SISTEMA DE WHITELIST DESDE EL GESTIÓN DEL SERVIDOR, QUE VAYA CON EL SCRIPT 'connectqueue' Y 'qb-core'. (BASICAMENTE QUE AL ESTÁR ACTIVO, HECHARÁ A TODO EL MUNDO QUE ESTÉ EN EL SERVER MENOS A LOS QUE TIENEN WHITELIST... SI INTENTAN ENTRAR NO LES DEJARA HASTA QUE ALGUIEN QUITE LA WHITELIST DE NUEVO... QUE SE GUARDE EL ESTADO CON LOS REINICIOS DE SERVER/BORRADO DE CACHE/ETC, ES DECIR QUE SI LO PONGO CON WHITELIST, SE QUEDA CON WHITELIST PARA SIEMPRE HASTA QUE ALGUIEN LO QUITE)
-
-- CAMBIAR EL MANTENIMIENTO POR OTRA COSA, YA QUE NO TIENE SENTIDO.
-
-- REEMPLAZAR EL BOTON DEL LOG DE DISCORD POR UN BOTÓN QUE SEA "CAMBIAR POSICIÓN" QUE AL DARLE ME ABRA UN MODAL QUE SEA PARA QUE PUEDAN MODIFICAR CADA JUGADOR LA UBICACIÓN DEL MENÚ A LIBRE ALBEDRIO... ES DECIR QUE PUEDAN ARRASTRAR AL LUGAR QUE DESEEN EL MENÚ Y SIEMPRE A ESA PERSONA LE SALDRÁ EN ESA POSICION (GUARDAR EN BASE DE DATOS QUE ADMINISTRADOR TIENE EN QUE POSICION EXACTA EL MENÚ, PARA QUE AL REINICIAR EL SERVER CARGUE AUTOMATICAMENTE Y ESE JUGADOR LO TENGA EN ESA POSICION...)
 
 - EN EL <div class="page" id="home">, <button>INFORMACIÓN DEL JUGADOR</button> Y <div class="icon-btn" onclick="" data-tooltip="Detalles del Jugador"> QUE ME SALGA EL MENÚ DE DETALLES DEL JUGADOR
 
-
-
+- Hacer que el mensaje de arriba de SISTEMA (ANNOUNCE) QUE TENGA ANIMACION AL APARECER/DESAPARECER DE REBOTE DESDE LA PARTE SUPERIOR DE LA PANTALLA, QUE TENGA UN POQUITO DE TRANSPARENCIA Y METERLE UN SONIDO PARA QUE SE ENTERE TODO EL MUNDO...
 
 - CAMBIAR EL MODEL DEL IR A:
-Contexto del Proyecto: Estoy desarrollando un menú administrativo para un servidor de GTA V (FiveM) usando HTML, CSS y JS. Actualmente tengo un sistema de teletransporte basado en listas de texto (categorías y destinos), pero quiero evolucionarlo a un Mapa Táctico Interactivo. La estructura del proyecto es:
-html/index.html, html/script.js, html/style.css (Interfaz NUI).
-client/main_cl.lua (Lógica de FiveM para teletransporte).
-fxmanifest.lua y config.lua.
+  Contexto del Proyecto: Estoy desarrollando un menú administrativo para un servidor de GTA V (FiveM) usando HTML, CSS y JS. Actualmente tengo un sistema de teletransporte basado en listas de texto (categorías y destinos), pero quiero evolucionarlo a un Mapa Táctico Interactivo. La estructura del proyecto es:
+  html/index.html, html/script.js, html/style.css (Interfaz NUI).
+  client/main_cl.lua (Lógica de FiveM para teletransporte).
+  fxmanifest.lua y config.lua.
 
 Objetivo: Quiero transformar el actual modal de teletransporte (que lo tengo de manera que es listas de categorías y destinos) en un Mapa Táctico Interactivo usando la imagen MAP.webp. Al hacer clic en puntos específicos (blips) del mapa, debe aparecer un panel lateral de información detallada.
 
@@ -43,13 +37,13 @@ Tarea: Genera el código necesario para client.lua, server.lua, config.lua, dpad
 ESTRUCTURA:
 DP-AdminMenu:
 ├── 📁 client
-│        └── 📄 main_cl.lua
+│ └── 📄 main_cl.lua
 ├── 📁 html
-│        ├── 🌐 index.html
-│        ├── 📄 script.js
-│        └── 🎨 style.css
+│ ├── 🌐 index.html
+│ ├── 📄 script.js
+│ └── 🎨 style.css
 ├── 📁 server
-│        └── 📄 main_sv.lua
+│ └── 📄 main_sv.lua
 ├── 🖼️ Captura de pantalla 2026-02-06 034209.png
 ├── 🖼️ Captura de pantalla 2026-02-06 034250.png
 ├── 📝 README.md
@@ -57,11 +51,12 @@ DP-AdminMenu:
 ├── 📄 dpadmin.sql
 └── 📄 fxmanifest.lua
 
-
 💡 Consejos para cuando lo use:
 Añade tus datos: Cuando pegues este prompt, pega debajo el objeto gotoLocations completo que hemos actualizado hoy para que la IA sepa qué puntos tiene que dibujar.
 
 Librerías: Si la IA te pregunta, dile que prefieres usar JS nativo para el zoom/drag o una librería ligera como Leaflet.js si quieres algo muy profesional.
 
 Imágenes: Recuerda que para que el panel de la derecha funcione, tendrás que tomar fotos dentro del juego de cada lugar y guardarlas en una carpeta (ej: img/ubicaciones/bunker.jpg).
+
+- MEJORAR EL SISTEMA DE REPORTES, YA QUE QUIERO QUE PUEDAN METER IMAGENES EN UN REPORTE CON LO DE CNTR+V... tal y como está el del chat de administradores, con el BOT DE DISCORD...
 

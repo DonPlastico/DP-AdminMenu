@@ -23,6 +23,10 @@ let allJobs = [];
 let allGangs = [];
 let allVehicles = [];
 let currentReportType = 'support';
+let isDragging = false;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let isEditMode = false;
 
 // Estados de Botones (Toggle) - AQUÍ GUARDAMOS SI LA HERRAMIENTA ESTÁ ACTIVA
 const actionStates = {
@@ -160,6 +164,162 @@ const gtaPaintData = {
 };
 
 // ==========================================================================
+// 2.1. COORDENADAS CON LOCALIZACIONES DE LOS MAPEADOS DE DP-SCRIPTS
+// ==========================================================================
+const gotoLocations = {
+    "MAPEOS Y OTROS": [
+        { name: "Ayuntamiento", coords: { x: -545.49, y: -206.71, z: 38.16 }, icon: "mdi:town-hall" },
+        { name: "Plaza Legion", coords: { x: 202.75, y: -940.58, z: 29.79 }, icon: "mdi:fountain" },
+        { name: "Gimnasio (Gym)", coords: { x: -1261.11, y: -348.45, z: 36.83 }, icon: "mdi:weight-lifter" },
+        { name: "Hotel Wiwang", coords: { x: -827.64, y: -700.06, z: 28.06 }, icon: "mdi:office-building" },
+        { name: "Mina", coords: { x: 2910.8, y: 2780.22, z: 40.49 }, icon: "mdi:pickaxe" },
+        { name: "Iglesia Rockford", coords: { x: -766.33, y: -24.46, z: 41.08 }, icon: "mdi:church" },
+        { name: "Casino MLO", coords: { x: 923.85, y: 47.14, z: 81.11 }, icon: "mdi:casino" },
+        { name: "Tienda 24/7", coords: { x: 1965.54, y: 3739.63, z: 32.32 }, icon: "mdi:shop" },
+        { name: "Tienda Ropa", coords: { x: 1685.81, y: 4820.45, z: 41.99 }, icon: "mdi:tshirt-crew" },
+        { name: "Fleeca", coords: { x: -1213.19, y: -329.75, z: 37.78 }, icon: "mdi:bank-transfer" },
+        { name: "Banco Paleto", coords: { x: -112.52, y: 6467.73, z: 31.63 }, icon: "mdi:bank-check" },
+        { name: "Banco Central", coords: { x: 230.41, y: 214.39, z: 105.55 }, icon: "mdi:bank-check" },
+        { name: "Monte Chiliad (Cima)", coords: { x: 481.53, y: 5531.77, z: 784.2 }, icon: "mdi:image-filter-hdr" },
+        { name: "Observatorio", coords: { x: -431.15, y: 1122.95, z: 325.85 }, icon: "mdi:telescope" },
+        { name: "Zancudo", coords: { x: -1600.301, y: 2806.731, z: 18.796 }, icon: "mdi:tank" },
+        { name: "Cárcel (Bolingbroke)", coords: { x: 1846.54, y: 2585.83, z: 45.67 }, icon: "mdi:gavel" }
+    ],
+    "LOCALES Y OCIO": [
+        { name: "Bolera", coords: { x: 759.1, y: -778.01, z: 26.45 }, icon: "mdi:bowling" },
+        { name: "Cat Café", coords: { x: -581.0, y: -1071.81, z: 22.33 }, icon: "mdi:coffee" },
+        { name: "Vanilla Unicorn", coords: { x: 127.34, y: -1308.18, z: 29.19 }, icon: "mdi:gender-female" },
+        { name: "Hookies", coords: { x: -2193.55, y: 4290.18, z: 49.17 }, icon: "mdi:glass-mug-variant" },
+        { name: "Caza (Hunt)", coords: { x: -680.14, y: 5833.56, z: 17.33 }, icon: "mdi:target" },
+        { name: "DYNASTY 8 REAL ESTATES", coords: { x: -698.65, y: 271.07, z: 83.11 }, icon: "mdi:home-circle-outline" },
+        { name: "Sandy Pawn", coords: { x: 911.13, y: 3644.32, z: 32.68 }, icon: "mdi:scale-balance" },
+        { name: "Café Cute V2", coords: { x: -281.81, y: -64.12, z: 49.53 }, icon: "mdi:muffin" },
+        { name: "Pet Shop", coords: { x: 230.69, y: -22.4, z: 74.99 }, icon: "mdi:dog" },
+        { name: "Pacific Bluffs", coords: { x: -3020.92, y: 84.22, z: 11.68 }, icon: "mdi:pool" },
+        { name: "Paleto 3 Shops", coords: { x: -20.51, y: 6490.53, z: 31.5 }, icon: "mdi:store" },
+        { name: "Concesionario PDM", coords: { x: -1039.86, y: -1352.17, z: 5.55 }, icon: "mdi:car-estate" },
+        { name: "Burger Shot", coords: { x: -1198.08, y: -883.68, z: 13.63 }, icon: "mdi:hamburger" },
+        { name: "Pearls Resort", coords: { x: -1742.47, y: -1117.32, z: 13.03 }, icon: "mdi:island" },
+        { name: "Arcade 1", coords: { x: 128.46, y: -207.21, z: 54.57 }, icon: "mdi:controller-classic" },
+        { name: "Arcade 2", coords: { x: 618.39, y: 2746.11, z: 42.01 }, icon: "mdi:controller-classic" },
+        { name: "Arcade 3", coords: { x: -3166.03, y: 1060.43, z: 20.85 }, icon: "mdi:controller-classic" },
+        { name: "Arcade 4", coords: { x: -1204.69, y: -780.7, z: 17.33 }, icon: "mdi:controller-classic" },
+        { name: "Arcadius Business Centre", coords: { x: -141.1987, y: -620.913, z: 168.8205 }, icon: "mdi:office-building" },
+        { name: "Maze Bank Building", coords: { x: -75.8466, y: -826.9893, z: 243.3859 }, icon: "mdi:bank" },
+        { name: "Lom Bank", coords: { x: -1579.756, y: -565.0661, z: 108.523 }, icon: "mdi:bank" },
+        { name: "Maze Bank West", coords: { x: -1392.667, y: -480.4736, z: 72.04217 }, icon: "mdi:bank" },
+        { name: "Nightclub", coords: { x: -1604.664, y: -3012.583, z: -78.0 }, icon: "mdi:music-box-outline" },
+        { name: "OFICINA RICA 1", coords: { x: -1021.86, y: -427.74, z: 68.95 }, icon: "mdi:briefcase-check" },
+        { name: "OFICINA RICA 2", coords: { x: 383.41, y: -59.87, z: 108.45 }, icon: "mdi:briefcase-check" },
+        { name: "OFICINA RICA 3", coords: { x: -1004.23, y: -761.2, z: 66.99 }, icon: "mdi:briefcase-check" },
+        { name: "OFICINA RICA 4", coords: { x: -587.87, y: -716.84, z: 118.1 }, icon: "mdi:briefcase-check" }
+    ],
+    "SERVICIOS (PD/EMS/MEC)": [
+        { name: "Paleto PD", coords: { x: -427.23, y: 6023.62, z: 31.49 }, icon: "mdi:police-badge" },
+        { name: "Pillbox Medical", coords: { x: 298.52, y: -584.33, z: 43.26 }, icon: "mdi:hospital-building" },
+        { name: "BENNY'S ORIGINAL MOTORWORKS", coords: { x: -205.73, y: -1309.03, z: 31.29 }, icon: "mdi:wrench" },
+        { name: "HAYES AUTOS (Gabz)", coords: { x: -1430.76, y: -442.14, z: 35.7 }, icon: "mdi:car-cog" },
+        { name: "EAST CUSTOMS (Rfc)", coords: { x: 869.93, y: -2112.58, z: 30.51 }, icon: "mdi:car-wrench" },
+        { name: "6 STR PERFORMANCE (Tuners)", coords: { x: 169.51, y: -3029.7, z: 6.0 }, icon: "mdi:wrench" },
+        { name: "DASHOUND (Bus Station)", coords: { x: 425.1, y: -644.3, z: 28.5 }, icon: "mdi:bus" },
+        { name: "SAN ANDREAS COURTS (Juez)", coords: { x: -545.49, y: -206.71, z: 38.16 }, icon: "mdi:gavel" },
+        { name: "WEAZEL NEWS", coords: { x: -598.6, y: -929.9, z: 23.8 }, icon: "mdi:television-classic" },
+        { name: "POST OP (Camioneros)", coords: { x: -413.5, y: -2795.3, z: 6.0 }, icon: "mdi:truck-delivery" },
+        { name: "ATOMIC TOWING (Remolque)", coords: { x: 485.4, y: -1314.9, z: 29.2 }, icon: "mdi:truck-pickup" },
+        { name: "LS SANITATION (Basureros)", coords: { x: -622.3, y: -1640.4, z: 25.9 }, icon: "mdi:trash-can" },
+        { name: "MARLOWE VINEYARDS (Viñedo)", coords: { x: -1883.0, y: 2107.0, z: 140.0 }, icon: "mdi:fruit-grapes" },
+        { name: "HORNY'S BURGERS (Hotdog)", coords: { x: 121.7, y: -1039.6, z: 29.2 }, icon: "mdi:food-hot-dog" },
+        { name: "DOWNTOWN CAB CO. (Taxi)", coords: { x: 895.1, y: -179.2, z: 74.7 }, icon: "mdi:taxi" },
+        { name: "PREMIUM DELUXE MOTORSPORT", coords: { x: -44.5, y: -1094.2, z: 26.4 }, icon: "mdi:car-multiple" },
+        { name: "Oficina 1", coords: { x: -467.4, y: -68.3, z: 45.9 }, icon: "mdi:briefcase-account" }
+    ],
+    "ROBOS Y BANCOS": [
+        { name: "Cerrajería", coords: { x: 170.14, y: -1799.38, z: 29.32 }, icon: "mdi:key-chain" },
+        { name: "Pacific Bank", coords: { x: 230.41, y: 214.39, z: 105.55 }, icon: "mdi:bank" },
+        { name: "The Vault", coords: { x: 231.52, y: -1095.24, z: 29.29 }, icon: "mdi:safe" },
+        { name: "Farmacia 1", coords: { x: -509.3, y: 278.68, z: 83.32 }, icon: "mdi:pill" },
+        { name: "Farmacia 2", coords: { x: 114.67, y: -5.19, z: 67.84 }, icon: "mdi:pill" },
+        { name: "Tienda (Store)", coords: { x: -501.35, y: 277.88, z: 83.32 }, icon: "mdi:cart" }
+    ],
+    "BARRIOS E ILEGAL": [
+        { name: "Ballas (Grove St.)", coords: { x: 107.19, y: -1942.33, z: 20.8 }, icon: "mdi:skull-outline" },
+        { name: "THE FAMILIES (Forum Dr.)", coords: { x: -144.17, y: -1586.26, z: 31.78 }, icon: "mdi:account-group" },
+        { name: "VAGOS (Rancho)", coords: { x: 347.41, y: -2011.6, z: 22.39 }, icon: "mdi:emoticon-angry" },
+        { name: "MARABUNTA GRANDE (El Burro)", coords: { x: 1215.14, y: -1641.52, z: 48.64 }, icon: "mdi:knife-military" },
+        { name: "AZTECAS (North Rancho)", coords: { x: 508.06, y: -1536.6, z: 29.27 }, icon: "mdi:knife" },
+        { name: "CARTEL DE MADRAZO (La Fuente)", coords: { x: 1395.25, y: 1141.7, z: 114.33 }, icon: "mdi:fencing" },
+        { name: "MERRYWEATHER (Elysian Is)", coords: { x: 488.39, y: -3326.69, z: 6.07 }, icon: "mdi:shield-airplane" },
+        { name: "WEI CHENG TRIAD (Little Seoul)", coords: { x: -744.52, y: -908.43, z: 19.46 }, icon: "mdi:fire-circle" },
+        { name: "O'NEIL BROTHERS (Farm)", coords: { x: 2434.93, y: 4964.84, z: 42.35 }, icon: "mdi:fire" },
+        { name: "T.P. INDUSTRIES (Sandy)", coords: { x: 1982.72, y: 3816.03, z: 32.18 }, icon: "mdi:biohazard" },
+        { name: "THE LOST MC (Casino HQ)", coords: { x: 978.88, y: -103.11, z: 74.85 }, icon: "mdi:motorbike" },
+        { name: "ANGELS OF DEATH (Up-n-Atom)", coords: { x: -16.48, y: 6314.54, z: 31.33 }, icon: "mdi:vlc" },
+        { name: "KKANGPAE (Korean Mob)", coords: { x: -589.65, y: -884.21, z: 25.56 }, icon: "mdi:skull-scan" },
+        { name: "ARMENIAN POWER (La Puerta)", coords: { x: -446.7, y: -1684.34, z: 19.03 }, icon: "mdi:wallet-membership" },
+        { name: "MIDNIGHT CLUB (Tunnels)", coords: { x: 928.98, y: -193.39, z: 73.01 }, icon: "mdi:engine-outline" },
+        { name: "ALTRUISTAS (Montaña)", coords: { x: -1170.81, y: 4925.33, z: 224.28 }, icon: "mdi:eye-outline" },
+        { name: "THE PROFESSIONALS", coords: { x: -841.9, y: -1367.6, z: 5.15 }, icon: "mdi:laptop" },
+        { name: "CAMPAMENTO HIPPIE", coords: { x: 2471.9, y: 3772.64, z: 41.24 }, icon: "mdi:peace" },
+        { name: "CALI ESTATE (Mafia)", coords: { x: 803.45, y: 1274.91, z: 360.32 }, icon: "mdi:account-tie-hat" },
+        { name: "THE LOST MC (Russ 68 Cus)", coords: { x: 28.01, y: 2778.36, z: 58.19 }, icon: "mdi:motorbike" },
+        { name: "Cocaine lockup", coords: { x: 1093.6, y: -3196.6, z: -38.99 }, icon: "mdi:pill" },
+        { name: "Counterfeit cash factory", coords: { x: 1121.89, y: -3195.33, z: -40.4 }, icon: "mdi:cash-multiple" },
+        { name: "Document forgery", coords: { x: 1165.0, y: -3196.6, z: -39.01 }, icon: "mdi:file-document-edit" },
+        { name: "Meth lab 1", coords: { x: 1009.5, y: -3196.6, z: -38.99 }, icon: "mdi:flask-outline" },
+        { name: "Meth lab 2", coords: { x: 981.99, y: -143.0, z: -50.0 }, icon: "mdi:flask-outline" },
+        { name: "Meth Lab (Pequeño)", coords: { x: 483.42, y: -2625.07, z: -50.0 }, icon: "mdi:flask-outline" },
+        { name: "Weed farm", coords: { x: 1051.49, y: -3196.53, z: -39.14 }, icon: "mdi:leaf" },
+        { name: "BikerClubhouse1", coords: { x: 1107.04, y: -3157.39, z: -37.51 }, icon: "mdi:motorcycle" },
+        { name: "PCPROS HACKERS", coords: { x: 570.97, y: -420.07, z: -70.0 }, icon: "mdi:laptop" },
+        { name: "Tuner ilegal (Carreras)", coords: { x: 1077.27, y: -2274.87, z: -50.0 }, icon: "mdi:flag-checkered" },
+    ],
+    "MISIONES Y OTROS": [
+        { name: "Bunker", coords: { x: 174.3, y: 1245.75, z: 223.3 }, icon: "mdi:shield-home" },
+        { name: "Vangelico", coords: { x: -762.44, y: -601.51, z: 30.28 }, icon: "mdi:diamond-stone" },
+        { name: "Hide Island", coords: { x: -3534.34, y: 6291.64, z: 37.96 }, icon: "mdi:palm-tree" },
+        { name: "Cayo Perico", coords: { x: 7374.51, y: 7338.58, z: 42.29 }, icon: "mdi:island" },
+        { name: "XLabs 1", coords: { x: 1086.89, y: -307.25, z: 64.29 }, icon: "mdi:flask" },
+        { name: "XLabs 2", coords: { x: -505.22, y: -1438.36, z: 14.11 }, icon: "mdi:flask" },
+        { name: "Document forgery 1", coords: { x: 1165.0, y: -3196.6, z: -39.01 }, icon: "mdi:file-certificate" },
+        { name: "Document forgery 2", coords: { x: 565.88, y: -2688.76, z: -50.0 }, icon: "mdi:file-certificate" },
+        { name: "Vehicle warehouse", coords: { x: 994.59, y: -3002.59, z: -39.64 }, icon: "mdi:warehouse" },
+        { name: "Bunker 2", coords: { x: 892.63, y: -3245.86, z: -98.26 }, icon: "mdi:shield-alert" },
+        { name: "Yacht 1", coords: { x: -1363.72, y: 6734.1, z: 2.44 }, icon: "mdi:sail-boat" },
+        { name: "Yacht 2", coords: { x: -2041.54, y: -1032.34, z: 11.98 }, icon: "mdi:sail-boat" },
+        { name: "Porta Aviones 1", coords: { x: 3089.28, y: -4727.51, z: 15.26 }, icon: "mdi:ferry" },
+        { name: "Porta Aviones 2", coords: { x: -3208.03, y: 3954.54, z: 14.0 }, icon: "mdi:ferry" },
+        { name: "Angar", coords: { x: -1256.76, y: -3003.44, z: -48.49 }, icon: "mdi:airplane-landing" },
+        { name: "DiamondArcadeBasement", coords: { x: 2710.0, y: -360.78, z: -56.0 }, icon: "mdi:controller" },
+        { name: "Submarine", coords: { x: 1560.0, y: 400.0, z: -50.0 }, icon: "mdi:waves" },
+        { name: "Laboratorio", coords: { x: -1916.11, y: 3749.71, z: -100.0 }, icon: "mdi:flask-empty-plus-outline" },
+        { name: "Cargero", coords: { x: -344.43, y: -4062.83, z: 17.0 }, icon: "mdi:ship-wheel" },
+        { name: "AgentsFactory", coords: { x: 752.31, y: -997.24, z: -47.0 }, icon: "mdi:factory" },
+        { name: "Mini Oficina 1", coords: { x: 2149.71, y: 4787.76, z: -47.0 }, icon: "mdi:desk" },
+        { name: "Mini Oficina 2", coords: { x: -1160.49, y: -1538.93, z: -50.0 }, icon: "mdi:desk" },
+        { name: "MoneyCarwash", coords: { x: 26.07, y: -1398.97, z: -75.0 }, icon: "mdi:car-wash" }
+    ],
+    "PROPIEDADES Y MANSIONES": [
+        { name: "Diamond Penthouse", coords: { x: 976.63, y: 70.29, z: 115.16 }, icon: "mdi:star-face" },
+        { name: "Tuner Garage", coords: { x: -1357.9, y: 168.52, z: -98.78 }, icon: "mdi:garage-variant" },
+        { name: "Garaje Subterráneo", coords: { x: -1071.43, y: -77.03, z: -93.52 }, icon: "mdi:garage" },
+        { name: "Estudio musical", coords: { x: -1000.72, y: -70.55, z: -98.1 }, icon: "mdi:microphone-variant" },
+        { name: "Garaje/Angar", coords: { x: 800.13, y: -3001.42, z: -65.14 }, icon: "mdi:warehouse" },
+        { name: "Criminal Enterprise Warehouse", coords: { x: 849.1, y: -3000.2, z: -45.97 }, icon: "mdi:domain" },
+        { name: "Garaje Custom", coords: { x: 1220.13, y: -2277.84, z: -50.0 }, icon: "mdi:tools" },
+        { name: "Garaje 2", coords: { x: 519.24, y: -2618.78, z: -50.0 }, icon: "mdi:garage-open" },
+        { name: "Galería de fotos", coords: { x: 1202.4, y: -3251.25, z: -50.0 }, icon: "mdi:camera-outline" },
+        { name: "MANSIÓN 1", coords: { x: 543.85, y: 712.75, z: 201.0 }, icon: "mdi:home-modern" },
+        { name: "MANSIÓN 2", coords: { x: -1630.43, y: 470.85, z: 128.0 }, icon: "mdi:home-modern" },
+        { name: "MANSIÓN 3", coords: { x: -2601.71, y: 1874.82, z: 166.0 }, icon: "mdi:home-modern" },
+        { name: "Casa Michael", coords: { x: -802.31, y: 175.05, z: 72.84 }, icon: "mdi:home-account" },
+        { name: "Casa Tía Franklin", coords: { x: -9.96, y: -1438.54, z: 31.1 }, icon: "mdi:home-heart" },
+        { name: "Mansión Franklin", coords: { x: 13.99, y: 526.0, z: 174.63 }, icon: "mdi:home-modern" },
+        { name: "Apartamento Floyd", coords: { x: -1150.7, y: -1520.71, z: 10.63 }, icon: "mdi:home-floor-1" },
+        { name: "Remolque Trevor", coords: { x: 1985.48, y: 3828.76, z: 32.5 }, icon: "mdi:home-variant" }
+    ]
+};
+
+// ==========================================================================
 // 3. INICIALIZACIÓN DEL DOM (ARRANQUE)
 // ==========================================================================
 
@@ -191,6 +351,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- ABRIR MENÚ ---
         if (data.type === 'open') {
             mainAdminPanel.style.display = 'flex';
+
+            if (data.menuPosition) {
+                mainAdminPanel.style.top = data.menuPosition.top;
+                mainAdminPanel.style.left = data.menuPosition.left;
+
+                // FIX BUG 1: Aplicar la escala guardada inmediatamente al abrir
+                currentScale = data.menuPosition.scale || 100;
+
+                // Actualizamos los inputs del modal para que coincidan con la BD
+                if (document.getElementById('scale-slider')) {
+                    document.getElementById('scale-slider').value = currentScale;
+                    document.getElementById('scale-number').value = currentScale;
+                }
+
+                mainAdminPanel.style.transformOrigin = 'top left'; // Importante mantener el origen
+                mainAdminPanel.style.transform = `scale(${currentScale / 100})`;
+                mainAdminPanel.style.margin = '0';
+            }
 
             mainAdminPanel.style.opacity = '1.0';
             cursorModeActive = false;
@@ -1876,7 +2054,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.classList.toggle('expanded');
     };
 
-    // 2. LÓGICA MODAL: GESTIONAR (NUEVO CON SELECTS)
+    // 2. LÓGICA MODAL: GESTIONAR
     const jmModal = document.getElementById('job-manage-modal');
     const jmName = document.getElementById('jm-player-name');
 
@@ -3139,27 +3317,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función llamada al cambiar cualquier interruptor del dashboard (Staff Mode, Whitelist...)
     window.toggleServerOption = (option, isActive) => {
-        // 1. ACTUALIZACIÓN VISUAL INSTANTÁNEA (Sin esperar al servidor)
+
+        // ============================================================
+        // 1. INTERCEPTOR DE SEGURIDAD (SOLO PARA WHITELIST)
+        // ============================================================
+        if (option === 'whitelist') {
+            // A. FRENADO VISUAL: Revertimos el switch inmediatamente para que parezca que no se movió
+            const switchEl = document.getElementById('dash-whitelist');
+            if (switchEl) switchEl.checked = !isActive;
+
+            // B. DEFINIR MENSAJE SEGÚN ACTIVAR O DESACTIVAR
+            // Usamos HTML para que se vea bonito y claro en el modal
+            const msg = isActive
+                ? `<span style="color:#ff4444; font-weight:bold; font-size:18px;">⚠️ ¿ACTIVAR WHITELIST GLOBAL?</span><br><br>
+                   <ul style="text-align:left; font-size:14px; color:#ccc; margin-left:15px; line-height: 1.6;">
+                        <li>Se <b>expulsará</b> a todos los jugadores sin permisos.</li>
+                        <li>El servidor quedará <b>bloqueado</b> para usuarios normales.</li>
+                        <li>Se enviará un aviso de <b>60 segundos</b> antes del cierre.</li>
+                   </ul>`
+                : `<span style="color:#00C851; font-weight:bold; font-size:18px;">🔓 ¿DESACTIVAR WHITELIST?</span><br><br>
+                   <div style="color:#ccc; font-size:14px;">El servidor volverá a ser público y accesible para todos los jugadores.</div>`;
+
+            // C. PEDIR CONFIRMACIÓN AL ADMIN
+            showConfirmationModal(msg, () => {
+                // SI PULSA "CONFIRMAR":
+
+                // 1. Ponemos el switch visualmente en la posición deseada (ahora sí)
+                if (switchEl) switchEl.checked = isActive;
+
+                // 2. Ejecutamos la lógica real de envío al servidor
+                executeServerOption(option, isActive);
+            });
+
+            // IMPORTANTE: Detenemos la función aquí con 'return'. 
+            // Si el usuario cancela o cierra el modal, no se ejecuta nada más.
+            return;
+        }
+
+        // ============================================================
+        // 2. SI NO ES WHITELIST, EJECUTAR DIRECTAMENTE
+        // ============================================================
+        executeServerOption(option, isActive);
+    };
+
+    // Función auxiliar para no repetir código (Tu lógica original encapsulada)
+    function executeServerOption(option, isActive) {
+        // 1. ACTUALIZACIÓN VISUAL INSTANTÁNEA (Staff Mode)
         if (option === 'staff_mode') {
             const adminCounter = document.getElementById('stat-admins');
             if (adminCounter) {
-                // Leemos el número actual
                 let currentCount = parseInt(adminCounter.innerText) || 0;
-
-                // Si activamos, sumamos 1. Si desactivamos, restamos 1.
                 if (isActive) {
                     currentCount++;
                 } else {
-                    currentCount = Math.max(0, currentCount - 1); // Evitar negativos
+                    currentCount = Math.max(0, currentCount - 1);
                 }
-
-                // Pintamos el nuevo número
                 adminCounter.innerText = currentCount;
             }
         }
 
         // 2. ENVIAR CAMBIO AL SERVIDOR
-        // IMPORTANTE: Cambiamos ${GetParentResourceName()} por 'dp-adminmenu' para evitar el error
+        // Respetando tu URL 'https://dp-adminmenu/...'
         fetch(`https://dp-adminmenu/toggleServerOption`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3168,7 +3386,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state: isActive
             })
         });
-    };
+    }
 
     // ==========================================================================
     // SISTEMA AVANZADO DE CHAT (PREVIEW + UPLOAD)
@@ -3617,159 +3835,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //      MODAL: SISTEMA "IR A" (GOTO)
     // =========================================
 
-    const gotoLocations = {
-        "MAPEOS Y OTROS": [
-            { name: "Ayuntamiento", coords: { x: -545.49, y: -206.71, z: 38.16 }, icon: "mdi:town-hall" },
-            { name: "Plaza Legion V2", coords: { x: 202.75, y: -940.58, z: 29.79 }, icon: "mdi:fountain" },
-            { name: "Gimnasio (Gym)", coords: { x: -1261.11, y: -348.45, z: 36.83 }, icon: "mdi:weight-lifter" },
-            { name: "Hotel Wiwang", coords: { x: -827.64, y: -700.06, z: 28.06 }, icon: "mdi:office-building" },
-            { name: "Mina", coords: { x: 2910.8, y: 2780.22, z: 40.49 }, icon: "mdi:pickaxe" },
-            { name: "Iglesia Rockford", coords: { x: -766.33, y: -24.46, z: 41.08 }, icon: "mdi:church" },
-            { name: "Casino MLO", coords: { x: 923.85, y: 47.14, z: 81.11 }, icon: "mdi:casino" },
-            { name: "Tienda 24/7", coords: { x: 1965.54, y: 3739.63, z: 32.32 }, icon: "mdi:shop" },
-            { name: "Tienda Ropa", coords: { x: 1685.81, y: 4820.45, z: 41.99 }, icon: "mdi:tshirt-crew" },
-            { name: "Fleeca", coords: { x: -1213.19, y: -329.75, z: 37.78 }, icon: "mdi:bank-transfer" },
-            { name: "Banco Paleto", coords: { x: -112.52, y: 6467.73, z: 31.63 }, icon: "mdi:bank-check" },
-            { name: "Banco Central", coords: { x: 230.41, y: 214.39, z: 105.55 }, icon: "mdi:bank-check" },
-            { name: "Monte Chiliad (Cima)", coords: { x: 481.53, y: 5531.77, z: 784.2 }, icon: "mdi:image-filter-hdr" },
-            { name: "Observatorio", coords: { x: -431.15, y: 1122.95, z: 325.85 }, icon: "mdi:telescope" },
-            { name: "Zancudo", coords: { x: -1600.301, y: 2806.731, z: 18.796 }, icon: "mdi:tank" },
-            { name: "Cárcel (Bolingbroke)", coords: { x: 1846.54, y: 2585.83, z: 45.67 }, icon: "mdi:gavel" }
-        ],
-        "LOCALES Y OCIO": [
-            { name: "Bolera", coords: { x: 759.1, y: -778.01, z: 26.45 }, icon: "mdi:bowling" },
-            { name: "Cat Café", coords: { x: -581.0, y: -1071.81, z: 22.33 }, icon: "mdi:coffee" },
-            { name: "Vanilla Unicorn", coords: { x: 127.34, y: -1308.18, z: 29.19 }, icon: "mdi:gender-female" },
-            { name: "Hookies", coords: { x: -2193.55, y: 4290.18, z: 49.17 }, icon: "mdi:glass-mug-variant" },
-            { name: "Caza (Hunt)", coords: { x: -680.14, y: 5833.56, z: 17.33 }, icon: "mdi:target" },
-            { name: "DYNASTY 8 REAL ESTATES", coords: { x: -698.65, y: 271.07, z: 83.11 }, icon: "mdi:home-circle-outline" },
-            { name: "Sandy Pawn", coords: { x: 911.13, y: 3644.32, z: 32.68 }, icon: "mdi:scale-balance" },
-            { name: "Café Cute V2", coords: { x: -281.81, y: -64.12, z: 49.53 }, icon: "mdi:muffin" },
-            { name: "Pet Shop", coords: { x: 230.69, y: -22.4, z: 74.99 }, icon: "mdi:dog" },
-            { name: "Pacific Bluffs", coords: { x: -3020.92, y: 84.22, z: 11.68 }, icon: "mdi:pool" },
-            { name: "Paleto 3 Shops", coords: { x: -20.51, y: 6490.53, z: 31.5 }, icon: "mdi:store" },
-            { name: "Concesionario PDM", coords: { x: -1039.86, y: -1352.17, z: 5.55 }, icon: "mdi:car-estate" },
-            { name: "Burger Shot", coords: { x: -1198.08, y: -883.68, z: 13.63 }, icon: "mdi:hamburger" },
-            { name: "Pearls Resort", coords: { x: -1742.47, y: -1117.32, z: 13.03 }, icon: "mdi:island" },
-            { name: "Arcade 1", coords: { x: 128.46, y: -207.21, z: 54.57 }, icon: "mdi:controller-classic" },
-            { name: "Arcade 2", coords: { x: 618.39, y: 2746.11, z: 42.01 }, icon: "mdi:controller-classic" },
-            { name: "Arcade 3", coords: { x: -3166.03, y: 1060.43, z: 20.85 }, icon: "mdi:controller-classic" },
-            { name: "Arcade 4", coords: { x: -1204.69, y: -780.7, z: 17.33 }, icon: "mdi:controller-classic" },
-            { name: "Arcadius Business Centre", coords: { x: -141.1987, y: -620.913, z: 168.8205 }, icon: "mdi:office-building" },
-            { name: "Maze Bank Building", coords: { x: -75.8466, y: -826.9893, z: 243.3859 }, icon: "mdi:bank" },
-            { name: "Lom Bank", coords: { x: -1579.756, y: -565.0661, z: 108.523 }, icon: "mdi:bank" },
-            { name: "Maze Bank West", coords: { x: -1392.667, y: -480.4736, z: 72.04217 }, icon: "mdi:bank" },
-            { name: "Nightclub", coords: { x: -1604.664, y: -3012.583, z: -78.0 }, icon: "mdi:music-box-outline" },
-            { name: "OFICINA RICA 1", coords: { x: -1021.86, y: -427.74, z: 68.95 }, icon: "mdi:briefcase-check" },
-            { name: "OFICINA RICA 2", coords: { x: 383.41, y: -59.87, z: 108.45 }, icon: "mdi:briefcase-check" },
-            { name: "OFICINA RICA 3", coords: { x: -1004.23, y: -761.2, z: 66.99 }, icon: "mdi:briefcase-check" },
-            { name: "OFICINA RICA 4", coords: { x: -587.87, y: -716.84, z: 118.1 }, icon: "mdi:briefcase-check" }
-        ],
-        "SERVICIOS (PD/EMS/MEC)": [
-            { name: "Paleto PD", coords: { x: -427.23, y: 6023.62, z: 31.49 }, icon: "mdi:police-badge" },
-            { name: "Pillbox Medical", coords: { x: 298.52, y: -584.33, z: 43.26 }, icon: "mdi:hospital-building" },
-            { name: "BENNY'S ORIGINAL MOTORWORKS", coords: { x: -205.73, y: -1309.03, z: 31.29 }, icon: "mdi:wrench" },
-            { name: "HAYES AUTOS (Gabz)", coords: { x: -1430.76, y: -442.14, z: 35.7 }, icon: "mdi:car-cog" },
-            { name: "EAST CUSTOMS (Rfc)", coords: { x: 869.93, y: -2112.58, z: 30.51 }, icon: "mdi:car-wrench" },
-            { name: "6 STR PERFORMANCE (Tuners)", coords: { x: 169.51, y: -3029.7, z: 6.0 }, icon: "mdi:wrench" },
-            { name: "DASHOUND (Bus Station)", coords: { x: 425.1, y: -644.3, z: 28.5 }, icon: "mdi:bus" },
-            { name: "SAN ANDREAS COURTS (Juez)", coords: { x: -545.49, y: -206.71, z: 38.16 }, icon: "mdi:gavel" },
-            { name: "WEAZEL NEWS", coords: { x: -598.6, y: -929.9, z: 23.8 }, icon: "mdi:television-classic" },
-            { name: "POST OP (Camioneros)", coords: { x: -413.5, y: -2795.3, z: 6.0 }, icon: "mdi:truck-delivery" },
-            { name: "ATOMIC TOWING (Remolque)", coords: { x: 485.4, y: -1314.9, z: 29.2 }, icon: "mdi:truck-pickup" },
-            { name: "LS SANITATION (Basureros)", coords: { x: -622.3, y: -1640.4, z: 25.9 }, icon: "mdi:trash-can" },
-            { name: "MARLOWE VINEYARDS (Viñedo)", coords: { x: -1883.0, y: 2107.0, z: 140.0 }, icon: "mdi:fruit-grapes" },
-            { name: "HORNY'S BURGERS (Hotdog)", coords: { x: 121.7, y: -1039.6, z: 29.2 }, icon: "mdi:food-hot-dog" },
-            { name: "DOWNTOWN CAB CO. (Taxi)", coords: { x: 895.1, y: -179.2, z: 74.7 }, icon: "mdi:taxi" },
-            { name: "PREMIUM DELUXE MOTORSPORT", coords: { x: -44.5, y: -1094.2, z: 26.4 }, icon: "mdi:car-multiple" },
-            { name: "Oficina 1", coords: { x: -467.4, y: -68.3, z: 45.9 }, icon: "mdi:briefcase-account" }
-        ],
-        "ROBOS Y BANCOS": [
-            { name: "Cerrajería", coords: { x: 170.14, y: -1799.38, z: 29.32 }, icon: "mdi:key-chain" },
-            { name: "Pacific Bank", coords: { x: 230.41, y: 214.39, z: 105.55 }, icon: "mdi:bank" },
-            { name: "The Vault", coords: { x: 231.52, y: -1095.24, z: 29.29 }, icon: "mdi:safe" },
-            { name: "Farmacia 1", coords: { x: -509.3, y: 278.68, z: 83.32 }, icon: "mdi:pill" },
-            { name: "Farmacia 2", coords: { x: 114.67, y: -5.19, z: 67.84 }, icon: "mdi:pill" },
-            { name: "Tienda (Store)", coords: { x: -501.35, y: 277.88, z: 83.32 }, icon: "mdi:cart" }
-        ],
-        "BARRIOS E ILEGAL": [
-            { name: "Ballas (Grove St.)", coords: { x: 107.19, y: -1942.33, z: 20.8 }, icon: "mdi:skull-outline" },
-            { name: "THE FAMILIES (Forum Dr.)", coords: { x: -144.17, y: -1586.26, z: 31.78 }, icon: "mdi:account-group" },
-            { name: "VAGOS (Rancho)", coords: { x: 347.41, y: -2011.6, z: 22.39 }, icon: "mdi:emoticon-angry" },
-            { name: "MARABUNTA GRANDE (El Burro)", coords: { x: 1215.14, y: -1641.52, z: 48.64 }, icon: "mdi:knife-military" },
-            { name: "AZTECAS (North Rancho)", coords: { x: 508.06, y: -1536.6, z: 29.27 }, icon: "mdi:knife" },
-            { name: "CARTEL DE MADRAZO (La Fuente)", coords: { x: 1395.25, y: 1141.7, z: 114.33 }, icon: "mdi:fencing" },
-            { name: "MERRYWEATHER (Elysian Is)", coords: { x: 488.39, y: -3326.69, z: 6.07 }, icon: "mdi:shield-airplane" },
-            { name: "WEI CHENG TRIAD (Little Seoul)", coords: { x: -744.52, y: -908.43, z: 19.46 }, icon: "mdi:fire-circle" },
-            { name: "O'NEIL BROTHERS (Farm)", coords: { x: 2434.93, y: 4964.84, z: 42.35 }, icon: "mdi:fire" },
-            { name: "T.P. INDUSTRIES (Sandy)", coords: { x: 1982.72, y: 3816.03, z: 32.18 }, icon: "mdi:biohazard" },
-            { name: "THE LOST MC (Casino HQ)", coords: { x: 978.88, y: -103.11, z: 74.85 }, icon: "mdi:motorbike" },
-            { name: "ANGELS OF DEATH (Up-n-Atom)", coords: { x: -16.48, y: 6314.54, z: 31.33 }, icon: "mdi:vlc" },
-            { name: "KKANGPAE (Korean Mob)", coords: { x: -589.65, y: -884.21, z: 25.56 }, icon: "mdi:skull-scan" },
-            { name: "ARMENIAN POWER (La Puerta)", coords: { x: -446.7, y: -1684.34, z: 19.03 }, icon: "mdi:wallet-membership" },
-            { name: "MIDNIGHT CLUB (Tunnels)", coords: { x: 928.98, y: -193.39, z: 73.01 }, icon: "mdi:engine-outline" },
-            { name: "ALTRUISTAS (Montaña)", coords: { x: -1170.81, y: 4925.33, z: 224.28 }, icon: "mdi:eye-outline" },
-            { name: "THE PROFESSIONALS", coords: { x: -841.9, y: -1367.6, z: 5.15 }, icon: "mdi:laptop" },
-            { name: "CAMPAMENTO HIPPIE", coords: { x: 2471.9, y: 3772.64, z: 41.24 }, icon: "mdi:peace" },
-            { name: "CALI ESTATE (Mafia)", coords: { x: 803.45, y: 1274.91, z: 360.32 }, icon: "mdi:account-tie-hat" },
-            { name: "THE LOST MC (Russ 68 Cus)", coords: { x: 28.01, y: 2778.36, z: 58.19 }, icon: "mdi:motorbike" },
-            { name: "Cocaine lockup", coords: { x: 1093.6, y: -3196.6, z: -38.99 }, icon: "mdi:pill" },
-            { name: "Counterfeit cash factory", coords: { x: 1121.89, y: -3195.33, z: -40.4 }, icon: "mdi:cash-multiple" },
-            { name: "Document forgery", coords: { x: 1165.0, y: -3196.6, z: -39.01 }, icon: "mdi:file-document-edit" },
-            { name: "Meth lab 1", coords: { x: 1009.5, y: -3196.6, z: -38.99 }, icon: "mdi:flask-outline" },
-            { name: "Meth lab 2", coords: { x: 981.99, y: -143.0, z: -50.0 }, icon: "mdi:flask-outline" },
-            { name: "Meth Lab (Pequeño)", coords: { x: 483.42, y: -2625.07, z: -50.0 }, icon: "mdi:flask-outline" },
-            { name: "Weed farm", coords: { x: 1051.49, y: -3196.53, z: -39.14 }, icon: "mdi:leaf" },
-            { name: "BikerClubhouse1", coords: { x: 1107.04, y: -3157.39, z: -37.51 }, icon: "mdi:motorcycle" },
-            { name: "PCPROS HACKERS", coords: { x: 570.97, y: -420.07, z: -70.0 }, icon: "mdi:laptop" },
-            { name: "Tuner ilegal (Carreras)", coords: { x: 1077.27, y: -2274.87, z: -50.0 }, icon: "mdi:flag-checkered" },
-        ],
-        "MISIONES Y OTROS": [
-            { name: "Bunker", coords: { x: 174.3, y: 1245.75, z: 223.3 }, icon: "mdi:shield-home" },
-            { name: "Vangelico", coords: { x: -762.44, y: -601.51, z: 30.28 }, icon: "mdi:diamond-stone" },
-            { name: "Hide Island", coords: { x: -3534.34, y: 6291.64, z: 37.96 }, icon: "mdi:palm-tree" },
-            { name: "Cayo Perico", coords: { x: 7374.51, y: 7338.58, z: 42.29 }, icon: "mdi:island" },
-            { name: "XLabs 1", coords: { x: 1086.89, y: -307.25, z: 64.29 }, icon: "mdi:flask" },
-            { name: "XLabs 2", coords: { x: -505.22, y: -1438.36, z: 14.11 }, icon: "mdi:flask" },
-            { name: "Document forgery 1", coords: { x: 1165.0, y: -3196.6, z: -39.01 }, icon: "mdi:file-certificate" },
-            { name: "Document forgery 2", coords: { x: 565.88, y: -2688.76, z: -50.0 }, icon: "mdi:file-certificate" },
-            { name: "Vehicle warehouse", coords: { x: 994.59, y: -3002.59, z: -39.64 }, icon: "mdi:warehouse" },
-            { name: "Bunker 2", coords: { x: 892.63, y: -3245.86, z: -98.26 }, icon: "mdi:shield-alert" },
-            { name: "Yacht 1", coords: { x: -1363.72, y: 6734.1, z: 2.44 }, icon: "mdi:sail-boat" },
-            { name: "Yacht 2", coords: { x: -2041.54, y: -1032.34, z: 11.98 }, icon: "mdi:sail-boat" },
-            { name: "Porta Aviones 1", coords: { x: 3089.28, y: -4727.51, z: 15.26 }, icon: "mdi:ferry" },
-            { name: "Porta Aviones 2", coords: { x: -3208.03, y: 3954.54, z: 14.0 }, icon: "mdi:ferry" },
-            { name: "Angar", coords: { x: -1256.76, y: -3003.44, z: -48.49 }, icon: "mdi:airplane-landing" },
-            { name: "DiamondArcadeBasement", coords: { x: 2710.0, y: -360.78, z: -56.0 }, icon: "mdi:controller" },
-            { name: "Submarine", coords: { x: 1560.0, y: 400.0, z: -50.0 }, icon: "mdi:waves" },
-            { name: "Laboratorio", coords: { x: -1916.11, y: 3749.71, z: -100.0 }, icon: "mdi:flask-empty-plus-outline" },
-            { name: "Cargero", coords: { x: -344.43, y: -4062.83, z: 17.0 }, icon: "mdi:ship-wheel" },
-            { name: "AgentsFactory", coords: { x: 752.31, y: -997.24, z: -47.0 }, icon: "mdi:factory" },
-            { name: "Mini Oficina 1", coords: { x: 2149.71, y: 4787.76, z: -47.0 }, icon: "mdi:desk" },
-            { name: "Mini Oficina 2", coords: { x: -1160.49, y: -1538.93, z: -50.0 }, icon: "mdi:desk" },
-            { name: "MoneyCarwash", coords: { x: 26.07, y: -1398.97, z: -75.0 }, icon: "mdi:car-wash" }
-        ],
-        "PROPIEDADES Y MANSIONES": [
-            { name: "Diamond Penthouse", coords: { x: 976.63, y: 70.29, z: 115.16 }, icon: "mdi:star-face" },
-            { name: "Tuner Garage", coords: { x: -1357.9, y: 168.52, z: -98.78 }, icon: "mdi:garage-variant" },
-            { name: "Garaje Subterráneo", coords: { x: -1071.43, y: -77.03, z: -93.52 }, icon: "mdi:garage" },
-            { name: "Estudio musical", coords: { x: -1000.72, y: -70.55, z: -98.1 }, icon: "mdi:microphone-variant" },
-            { name: "Garaje/Angar", coords: { x: 800.13, y: -3001.42, z: -65.14 }, icon: "mdi:warehouse" },
-            { name: "Criminal Enterprise Warehouse", coords: { x: 849.1, y: -3000.2, z: -45.97 }, icon: "mdi:domain" },
-            { name: "Garaje Custom", coords: { x: 1220.13, y: -2277.84, z: -50.0 }, icon: "mdi:tools" },
-            { name: "Garaje 2", coords: { x: 519.24, y: -2618.78, z: -50.0 }, icon: "mdi:garage-open" },
-            { name: "Galería de fotos", coords: { x: 1202.4, y: -3251.25, z: -50.0 }, icon: "mdi:camera-outline" },
-            { name: "MANSIÓN 1", coords: { x: 543.85, y: 712.75, z: 201.0 }, icon: "mdi:home-modern" },
-            { name: "MANSIÓN 2", coords: { x: -1630.43, y: 470.85, z: 128.0 }, icon: "mdi:home-modern" },
-            { name: "MANSIÓN 3", coords: { x: -2601.71, y: 1874.82, z: 166.0 }, icon: "mdi:home-modern" },
-            { name: "Casa Michael", coords: { x: -802.31, y: 175.05, z: 72.84 }, icon: "mdi:home-account" },
-            { name: "Casa Tía Franklin", coords: { x: -9.96, y: -1438.54, z: 31.1 }, icon: "mdi:home-heart" },
-            { name: "Mansión Franklin", coords: { x: 13.99, y: 526.0, z: 174.63 }, icon: "mdi:home-modern" },
-            { name: "Apartamento Floyd", coords: { x: -1150.7, y: -1520.71, z: 10.63 }, icon: "mdi:home-floor-1" },
-            { name: "Remolque Trevor", coords: { x: 1985.48, y: 3828.76, z: 32.5 }, icon: "mdi:home-variant" }
-        ]
-    };
-
     window.openGotoModal = function () {
         renderGotoCategories();
         document.getElementById('goto-modal').style.display = 'flex';
@@ -3836,5 +3901,165 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('goto-modal').style.display = 'none';
         document.getElementById('goto-modal-box').classList.remove('expanded');
     }
+
+    // ==========================================================================
+    //      SISTEMA DE ARRASTRE AVANZADO (CON LÍMITES Y ANTI-SALIDA)
+    // ==========================================================================
+
+    const dragContainer = document.getElementById('admin-menu');
+    const saveBtn = document.getElementById('save-pos-btn');
+
+    // 1. Activar Modo Edición
+    window.enableDragMode = () => {
+        isEditMode = true;
+        dragContainer.classList.add('draggable-mode');
+        if (saveBtn) saveBtn.style.display = 'block';
+
+        // FIX BUG 2: No usamos getBoundingClientRect para evitar el desplazamiento
+        // Simplemente forzamos que el transform-origin sea correcto y mantenemos
+        // las coordenadas top/left que ya tiene el elemento en su style.
+
+        dragContainer.style.transformOrigin = 'top left';
+        dragContainer.style.transform = `scale(${currentScale / 100})`;
+        dragContainer.style.margin = '0';
+
+        // Si por alguna razón no tuviera posición (primera vez), entonces sí usamos un fallback
+        if (!dragContainer.style.left) {
+            const rect = dragContainer.getBoundingClientRect();
+            dragContainer.style.left = ((rect.left / window.innerWidth) * 100) + '%';
+            dragContainer.style.top = ((rect.top / window.innerHeight) * 100) + '%';
+        }
+
+        console.log("Modo edición activado. Posición congelada para evitar saltos.");
+    };
+
+    // 2. Guardar y Salir
+    window.saveMenuPosition = () => {
+        isEditMode = false;
+        const dragContainer = document.getElementById('admin-menu');
+
+        // Quitar modo visual
+        dragContainer.classList.remove('draggable-mode');
+        if (saveBtn) saveBtn.style.display = 'none';
+
+        // Obtener datos finales
+        const posData = {
+            top: dragContainer.style.top,
+            left: dragContainer.style.left,
+            scale: currentScale // <--- AGREGA ESTA LÍNEA
+        };
+
+        fetch(`https://dp-adminmenu/saveMenuPos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+            body: JSON.stringify(posData)
+        });
+    };
+
+    // 3. LISTENERS DEL RATÓN
+
+    // A. INICIAR ARRASTRE
+    dragContainer.addEventListener('mousedown', (e) => {
+        if (!isEditMode) return;
+        isDragging = true;
+
+        const rect = dragContainer.getBoundingClientRect();
+
+        // Calculamos el offset relativo al clic, pero lo dividimos por la escala 
+        // para que el movimiento sea 1:1 con el ratón
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+    });
+
+    // B. MOVER (DENTRO DEL LISTENER mousemove)
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging || !isEditMode) return;
+
+        e.preventDefault();
+
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        // getBoundingClientRect nos da el tamaño REAL ocupado en pantalla tras la escala
+        const menuRect = dragContainer.getBoundingClientRect();
+
+        // 1. Calculamos la posición donde debería estar la esquina superior izquierda
+        let rawX = e.clientX - dragOffsetX;
+        let rawY = e.clientY - dragOffsetY;
+
+        // 2. LIMITES: Usamos el ancho/alto VISUAL (ya escalado)
+        const minX = 0;
+        const maxX = screenWidth - menuRect.width;
+        const minY = 0;
+        const maxY = screenHeight - menuRect.height;
+
+        // 3. CLAMP: Bloqueamos el menú dentro de esos límites
+        let clampedX = Math.max(minX, Math.min(rawX, maxX));
+        let clampedY = Math.max(minY, Math.min(rawY, maxY));
+
+        // 4. CONVERSIÓN A PORCENTAJES
+        let percentLeft = (clampedX / screenWidth) * 100;
+        let percentTop = (clampedY / screenHeight) * 100;
+
+        // 5. APLICAR
+        dragContainer.style.left = percentLeft.toFixed(4) + '%';
+        dragContainer.style.top = percentTop.toFixed(4) + '%';
+
+        // Mantenemos escala y origen consistentes
+        dragContainer.style.transform = `scale(${currentScale / 100})`;
+        dragContainer.style.transformOrigin = 'top left';
+    });
+
+    // C. SOLTAR
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+        }
+    });
+
+    // ==========================================
+    // LÓGICA DE ESCALA
+    // ==========================================
+    let currentScale = 100;
+    let originalScale = 100;
+
+    window.previewScale = (val) => {
+        val = parseInt(val);
+
+        // Si no es un número (está vacío), no hacemos nada o ponemos 100
+        if (isNaN(val)) return;
+
+        // BLOQUEO DE SEGURIDAD: Forzamos que el valor esté entre 70 y 150
+        if (val < 70) val = 70;
+        if (val > 150) val = 150;
+
+        currentScale = val;
+
+        // Actualizamos ambos inputs para que muestren el valor corregido
+        document.getElementById('scale-slider').value = val;
+        document.getElementById('scale-number').value = val;
+
+        const menu = document.getElementById('admin-menu');
+        if (menu) {
+            // Aplicamos la escala con el origen corregido (center center)
+            menu.style.transformOrigin = 'center center';
+            menu.style.transform = `scale(${val / 100})`;
+        }
+    };
+
+    window.openScaleModal = () => {
+        originalScale = currentScale;
+        document.getElementById('scale-modal').style.display = 'flex';
+    };
+
+    window.closeScaleModal = () => {
+        previewScale(originalScale);
+        document.getElementById('scale-modal').style.display = 'none';
+    };
+
+    window.confirmScale = () => {
+        saveMenuPosition(); // Esto llamará a tu función de guardado que ahora incluye la escala
+        document.getElementById('scale-modal').style.display = 'none';
+    };
 
 }); // FIN DEL DOMContentLoaded

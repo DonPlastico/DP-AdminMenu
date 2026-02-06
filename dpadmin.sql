@@ -277,3 +277,17 @@ INSERT INTO `dp_stats` (`player_count`, `admin_count`, `report_count`, `created_
 (45, 4, 6, DATE_SUB(NOW(), INTERVAL 6 DAY)),
 (62, 6, 15, DATE_SUB(NOW(), INTERVAL 4 DAY)),
 (20, 2, 0, DATE_SUB(NOW(), INTERVAL 2 DAY));
+
+-- =======================================================
+-- 6. TABLA DE POSICIONAMIENTOS DEL MENÚ
+-- =======================================================
+
+CREATE TABLE IF NOT EXISTS `dp_preferences` (
+  `citizenid` varchar(50) NOT NULL,
+  `menu_top` varchar(20) DEFAULT '15%',
+  `menu_left` varchar(20) DEFAULT '15%',
+  PRIMARY KEY (`citizenid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `dp_preferences` 
+ADD COLUMN `menu_scale` INT DEFAULT 100 AFTER `menu_left`;

@@ -824,43 +824,49 @@ local function toggleMenu(state)
     DebugLog("Menu puesto en: " .. tostring(state))
 
     if state then
-        -- Carga de Datos en Cascada
-        QBCore.Functions.TriggerCallback('dpadmin:getPlayers', function(players)
-            QBCore.Functions.TriggerCallback('dpadmin:getReports', function(reports)
-                QBCore.Functions.TriggerCallback('dpadmin:getBans', function(bans)
-                    QBCore.Functions.TriggerCallback('dpadmin:getChatMessages', function(chat)
-                        QBCore.Functions.TriggerCallback('dpadmin:getJobs', function(jobsList)
-                            QBCore.Functions.TriggerCallback('dpadmin:getGangs', function(gangsList)
+        -- 1. NUEVO: PEDIMOS LA POSICIÓN PRIMERO
+        QBCore.Functions.TriggerCallback('dpadmin:server:getMenuPos', function(pos)
 
-                                local currentState = {
-                                    freezeTime = GlobalState.FreezeTime or false,
-                                    freezeWeather = GlobalState.FreezeWeather or false,
-                                    blackout = GlobalState.Blackout or false,
-                                    wind = GlobalState.HighWind or false,
-                                    waves = GlobalState.HighWaves or false,
-                                    currentWeather = GlobalState.CurrentWeather or "EXTRASUNNY",
-                                    timeHour = (GlobalState.Time and GlobalState.Time.hour) or 12
-                                }
+            -- 2. CARGA DE DATOS ORIGINAL (CASCADA)
+            QBCore.Functions.TriggerCallback('dpadmin:getPlayers', function(players)
+                QBCore.Functions.TriggerCallback('dpadmin:getReports', function(reports)
+                    QBCore.Functions.TriggerCallback('dpadmin:getBans', function(bans)
+                        QBCore.Functions.TriggerCallback('dpadmin:getChatMessages', function(chat)
+                            QBCore.Functions.TriggerCallback('dpadmin:getJobs', function(jobsList)
+                                QBCore.Functions.TriggerCallback('dpadmin:getGangs', function(gangsList)
 
-                                SendNUIMessage({
-                                    type = "open",
-                                    debugMode = Config.Debug,
-                                    playerCount = #players,
-                                    players = players,
-                                    reports = reports,
-                                    bans = bans,
-                                    chat = chat,
-                                    jobs = jobsList,
-                                    gangs = gangsList,
-                                    weatherState = currentState
-                                })
+                                    local currentState = {
+                                        freezeTime = GlobalState.FreezeTime or false,
+                                        freezeWeather = GlobalState.FreezeWeather or false,
+                                        blackout = GlobalState.Blackout or false,
+                                        wind = GlobalState.HighWind or false,
+                                        waves = GlobalState.HighWaves or false,
+                                        currentWeather = GlobalState.CurrentWeather or "EXTRASUNNY",
+                                        timeHour = (GlobalState.Time and GlobalState.Time.hour) or 12
+                                    }
 
+                                    SendNUIMessage({
+                                        type = "open",
+                                        debugMode = Config.Debug,
+                                        playerCount = #players,
+                                        players = players,
+                                        reports = reports,
+                                        bans = bans,
+                                        chat = chat,
+                                        jobs = jobsList,
+                                        gangs = gangsList,
+                                        weatherState = currentState,
+                                        menuPosition = pos
+                                    })
+
+                                end)
                             end)
                         end)
                     end)
                 end)
             end)
-        end)
+
+        end) -- Fin del callback de posición
 
         -- Hilo de Tiempo Real (Solo mientras menú abierto)
         Citizen.CreateThread(function()
@@ -1242,7 +1248,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
         toggleMenu(false)
         local coords = data.coords
         local entity = PlayerPedId()
-        
+
         -- Si estás en un vehículo, teletransportamos el vehículo
         if IsPedInAnyVehicle(entity, false) then
             entity = GetVehiclePedIsUsing(entity)
@@ -1250,7 +1256,9 @@ RegisterNUICallback('triggerAction', function(data, cb)
 
         -- 1. Iniciamos el fundido a negro
         DoScreenFadeOut(500)
-        while not IsScreenFadedOut() do Wait(0) end
+        while not IsScreenFadedOut() do
+            Wait(0)
+        end
 
         -- 2. Guardamos posición actual (para el sistema BACK si lo usas luego)
         lastCoords = GetEntityCoords(PlayerPedId())
@@ -1258,7 +1266,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
         -- 3. Congelamos y movemos
         FreezeEntityPosition(entity, true)
         SetEntityCoordsNoOffset(entity, coords.x, coords.y, coords.z, false, false, false)
-        
+
         -- 4. Forzamos carga de la zona
         RequestCollisionAtCoord(coords.x, coords.y, coords.z)
         NewLoadSceneStart(coords.x, coords.y, coords.z, coords.x, coords.y, coords.z, 50.0, 0)
@@ -1273,11 +1281,11 @@ RegisterNUICallback('triggerAction', function(data, cb)
         -- 6. Limpieza y liberación
         NewLoadSceneStop()
         FreezeEntityPosition(entity, false)
-        
+
         -- 7. Esperamos un poco antes de quitar el negro para que carguen texturas
         Wait(1000)
         DoScreenFadeIn(1000)
-        
+
         QBCore.Functions.Notify("Teletransportado a destino", "success")
         TriggerServerEvent('dpadmin:server:log', 'GOTO', 'TP Rápido ejecutado.')
 
@@ -1804,6 +1812,12 @@ RegisterNUICallback('toggleCursorMode', function(data, cb)
         SetNuiFocusKeepInput(false)
     end
 
+    cb('ok')
+end)
+
+RegisterNUICallback('saveMenuPos', function(data, cb)
+    -- data.top y data.left son strings "15.50%"
+    TriggerServerEvent('dpadmin:server:saveMenuPos', data)
     cb('ok')
 end)
 

@@ -1579,90 +1579,111 @@ input:checked+.slider:before {
 }
 
 /* ==========================================================================
-   13. SISTEMA DE MODALES (BASE)
+   13. SISTEMA DE MODALES (INTEGRADO EN .container)
    ========================================================================== */
 .modal-overlay {
-    position: absolute;
-    top: 50%;
-    right: 0%;
-    transform: translateY(-50%);
-    width: 64vh;
-    min-width: 800px;
-    height: 85%;
-    border-radius: 5px 0 0 5px;
-    background-color: rgba(0, 0, 0, 0.85);
+    /* 1. ANCLAJE AL CONTENEDOR PADRE (.container) */
+    position: absolute !important; 
+    top: 0;
+    left: 0;
+    width: 100%;  /* Cubre todo el ancho del menú */
+    height: 100%; /* Cubre todo el alto del menú */
+
+    /* 2. CENTRADO DEL CONTENIDO (La cajita blanca) */
     display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+    justify-content: center; /* Centrado Horizontal */
+    align-items: center;     /* Centrado Vertical */
+
+    /* 3. FONDO Y CAPAS */
+    background-color: rgba(0, 0, 0, 0.85); /* Oscurece el contenido del menú */
+    z-index: 2000; /* Se pone por encima de todo dentro del .container */
+    
+    /* 4. HERENCIA DE BORDES */
+    /* Esto es clave: copiará el '5px 0 0 5px' de tu .container para no salirse */
+    border-radius: inherit; 
+    
+    /* Animación suave de entrada */
+    animation: fadeIn 0.2s ease-out;
 }
 
+/* CAJA DEL MENSAJE (CONFIRMACIÓN, INPUTS, ETC) */
 .modal-box {
-    width: 400px;
+    width: 450px;       
+    max-width: 90%;     /* Margen de seguridad si el menú se encoge */
+    max-height: 90%;    
+    
     background-color: var(--bg-panel);
     border: 1px solid var(--bg-button-hover);
-    border-radius: 8px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 1);
+    border-radius: 8px; /* Bordes propios de la cajita */
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8); 
+    
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: popIn 0.5s ease-out;
+    
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* --- CABECERAS Y BOTONES --- */
 .modal-header {
     background-color: var(--bg-element);
     padding: 15px;
-    border-radius: 8px 8px 0 0;
     font-weight: bold;
     color: var(--text-main);
     border-bottom: 2px solid var(--primary);
     text-transform: uppercase;
     letter-spacing: 1px;
+    text-align: center;
 }
 
 .modal-body {
-    padding: 10px;
+    padding: 25px 20px;
     color: var(--text-secondary);
     font-size: 14px;
     text-align: center;
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 .modal-footer {
     display: flex;
-    padding: 10px;
+    padding: 15px;
     background-color: var(--bg-element);
-    gap: 10px;
-    border-radius: 0 0 8px 8px;
+    gap: 15px;
+    border-top: 1px solid rgba(255,255,255,0.05);
 }
 
 .modal-footer button {
     flex: 1;
-    padding: 10px;
+    padding: 12px;
     font-size: 12px;
     border-radius: 4px;
     border: none;
     cursor: pointer;
     font-weight: bold;
     text-transform: uppercase;
+    transition: all 0.2s;
+}
+
+.modal-footer button:active {
+    transform: scale(0.95);
 }
 
 .btn-cancel {
     background-color: var(--bg-button-hover);
     color: #fff;
 }
-
 .btn-cancel:hover {
     background-color: #555;
+    filter: brightness(1.2);
 }
 
 .btn-confirm {
     background-color: var(--success);
     color: #fff;
 }
-
 .btn-confirm:hover {
     background-color: var(--success-dark);
+    filter: brightness(1.1);
 }
 
 /* --- SECCIONES DE TIEMPO (EXTENDER BAN) --- */
@@ -3540,6 +3561,47 @@ input:checked+.slider:before {
     letter-spacing: 0.5px;
 }
 
+/* Estado cuando el menú se está moviendo */
+.draggable-mode {
+    border: 2px dashed #f1c40f !important; /* Borde amarillo discontinuo */
+    cursor: move !important; /* Cursor de movimiento */
+    user-select: none; /* Evitar seleccionar texto */
+    transition: none !important; /* Quitar transiciones para que el drag sea suave */
+}
+
+/* Botón flotante para guardar */
+.floating-save-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    /* Mantenemos el translateX(-50%) para que esté centrado */
+    transform: translateX(-50%);
+    
+    background-color: #2ecc71;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+    cursor: pointer;
+    z-index: 99999;
+    
+    transition: transform 0.2s, background-color 0.2s;
+    
+    /* Usamos un nombre NUEVO para no romper tu popIn */
+    animation: floatBtnAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-save-btn:hover {
+    /* Al hacer hover, mantenemos el centrado y escalamos un poco */
+    transform: translateX(-50%) scale(1.05);
+    background-color: #27ae60;
+}
+
+.floating-save-btn:active {
+    transform: translateX(-50%) scale(0.95);
+}
 
 
 
@@ -3707,6 +3769,13 @@ input:checked+.slider:before {
     }
 }
 
-/* ==========================================================================
-   MEDIA QUERIES
-   ========================================================================== */
+@keyframes floatBtnAppear {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(100px); /* Empieza abajo */
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0); /* Termina en su sitio */
+    }
+}

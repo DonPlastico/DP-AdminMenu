@@ -2,13 +2,23 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 -- ==========================================================================
 --      1. VARIABLES GLOBALES Y UTILIDADES
--- ==========================================================================
+-- ==========================================================================\n
+local adminsInGodmode = {}
+local AdminsOnDuty = {}
 
-local adminsInGodmode = {} -- Lista de admins inmortales
-local AdminsOnDuty = {} -- Tabla de Staff Mode
--- Estados globales del servidor (Por defecto OFF)
+-- 1. Leemos la memoria del servidor (KVP)
+local savedWhitelist = GetResourceKvpInt('dp_whitelist_active')
+
+-- 2. APLICAMOS LA LÓGICA DEL FORCE UNLOCK
+-- Si en el config dice TRUE, ignoramos lo que diga la memoria y lo apagamos a la fuerza.
+if Config.Whitelist and Config.Whitelist.ForceUnlock then
+    savedWhitelist = 0
+    print("^1[DP-ADMIN] 🔓 FORCE UNLOCK DETECTADO EN CONFIG. La Whitelist ha sido desactivada forzosamente.^7")
+end
+
+-- 3. Cargamos el estado final
 local ServerStates = {
-    whitelist = false,
+    whitelist = (savedWhitelist == 1),
     maintenance = false,
     discord_logs = false
 }
@@ -204,9 +214,8 @@ QBCore.Functions.CreateCallback('dpadmin:getJobs', function(source, cb)
                     charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
                     gradeLabel = Player.PlayerData.job.grade.name,
                     gradeLevel = Player.PlayerData.job.grade.level,
-                    -- NUEVOS DATOS:
-                    payment = Player.PlayerData.job.payment, -- Salario
-                    onduty = Player.PlayerData.job.onduty -- Estado de servicio
+                    payment = Player.PlayerData.job.payment,
+                    onduty = Player.PlayerData.job.onduty
                 })
             end
         end
@@ -962,7 +971,6 @@ RegisterNetEvent('dpadmin:server:giveItemToPlayer', function(data)
 end)
 
 -- EVENTO: REGISTRAR ACCIÓN EN LOGS
--- EVENTO: REGISTRAR ACCIÓN EN LOGS (MODIFICADO: NOMBRE DUAL)
 RegisterNetEvent('dpadmin:server:log', function(action, details)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -992,6 +1000,27 @@ RegisterNetEvent('dpadmin:server:log', function(action, details)
     end
 end)
 
+-- FUNCIÓN AUXILIAR: Verificar permisos de Whitelist
+local function IsPlayerWhitelisted(src)
+    if not src then
+        return false
+    end
+    -- 1. Admins y Dioses siempre pasan
+    if QBCore.Functions.HasPermission(src, 'god') or QBCore.Functions.HasPermission(src, 'admin') then
+        return true
+    end
+
+    -- 2. Revisar roles extra del Config (ej: 'mod', 'whitelist')
+    if Config.Whitelist and Config.Whitelist.BypassRoles then
+        for _, role in ipairs(Config.Whitelist.BypassRoles) do
+            if QBCore.Functions.HasPermission(src, role) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 -- EVENTO PARA CAMBIAR OPCIONES (STAFF MODE, WHITELIST, ETC)
 RegisterNetEvent('dpadmin:server:toggleOption', function(option, state)
     local src = source
@@ -1005,14 +1034,58 @@ RegisterNetEvent('dpadmin:server:toggleOption', function(option, state)
             TriggerClientEvent('QBCore:Notify', src, 'STAFF MODE: OFF', 'primary')
         end
 
+    elseif option == 'whitelist' then
+        -- === LÓGICA DE WHITELIST === --
+        ServerStates.whitelist = state
+        SetResourceKvpInt('dp_whitelist_active', state and 1 or 0) -- Guardar Persistencia
+
+        if state then
+            -- A. ACTIVACIÓN (Cuenta atrás y Kick CON BARRA VISUAL)
+            Citizen.CreateThread(function()
+                -- 1. ANUNCIO 60 SEGUNDOS (Barra Visual)
+                local msg60 = string.format(Config.Lang.WhitelistAnnounce or "⚠️ WHITELIST EN %s SEGUNDOS", 60)
+                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg60, 30000)
+
+                Citizen.Wait(30000) -- Esperamos 30s reales
+
+                -- 2. ANUNCIO 30 SEGUNDOS
+                local msg30 = string.format(Config.Lang.WhitelistAnnounce or "⚠️ WHITELIST EN %s SEGUNDOS", 30)
+                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg30, 20000)
+
+                Citizen.Wait(20000) -- Esperamos 20s reales (Total acumulado: 50s)
+
+                -- 3. ANUNCIO 10 SEGUNDOS (FINAL)
+                local msg10 = string.format(Config.Lang.WhitelistAnnounce or "⚠️ WHITELIST EN %s SEGUNDOS", 10)
+                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg10, 10000)
+
+                Citizen.Wait(10000) -- Esperamos 10s reales (Total acumulado: 60s)
+
+                -- BARRIDO FINAL (KICK MASIVO)
+                local players = QBCore.Functions.GetPlayers()
+                local kickedCount = 0
+                for _, pId in pairs(players) do
+                    if not IsPlayerWhitelisted(pId) then
+                        DropPlayer(pId, Config.Lang.WhitelistKick or
+                            "⛔ El servidor ha activado la Whitelist. Acceso restringido.")
+                        kickedCount = kickedCount + 1
+                    end
+                end
+                print("^1[WHITELIST]^7 Activada. Jugadores expulsados: " .. kickedCount)
+            end)
+        else
+            -- B. DESACTIVACIÓN (AHORA CON NOTIFICACIÓN QB-CORE)
+            -- Usamos TriggerClientEvent con -1 para enviarlo a TODOS
+            TriggerClientEvent('QBCore:Notify', -1,
+                Config.Lang.WhitelistDisabled or "🔓 Whitelist DESACTIVADA. Servidor abierto.", "success", 5000)
+        end
+
     elseif ServerStates[option] ~= nil then
-        -- Actualizamos la variable global (Whitelist, Maintenance, etc)
+        -- Otras opciones
         ServerStates[option] = state
         DebugLog("^3[DP-Admin]^7 Opción global '" .. option .. "' cambiada a: " .. tostring(state))
     end
 
-    -- 2. ¡MAGIA! AVISAR A TODOS LOS ADMINS PARA QUE SE ACTUALICE SU MENÚ AL INSTANTE
-    -- Enviamos señal a todos (-1)
+    -- 2. Sincronizar menús de admins
     TriggerClientEvent('dpadmin:client:forceStatusUpdate', -1)
 end)
 
@@ -1072,7 +1145,127 @@ QBCore.Functions.CreateCallback('dpadmin:server:getStatusData', function(source,
 end)
 
 -- ==========================================================================
---      6. EVENTOS DEL SISTEMA
+--      6. SISTEMA DE SEGURIDAD Y CONEXIÓN
+-- ==========================================================================
+
+-- HOOK DE CONEXIÓN (El Muro)
+AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
+    local src = source
+    local identifiers = GetPlayerIdentifiers(src)
+
+    -- Si la whitelist está apagada, dejar pasar.
+    if not ServerStates.whitelist then
+        return
+    end
+
+    deferrals.defer()
+    Citizen.Wait(0)
+    deferrals.update("🔍 Verificando permisos de Whitelist Global...")
+    Citizen.Wait(1000)
+
+    -- 1. Comprobar si es Admin de Consola (ACE Perms de server.cfg)
+    -- Esto es vital: si te quedas sin base de datos, los admins de consola siempre entran.
+    if IsPlayerAceAllowed(src, 'command') then
+        deferrals.done()
+        return
+    end
+
+    -- 2. Comprobar Roles de QBCore (Consultando BD)
+    local license = nil
+    for _, v in pairs(identifiers) do
+        if string.find(v, 'license') then
+            license = v
+            break
+        end
+    end
+
+    if license then
+        -- Consultamos qué permiso tiene este usuario en la base de datos
+        MySQL.scalar('SELECT `permission` FROM `permissions` WHERE `license` = ?', {license}, function(permission)
+            local isAllowed = false
+
+            -- Si el usuario tiene algún permiso, comprobamos si está en TU lista del Config
+            if permission then
+                if Config.Whitelist and Config.Whitelist.BypassRoles then
+                    for _, allowedRole in ipairs(Config.Whitelist.BypassRoles) do
+                        if permission == allowedRole then
+                            isAllowed = true
+                            break
+                        end
+                    end
+                end
+            end
+
+            -- Veredicto final
+            if isAllowed then
+                deferrals.done() -- ¡Adentro!
+            else
+                deferrals.done(Config.Lang.WhitelistEnterDeny or
+                                   "⛔ WHITELIST ACTIVA: No tienes permisos para entrar en este momento.")
+            end
+        end)
+    else
+        deferrals.done("❌ Error: No se pudo verificar tu licencia.")
+    end
+end)
+
+-- COMANDO DE EMERGENCIA (Solo Consola)
+-- Úsalo si te quedas fuera: "togglewhitelist_emergency" en la consola de txAdmin
+RegisterCommand(Config.Commands.EmergencyWhitelist or "togglewhitelist_emergency", function(source, args)
+    if source ~= 0 then
+        print("^1[DP-ADMIN] Este comando es solo para consola de servidor.^7")
+        return
+    end
+
+    ServerStates.whitelist = not ServerStates.whitelist
+    SetResourceKvpInt('dp_whitelist_active', ServerStates.whitelist and 1 or 0)
+
+    print("^1[DP-ADMIN] Whitelist de Emergencia cambiada a: " .. tostring(ServerStates.whitelist) .. "^7")
+end, true)
+
+-- ==========================================================================
+--      7. SISTEMA DE POSICIONAMIENTO DEL MENÚ
+-- ==========================================================================
+
+-- Callback para obtener la posición
+QBCore.Functions.CreateCallback('dpadmin:server:getMenuPos', function(source, cb)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then
+        return cb(nil)
+    end
+
+    local cid = Player.PlayerData.citizenid
+
+    MySQL.single('SELECT menu_top, menu_left, menu_scale FROM dp_preferences WHERE citizenid = ?', {cid}, function(row)
+        if row then
+            cb({
+                top = row.menu_top,
+                left = row.menu_left,
+                scale = row.menu_scale
+            })
+        else
+            cb(nil)
+        end
+    end)
+end)
+
+-- Evento para guardar la posición
+RegisterNetEvent('dpadmin:server:saveMenuPos', function(posData)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then
+        return
+    end
+
+    local cid = Player.PlayerData.citizenid
+
+    MySQL.insert(
+        'INSERT INTO dp_preferences (citizenid, menu_top, menu_left, menu_scale) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE menu_top = VALUES(menu_top), menu_left = VALUES(menu_left), menu_scale = VALUES(menu_scale)',
+        {cid, posData.top, posData.left, posData.scale})
+end)
+
+-- ==========================================================================
+--      EVENTOS DEL SISTEMA
 -- ==========================================================================
 
 AddEventHandler('playerJoining', function()

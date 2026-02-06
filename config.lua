@@ -3,28 +3,37 @@ Config = {}
 -- =========================================
 --      MODO DEBUG (TRUE = VER LOGS EN F8)
 -- =========================================
-Config.Debug = false -- ¡ESTO ACTIVARÁ TODOS LOS MENSAJES!
+Config.Debug = false
 
 -- =========================================
 --      CONFIGURACION DE COMANDOS
 -- =========================================
--- Comandos Básicos
 Config.Commands = {
     Admin = "dpadmin",
-    Report = "dpreports"
+    Report = "dpreports",
+    -- Comando de emergencia (Solo consola)
+    EmergencyWhitelist = "togglewhitelist_emergency"
 }
 
 -- =========================================
---      TECLAS Y ATAJOS (BINDINGS)
+--      CONFIGURACION DE WHITELIST
 -- =========================================
--- ¡VACÍO POR SEGURIDAD! 
--- Si se te abre con una tecla, es culpa de la configuración de tu GTA, no de este archivo.
-Config.Keybinds = {}
+Config.Whitelist = {
+    -- Si 'ForceUnlock' es true, la whitelist se desactiva ignorando la base de datos.
+    -- Útil si te quedas fuera y no tienes acceso a la consola (se cambia desde el archivo y se reinicia el script).
+    ForceUnlock = false,
+
+    -- Tiempo de cuenta atrás para expulsar jugadores (en segundos)
+    CountDown = 60,
+
+    -- Permisos que BYPASSEAN la whitelist (no son expulsados)
+    BypassRoles = {"god", "admin", "mod" -- Puedes añadir "whitelist" aquí si creas ese permiso en QB-Core
+    }
+}
 
 -- =========================================
 --      TEXTOS Y TRADUCCIONES (IDIOMA)
 -- =========================================
--- Configuración de Idioma
 Config.Lang = {
     TitleAdmin = "ADMINISTRADOR",
     TitleReport = "ENVIAR REPORTE",
@@ -34,5 +43,12 @@ Config.Lang = {
     ErrorNoWeapon = "No tienes arma",
     ErrorNoTarget = "No hay objetivo",
     SuccessGodmodeOn = "MODO DIOS: ON",
-    SuccessGodmodeOff = "MODO DIOS: OFF"
+    SuccessGodmodeOff = "MODO DIOS: OFF",
+
+    -- Nuevos textos para la Whitelist
+    WhitelistKick = "⛔ EL SERVIDOR HA ACTIVADO LA WHITELIST. Acceso restringido a personal autorizado.",
+    WhitelistEnterDeny = "⛔ WHITELIST ACTIVA: No tienes permisos para entrar en este momento.",
+    WhitelistAnnounce = "⚠️ MANTENIMIENTO: La Whitelist se activará en %s segundos. Jugadores no autorizados serán expulsados.",
+    WhitelistEnabled = "🔒 Whitelist ACTIVADA globalmente.",
+    WhitelistDisabled = "🔓 Whitelist DESACTIVADA globalmente."
 }
