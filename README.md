@@ -4,8 +4,6 @@ Cosas que no van:
 
 - EN EL <div class="page" id="home">, <button>INFORMACIÓN DEL JUGADOR</button> Y <div class="icon-btn" onclick="" data-tooltip="Detalles del Jugador"> QUE ME SALGA EL MENÚ DE DETALLES DEL JUGADOR
 
-- Hacer que el mensaje de arriba de SISTEMA (ANNOUNCE) QUE TENGA ANIMACION AL APARECER/DESAPARECER DE REBOTE DESDE LA PARTE SUPERIOR DE LA PANTALLA, QUE TENGA UN POQUITO DE TRANSPARENCIA Y METERLE UN SONIDO PARA QUE SE ENTERE TODO EL MUNDO...
-
 - CAMBIAR EL MODEL DEL IR A:
   Contexto del Proyecto: Estoy desarrollando un menú administrativo para un servidor de GTA V (FiveM) usando HTML, CSS y JS. Actualmente tengo un sistema de teletransporte basado en listas de texto (categorías y destinos), pero quiero evolucionarlo a un Mapa Táctico Interactivo. La estructura del proyecto es:
   html/index.html, html/script.js, html/style.css (Interfaz NUI).
@@ -59,4 +57,3 @@ Librerías: Si la IA te pregunta, dile que prefieres usar JS nativo para el zoom
 Imágenes: Recuerda que para que el panel de la derecha funcione, tendrás que tomar fotos dentro del juego de cada lugar y guardarlas en una carpeta (ej: img/ubicaciones/bunker.jpg).
 
 - MEJORAR EL SISTEMA DE REPORTES, YA QUE QUIERO QUE PUEDAN METER IMAGENES EN UN REPORTE CON LO DE CNTR+V... tal y como está el del chat de administradores, con el BOT DE DISCORD...
-

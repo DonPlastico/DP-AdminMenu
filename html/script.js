@@ -484,15 +484,63 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (data.type === "showAnnouncement") {
             const bar = document.getElementById('global-announce-bar');
             const marquee = document.getElementById('announce-marquee');
+            const content = document.querySelector('.announce-content');
+
+            // REFERENCIAS A LOS SONIDOS
+            const soundIn = document.getElementById('audio-announce-in');
+            const soundOut = document.getElementById('audio-announce-out');
+
+            // AJUSTAR VOLUMEN (Opcional, 0.1 a 1.0)
+            soundIn.volume = 0.4;
+            soundOut.volume = 0.3;
+
             marquee.innerText = data.message;
             marquee.style.animation = 'none';
-            marquee.offsetHeight; /* Trigger Reflow */
-            const textLength = data.message.length;
-            const animDuration = Math.max(4, textLength * 0.3);
-            marquee.style.animation = `marquee-scroll ${animDuration}s linear infinite`;
+            bar.classList.remove('hide-announce');
+
+            // --- SONIDO DE ENTRADA (ALERTA) ---
+            soundIn.currentTime = 0; // Reinicia el audio por si sonó hace poco
+            soundIn.play();
+
+            // APLICAMOS CLASE DE ENTRADA
+            bar.classList.add('show-announce');
             bar.style.display = 'flex';
+
+            // Cálculos de tamaño (Igual que antes)
+            const anchoBarra = content.offsetWidth;
+            const anchoTexto = marquee.offsetWidth;
+            const recorridoTotal = anchoBarra + anchoTexto;
+            const pixelesPorSegundo = 200;
+            const tiempoDeUnaVuelta = recorridoTotal / pixelesPorSegundo;
+
+            marquee.style.setProperty('--distancia-recorrido', `-${recorridoTotal}px`);
+
+            setTimeout(() => {
+                marquee.style.animation = `marquee-scroll ${tiempoDeUnaVuelta}s linear infinite`;
+            }, 10);
+
             if (announceTimeout) clearTimeout(announceTimeout);
-            announceTimeout = setTimeout(() => { bar.style.display = 'none'; }, data.duration);
+
+            announceTimeout = setTimeout(() => {
+
+                // --- SONIDO DE SALIDA (WHOOSH/VIENTO) ---
+                soundOut.currentTime = 0;
+                soundOut.play();
+
+                // Animación de salida (Rebote hacia arriba)
+                bar.classList.remove('show-announce');
+                bar.classList.add('hide-announce');
+
+                // Esperamos a que termine la animación visual (750ms)
+                setTimeout(() => {
+                    if (bar.classList.contains('hide-announce')) {
+                        bar.style.display = 'none';
+                        marquee.style.animation = 'none';
+                        bar.classList.remove('hide-announce');
+                    }
+                }, 750);
+
+            }, data.duration);
 
         } else if (data.type === "updateGameTime") {
             const h = data.hours.toString().padStart(2, '0');
@@ -1210,6 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         annUnitInput.value = "1000"; annUnitTrigger.querySelector('span').textContent = "Segundos";
         annModal.style.display = 'flex';
     };
+
     window.closeAnnounceModal = () => { annModal.style.display = 'none'; };
 
     if (annUnitTrigger) {

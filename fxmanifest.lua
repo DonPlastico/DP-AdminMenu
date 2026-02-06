@@ -24,7 +24,9 @@ server_scripts {
 files {
     'html/index.html',
     'html/style.css',
-    'html/script.js'
+    'html/script.js',
+    'html/sounds/alert.mp3',
+    'html/sounds/whoosh.mp3'
 }
 
 dependencies {

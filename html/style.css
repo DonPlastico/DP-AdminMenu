@@ -1494,26 +1494,40 @@ input:checked+.slider:before {
    ========================================================================== */
 #global-announce-bar {
     position: absolute;
-    top: 2px;
+    top: -150px;
     left: 50%;
     transform: translateX(-50%);
-    width: 75%;
+    width: 40%;
     display: none;
     z-index: 9999;
     flex-direction: column;
     align-items: flex-start;
-    animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+}
+
+/* CLASE PARA ENTRAR */
+#global-announce-bar.show-announce {
+    display: flex !important;
+    animation: bounceInTop 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
+}
+
+/* CLASE PARA SALIR */
+#global-announce-bar.hide-announce {
+    display: flex !important;
+    animation: bounceOutTop 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
 }
 
 .announce-label {
-    background-color: #000;
-    color: #f1c40f;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: rgba(241, 196, 15, 0.7);
     font-weight: 900;
     padding: 5px 20px;
     font-size: 14px;
     letter-spacing: 2px;
     border-radius: 4px 4px 0 0;
-    border: 3px solid #000;
+    border-left: 1px solid rgba(0, 0, 0, 0.7);
+    border-top: 1px solid rgba(0, 0, 0, 0.7);
+    border-right: 1px solid rgba(0, 0, 0, 0.7);
     border-bottom: none;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
 }
@@ -1524,9 +1538,9 @@ input:checked+.slider:before {
     display: flex;
     align-items: center;
     overflow: hidden;
-    background-color: #f1c40f;
+    background-color: rgba(241, 196, 15, 0.7);
     position: relative;
-    border: 2px solid #000;
+    border: 1px solid rgba(0, 0, 0, 0.7);
     border-radius: 0 4px 4px 4px;
     box-shadow: 0 10px 20px rgb(0 0 0 / 80%);
 }
@@ -1583,44 +1597,52 @@ input:checked+.slider:before {
    ========================================================================== */
 .modal-overlay {
     /* 1. ANCLAJE AL CONTENEDOR PADRE (.container) */
-    position: absolute !important; 
+    position: absolute !important;
     top: 0;
     left: 0;
-    width: 100%;  /* Cubre todo el ancho del menú */
-    height: 100%; /* Cubre todo el alto del menú */
+    width: 100%;
+    /* Cubre todo el ancho del menú */
+    height: 100%;
+    /* Cubre todo el alto del menú */
 
     /* 2. CENTRADO DEL CONTENIDO (La cajita blanca) */
     display: flex;
-    justify-content: center; /* Centrado Horizontal */
-    align-items: center;     /* Centrado Vertical */
+    justify-content: center;
+    /* Centrado Horizontal */
+    align-items: center;
+    /* Centrado Vertical */
 
     /* 3. FONDO Y CAPAS */
-    background-color: rgba(0, 0, 0, 0.85); /* Oscurece el contenido del menú */
-    z-index: 2000; /* Se pone por encima de todo dentro del .container */
-    
+    background-color: rgba(0, 0, 0, 0.85);
+    /* Oscurece el contenido del menú */
+    z-index: 2000;
+    /* Se pone por encima de todo dentro del .container */
+
     /* 4. HERENCIA DE BORDES */
     /* Esto es clave: copiará el '5px 0 0 5px' de tu .container para no salirse */
-    border-radius: inherit; 
-    
+    border-radius: inherit;
+
     /* Animación suave de entrada */
     animation: fadeIn 0.2s ease-out;
 }
 
 /* CAJA DEL MENSAJE (CONFIRMACIÓN, INPUTS, ETC) */
 .modal-box {
-    width: 450px;       
-    max-width: 90%;     /* Margen de seguridad si el menú se encoge */
-    max-height: 90%;    
-    
+    width: 450px;
+    max-width: 90%;
+    /* Margen de seguridad si el menú se encoge */
+    max-height: 90%;
+
     background-color: var(--bg-panel);
     border: 1px solid var(--bg-button-hover);
-    border-radius: 8px; /* Bordes propios de la cajita */
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8); 
-    
+    border-radius: 8px;
+    /* Bordes propios de la cajita */
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    
+
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -1649,7 +1671,7 @@ input:checked+.slider:before {
     padding: 15px;
     background-color: var(--bg-element);
     gap: 15px;
-    border-top: 1px solid rgba(255,255,255,0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .modal-footer button {
@@ -1672,6 +1694,7 @@ input:checked+.slider:before {
     background-color: var(--bg-button-hover);
     color: #fff;
 }
+
 .btn-cancel:hover {
     background-color: #555;
     filter: brightness(1.2);
@@ -1681,6 +1704,7 @@ input:checked+.slider:before {
     background-color: var(--success);
     color: #fff;
 }
+
 .btn-confirm:hover {
     background-color: var(--success-dark);
     filter: brightness(1.1);
@@ -3563,10 +3587,14 @@ input:checked+.slider:before {
 
 /* Estado cuando el menú se está moviendo */
 .draggable-mode {
-    border: 2px dashed #f1c40f !important; /* Borde amarillo discontinuo */
-    cursor: move !important; /* Cursor de movimiento */
-    user-select: none; /* Evitar seleccionar texto */
-    transition: none !important; /* Quitar transiciones para que el drag sea suave */
+    border: 2px dashed #f1c40f !important;
+    /* Borde amarillo discontinuo */
+    cursor: move !important;
+    /* Cursor de movimiento */
+    user-select: none;
+    /* Evitar seleccionar texto */
+    transition: none !important;
+    /* Quitar transiciones para que el drag sea suave */
 }
 
 /* Botón flotante para guardar */
@@ -3576,7 +3604,7 @@ input:checked+.slider:before {
     left: 50%;
     /* Mantenemos el translateX(-50%) para que esté centrado */
     transform: translateX(-50%);
-    
+
     background-color: #2ecc71;
     color: white;
     padding: 15px 30px;
@@ -3586,9 +3614,9 @@ input:checked+.slider:before {
     box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
     cursor: pointer;
     z-index: 99999;
-    
+
     transition: transform 0.2s, background-color 0.2s;
-    
+
     /* Usamos un nombre NUEVO para no romper tu popIn */
     animation: floatBtnAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -3736,12 +3764,12 @@ input:checked+.slider:before {
 @keyframes marquee-scroll {
     0% {
         transform: translateX(0);
-        left: 100%;
+        /* Empieza justo en el borde derecho de la barra */
     }
 
     100% {
-        transform: translateX(-100%);
-        left: 0;
+        /* Se desplaza hacia la izquierda la distancia exacta calculada por JS */
+        transform: translateX(var(--distancia-recorrido, -100%));
     }
 }
 
@@ -3772,10 +3800,56 @@ input:checked+.slider:before {
 @keyframes floatBtnAppear {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(100px); /* Empieza abajo */
+        transform: translateX(-50%) translateY(100px);
+        /* Empieza abajo */
     }
+
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0); /* Termina en su sitio */
+        transform: translateX(-50%) translateY(0);
+        /* Termina en su sitio */
+    }
+}
+
+@keyframes bounceInTop {
+    0% {
+        top: -150px;
+        opacity: 0;
+    }
+
+    60% {
+        top: 25px;
+        /* Baja más de la cuenta (Overshoot) */
+        opacity: 1;
+    }
+
+    80% {
+        top: -10px;
+        /* Rebote hacia arriba */
+    }
+
+    100% {
+        top: 2px;
+        /* Posición final */
+        opacity: 1;
+    }
+}
+
+@keyframes bounceOutTop {
+    0% {
+        top: 2px;
+        opacity: 1;
+    }
+
+    30% {
+        top: 30px;
+        /* Baja un poco para coger impulso (Anticipación) */
+        opacity: 1;
+    }
+
+    100% {
+        top: -200px;
+        /* Sale disparado hacia arriba */
+        opacity: 0;
     }
 }
