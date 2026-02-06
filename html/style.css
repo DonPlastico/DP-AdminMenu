@@ -2393,7 +2393,6 @@ span#live-weather-text {
 .accordion-card.expanded .accordion-content {
     max-height: 2000px;
     opacity: 1;
-    /* overflow: visible;  <-- Si activamos esto, la animación se rompe, así que movemos los tooltips */
 }
 
 /* Contador */
@@ -2414,6 +2413,158 @@ span#live-weather-text {
     color: #4cd137;
     border: 1px solid rgba(14, 160, 33, 0.2);
     box-shadow: 0 0 10px rgba(14, 160, 33, 0.1);
+}
+
+/* 1. CONTENEDOR PRINCIPAL */
+.dynamic-modal {
+    width: 370px;
+    transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* Efecto elástico suave */
+    overflow: hidden;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    /* Dejamos que los paneles controlen el fondo */
+    border-radius: 6px;
+    /* Borde general del modal */
+}
+
+/* 2. WRAPPER DE LOS DOS PANELES */
+.dual-panel-wrapper {
+    display: flex;
+    width: 720px;
+    /* Ancho total interno */
+    height: 100%;
+}
+
+/* 3. PANEL IZQUIERDO */
+.panel-left {
+    width: 370px;
+    min-width: 370px;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e24;
+    /* Fondo del panel */
+    z-index: 2;
+    /* Para que la sombra se proyecte sobre el derecho si quisieras */
+
+    /* BORDE SEPARADOR: Inicialmente transparente */
+    border-right: 1px solid transparent;
+    transition: border-right 0.5s ease;
+}
+
+/* CABECERA IZQUIERDA: Transición de bordes redondos */
+.header-left {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    /* Inicialmente redondo */
+    transition: border-radius 0.5s ease;
+}
+
+/* 4. PANEL DERECHO */
+.panel-right {
+    width: 350px;
+    min-width: 350px;
+    display: flex;
+    flex-direction: column;
+    background: #1b1b20;
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+}
+
+/* CABECERA DERECHA */
+.header-right {
+    border-top-right-radius: 6px;
+    border-top-left-radius: 0px;
+    background-color: #0f3443 !important;
+    /* Color distinto para diferenciar */
+    color: #4dd0e1 !important;
+    white-space: nowrap;
+    /* OBLIGATORIO: Prohíbe saltos de línea */
+    overflow: hidden;
+    /* Oculta lo que se salga */
+    text-overflow: ellipsis;
+}
+
+/* El texto "RANGOS DE:" */
+.grade-title-prefix {
+    opacity: 0.7;
+    margin-right: 6px;
+    font-size: 14px;
+    /* Tamaño normal */
+    flex-shrink: 0;
+    /* Este texto nunca se encogerá */
+}
+
+/* El nombre del trabajo (Ej: CONCESIONARIO...) */
+.grade-title-job {
+    color: #4dd0e1;
+    /* Mismo azul cyan que usas en el tema */
+    font-weight: 800;
+    /* Más gordita */
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Ajuste del ancho total */
+.dynamic-modal.expanded {
+    width: 720px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    /* Sombra más fuerte al abrirse */
+}
+
+/* Modificaciones al Panel Izquierdo cuando está expandido */
+.dynamic-modal.expanded .panel-left {
+    /* Aquí creamos la LINEA DE SEPARACIÓN */
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Modificaciones a la Cabecera Izquierda */
+.dynamic-modal.expanded .header-left {
+    /* Quitamos el borde redondo derecho para que pegue con el otro */
+    border-top-right-radius: 0px;
+}
+
+/* Modificaciones al Panel Derecho (Aparición) */
+.dynamic-modal.expanded .panel-right {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+    transition-delay: 0.1s;
+}
+
+/* ESTILOS DE LISTA (Tus estilos anteriores + pequeños retoques) */
+#job-grades-list-container .accordion-header {
+    padding: 4px 5px;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+}
+
+#job-grades-list-container .accordion-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(3px);
+}
+
+.job-item-row.active {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-left: 3px solid #ffa726 !important;
+}
+
+#gang-grades-list-container .accordion-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(3px);
 }
 
 /* ==========================================================================

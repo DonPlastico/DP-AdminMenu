@@ -930,6 +930,7 @@ end
 RegisterCommand(Config.Commands.Admin, function()
     toggleMenu(true)
 end)
+
 RegisterCommand(Config.Commands.Report, function()
     SetNuiFocus(true, true);
     SendNUIMessage({
