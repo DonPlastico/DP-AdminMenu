@@ -1265,6 +1265,85 @@ RegisterNetEvent('dpadmin:server:saveMenuPos', function(posData)
 end)
 
 -- ==========================================================================
+--          8. SISTEMA DE SUBIDA DE IMÁGENES (DISCORD MULTIPART)
+-- ==========================================================================
+
+-- Tabla de decodificación Base64
+local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local b64map = {}
+for i = 1, 64 do
+    b64map[string.sub(b64chars, i, i)] = i - 1
+end
+
+local function DecodeBase64(data)
+    data = string.gsub(data, '[^' .. b64chars .. '=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then
+            return ''
+        end
+        local r, f = '', (b64map[x] or 0)
+        for i = 6, 1, -1 do
+            r = r .. (f % 2 ^ i - f % 2 ^ (i - 1) > 0 and '1' or '0')
+        end
+        return r
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then
+            return ''
+        end
+        local c = 0
+        for i = 1, 8 do
+            c = c + (string.sub(x, i, i) == '1' and 2 ^ (8 - i) or 0)
+        end
+        return string.char(c)
+    end))
+end
+
+RegisterNetEvent('dpadmin:server:uploadImage', function(base64Data)
+    local src = source
+    local webhook = Config.ImageWebhook
+
+    if not webhook or webhook == "" then
+        print("^1[DP-ADMIN] Error: Config.ImageWebhook no está configurado.^7")
+        return
+    end
+
+    -- 1. Limpiar cabecera del base64 si existe
+    local cleanBase64 = base64Data:gsub("data:image/.-;base64,", "")
+
+    -- 2. Convertir a binario
+    local binaryData = DecodeBase64(cleanBase64)
+
+    -- 3. Construir cuerpo Multipart/Form-Data
+    local boundary = "------------------------Boundary" .. os.time()
+    local filename = "report_img_" .. os.time() .. ".png"
+
+    local body = {}
+    table.insert(body, "--" .. boundary)
+    table.insert(body, 'Content-Disposition: form-data; name="file"; filename="' .. filename .. '"')
+    table.insert(body, 'Content-Type: image/png')
+    table.insert(body, '')
+    table.insert(body, binaryData)
+    table.insert(body, "--" .. boundary .. "--")
+
+    local requestBody = table.concat(body, "\r\n")
+
+    -- 4. Enviar a Discord
+    PerformHttpRequest(webhook, function(err, text, headers)
+        if err == 200 or err == 204 then
+            local data = json.decode(text)
+            if data and data.attachments and data.attachments[1] then
+                -- Éxito: Devolver URL al cliente
+                TriggerClientEvent('dpadmin:client:imageUploaded', src, data.attachments[1].url)
+            end
+        else
+            print("^1[DP-ADMIN] Error subiendo imagen a Discord (Código: " .. tostring(err) .. ")^7")
+        end
+    end, 'POST', requestBody, {
+        ['Content-Type'] = 'multipart/form-data; boundary=' .. boundary
+    })
+end)
+
+-- ==========================================================================
 --      EVENTOS DEL SISTEMA
 -- ==========================================================================
 

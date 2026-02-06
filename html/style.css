@@ -612,6 +612,37 @@ input:checked+.slider:before {
     padding: 10px;
     border-radius: 4px;
     border: 1px solid var(--bg-button);
+    white-space: pre-wrap;
+    text-align: left;
+    /* Mantiene los saltos de línea originales */
+    word-break: break-word;
+    /* Evita que palabras largas rompan el diseño */
+    line-height: 1.4;
+    /* Un poco de aire entre líneas */
+}
+
+.report-inline-img {
+    display: inline-block;
+    /* CLAVE: Hace que salgan una al lado de la otra */
+    vertical-align: top;
+    /* Alineación superior */
+    height: 80px;
+    /* Altura fija para que se vean uniformes */
+    width: auto;
+    /* Ancho automático */
+    border-radius: 5px;
+    margin: 5px 5px 0 0;
+    /* Separación entre fotos */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: zoom-in;
+    transition: transform 0.2s;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.report-inline-img:hover {
+    transform: scale(1.05);
+    /* Efecto visual al pasar el mouse */
+    border-color: var(--primary);
 }
 
 .rc-footer {
@@ -689,7 +720,7 @@ input:checked+.slider:before {
     border: 1px solid #333;
     color: #fff;
     padding: 12px;
-    border-radius: 4px;
+    border-radius: 4px 4px 0 0;
     font-family: inherit;
     resize: none;
     /* Evitar que deformen el textarea */
@@ -770,6 +801,58 @@ input:checked+.slider:before {
 .close-report:hover {
     color: white;
     transform: rotate(90deg);
+}
+
+.report-body .attachments-preview {
+    border-radius: 0 0 5px 5px;
+    border-bottom: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#report-attachments-area .att-item {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+}
+
+#report-attachments-area .att-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#report-attachments-area .att-item img:hover {
+    opacity: 0.8;
+}
+
+/* Botón X para borrar */
+#report-attachments-area .att-remove {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#report-attachments-area .att-remove:hover {
+    background: #cc0000;
 }
 
 /* ==========================================================================

@@ -16,6 +16,12 @@ Config.Commands = {
 }
 
 -- =========================================
+--      CONFIGURACIÓN DE IMÁGENES
+-- =========================================
+-- Webhook para subir las imágenes pegadas en los reportes (Canal privado de logs de imágenes)
+Config.ImageWebhook = "TU_WEBHOOK_AQUI"
+
+-- =========================================
 --      CONFIGURACION DE WHITELIST
 -- =========================================
 Config.Whitelist = {

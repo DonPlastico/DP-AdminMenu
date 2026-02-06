@@ -5,6 +5,17 @@
 // Debug y Logs
 let isDebugActive = false;
 
+// FUNCIÓN DE SEGURIDAD 
+function escapeHtml(text) {
+    if (!text) return "";
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 function log(msg) {
     if (isDebugActive) console.log(`^4[DP-ADMIN JAVASCRIPT]^7 ${msg}`);
 }
@@ -38,6 +49,7 @@ const actionStates = {
 
 // Configuración Externa
 const discordWebhook = "https://discord.com/api/webhooks/1459417838530855074/LNstohvnbz6UpxPCvk8UMDCMKp7MUJAzDfRIBhgmbO7NTuewvaji2dOMSkfUt3yA8eLP";
+// const discordWebhook = "Meter_Tu_Webhook_Aquí";
 
 // Formateo de Fechas (Español)
 const dateOptions = {
@@ -800,40 +812,75 @@ document.addEventListener('DOMContentLoaded', () => {
         window.closeReportMenu();
     });
 
+    // --- FUNCIÓN MEJORADA: Detecta imágenes y respeta formato ---
+    function formatReportDescription(text) {
+        if (!text) return "";
+
+        // 1. PRIMERO: Limpiamos el texto de código malicioso.
+        // Si alguien puso <button>, ahora será &lt;button&gt; (texto visible, no funcional)
+        let safeText = escapeHtml(text);
+
+        // 2. Regex para detectar URLs de imágenes
+        // (Nota: detectará URLs incluso si tienen caracteres escapados como &amp;)
+        const imageRegex = /(https?:\/\/\S+\.(?:png|jpg|jpeg|gif|webp)(\?\S*)?)/gi;
+
+        // 3. Reemplazamos SOLO las URLs detectadas por nuestras imágenes
+        return safeText.replace(imageRegex, function (url) {
+            // IMPORTANTE: 'url' aquí ya es segura porque pasó por escapeHtml
+            return `<img src="${url}" 
+                     class="report-inline-img" 
+                     onclick="openImageModal('${url}')" 
+                     title="Click para ampliar">`;
+        });
+    }
+
     function renderReports(list) {
         const container = document.querySelector('.report-list');
         container.innerHTML = '';
+
         if (!list || list.length === 0) {
             container.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">Relax, no hay reportes pendientes.</div>';
             return;
         }
+
         list.forEach(rep => {
-            const steamName = rep.steam_name || "Anonimo";
-            const charName = rep.sender_name || "Anonimo";
-            let statusBadge = rep.status === 'open' ? '<span class="badge unassigned">LIBRE</span>' : `<span class="badge assigned">LLEVA: ${rep.assigned_to}</span>`;
+            // SEGURIDAD: Limpiamos los nombres y títulos también
+            const steamName = escapeHtml(rep.steam_name || "Anonimo");
+            const charName = escapeHtml(rep.sender_name || "Anonimo");
+            const titleSafe = escapeHtml(rep.title || "Sin Asunto");
+
+            let statusBadge = rep.status === 'open'
+                ? '<span class="badge unassigned">LIBRE</span>'
+                : `<span class="badge assigned">LLEVA: ${escapeHtml(rep.assigned_to)}</span>`;
+
             let assignBtn = rep.status === 'open'
                 ? `<button class="btn-assign" data-id="${rep.id}" data-player="${steamName}">ME LO QUEDO</button>`
                 : `<button disabled style="opacity:0.5; cursor:not-allowed;">OCUPADO</button>`;
 
             const card = document.createElement('div');
             card.className = 'report-card';
+
+            // Inyectamos los datos YA LIMPIOS
             card.innerHTML = `
-                <div class="rc-header">
-                    <span class="rc-title">${steamName} (${charName})</span>
-                    <div class="rc-badges">${statusBadge}<span class="badge type">${rep.type}</span></div>
-                </div>
-                <div class="rc-body">
-                    <div class="rc-subject">${rep.title}</div>
-                    <div class="rc-desc">${rep.description}</div>
-                </div>
-                <div class="rc-footer">
-                    ${assignBtn}
-                    <button>INFORMACIÓN DEL JUGADOR</button>
-                    <button class="btn-danger btn-delete" data-id="${rep.id}">CERRAR/BORRAR</button>
-                </div>
-            `;
+            <div class="rc-header">
+                <span class="rc-title">${steamName} (${charName})</span>
+                <div class="rc-badges">${statusBadge}<span class="badge type">${rep.type}</span></div>
+            </div>
+            <div class="rc-body">
+                <div class="rc-subject">${titleSafe}</div>
+                
+                <div class="rc-desc">${formatReportDescription(rep.description)}</div>
+                
+            </div>
+            <div class="rc-footer">
+                ${assignBtn}
+                <button>INFORMACIÓN DEL JUGADOR</button>
+                <button class="btn-danger btn-delete" data-id="${rep.id}">CERRAR/BORRAR</button>
+            </div>
+        `;
             container.appendChild(card);
         });
+
         addReportListeners();
     }
 
@@ -4110,5 +4157,140 @@ document.addEventListener('DOMContentLoaded', () => {
         saveMenuPosition(); // Esto llamará a tu función de guardado que ahora incluye la escala
         document.getElementById('scale-modal').style.display = 'none';
     };
+
+    // ==========================================================================
+    // 21. LOGICA DE IMÁGENES PARA REPORTES (INTEGRADO EN TU HTML)
+    // ==========================================================================
+
+    let reportAttachments = []; // Almacén temporal de las fotos
+
+    // A. DETECTAR EL PASTE EN TU TEXTAREA ESPECÍFICO
+    const reportDescInput = document.getElementById('report-desc');
+
+    if (reportDescInput) {
+        reportDescInput.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            let hasImage = false;
+
+            for (let item of items) {
+                if (item.type.indexOf('image') === 0) {
+                    e.preventDefault(); // Evitamos que intente pegar "binary data"
+                    const blob = item.getAsFile();
+                    addReportAttachment(blob);
+                    hasImage = true;
+                }
+            }
+        });
+    }
+
+    // B. FUNCIÓN: AÑADIR A LA COLA VISUAL
+    function addReportAttachment(file) {
+        if (reportAttachments.length >= 3) {
+            // Opcional: Sonido de error o notificación
+            return;
+        }
+        reportAttachments.push(file);
+        renderReportAttachments();
+    }
+
+    // C. FUNCIÓN: ELIMINAR DE LA COLA
+    window.removeReportAttachment = (index) => {
+        reportAttachments.splice(index, 1);
+        renderReportAttachments();
+    };
+
+    // D. RENDERIZAR LA LISTA HORIZONTAL
+    function renderReportAttachments() {
+        const container = document.getElementById('report-attachments-area');
+        container.innerHTML = '';
+
+        if (reportAttachments.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex'; // Mostramos el div
+
+        reportAttachments.forEach((file, index) => {
+            const url = URL.createObjectURL(file);
+
+            const div = document.createElement('div');
+            div.className = 'att-item';
+            div.innerHTML = `
+                <img src="${url}" onclick="openImageModal('${url}')">
+                <button class="att-remove" onclick="removeReportAttachment(${index})">✕</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // ==========================================================================
+    // 22. SOBRESCRIBIR EL BOTÓN DE ENVIAR REPORTE (LÓGICA ASYNC)
+    // ==========================================================================
+
+    // Primero, eliminamos listeners anteriores clonando el botón (truco limpio)
+    const oldBtn = document.getElementById('btn-send-report');
+    const newBtn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+
+    // Añadimos el nuevo listener inteligente
+    newBtn.addEventListener('click', async () => {
+        const title = document.getElementById('report-title').value;
+        const descEl = document.getElementById('report-desc');
+        let description = descEl.value;
+
+        // Validaciones básicas
+        if (!title) return; // Falta título
+        if (!description && reportAttachments.length === 0) return; // Ni texto ni fotos
+
+        // 1. BLOQUEO VISUAL (Feedback de carga)
+        const originalText = newBtn.innerText;
+        newBtn.disabled = true;
+        newBtn.innerHTML = '<span class="iconify" data-icon="eos-icons:loading"></span> SUBIENDO...';
+        newBtn.style.opacity = "0.7";
+
+        // 2. SUBIDA DE IMÁGENES A DISCORD (Si las hay)
+        if (reportAttachments.length > 0) {
+            // Usamos la función global uploadImageToDiscord que definimos para el chat
+            const uploadPromises = reportAttachments.map(file => uploadImageToDiscord(file));
+
+            // Esperamos a que todas suban
+            const uploadedUrls = await Promise.all(uploadPromises);
+
+            // Filtramos errores (nulls) y formateamos para el texto
+            const validUrls = uploadedUrls.filter(url => url !== null);
+
+            if (validUrls.length > 0) {
+                // AQUI ESTÁ EL TRUCO: Añadimos las URLs al texto del reporte
+                // Dejamos dos saltos de línea para separarlo del texto del usuario
+                description += "\n\n" + validUrls.join(" ");
+            }
+        }
+
+        // 3. ENVÍO AL SERVIDOR (SQL)
+        // Ahora 'description' contiene el texto original + las URLs de Discord
+        fetch(`https://${GetParentResourceName()}/submitReport`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                type: currentReportType
+            })
+        });
+
+        // 4. RESET Y CIERRE
+        newBtn.disabled = false;
+        newBtn.innerText = originalText;
+        newBtn.style.opacity = "1";
+
+        // Limpiamos formularios
+        document.getElementById('report-title').value = '';
+        descEl.value = '';
+        reportAttachments = [];
+        renderReportAttachments();
+
+        window.closeReportMenu();
+    });
 
 }); // FIN DEL DOMContentLoaded
