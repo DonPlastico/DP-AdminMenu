@@ -55,9 +55,9 @@ Citizen.CreateThread(function()
     Citizen.Wait(5000)
 
     while true do
-        -- 1. Esperamos 30 minutos (1800000 ms) DENTRO del bucle
+        -- 1. Esperamos 1 Hora (3600000 ms) DENTRO del bucle
         -- Al ponerlo al principio, espera 30 min antes de la primera ejecución y entre cada una.
-        Citizen.Wait(1800000)
+        Citizen.Wait(3600000)
 
         -- 2. Ejecutamos la lógica
         local currentPlayers = GetNumPlayerIndices()

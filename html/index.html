@@ -445,16 +445,6 @@
                         </div>
                     </div>
 
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: rgba(46, 204, 113, 0.2); color: #2ecc71;">
-                            <span class="iconify" data-icon="mdi:server-network"></span>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="stat-uptime">00:00</h3>
-                            <p>TIEMPO</p>
-                        </div>
-                    </div>
-
                     <div class="stat-card" onclick="switchMetric('reports', this)" style="cursor: pointer;">
                         <div class="stat-icon" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c;">
                             <span class="iconify" data-icon="mdi:bug"></span>
@@ -462,6 +452,16 @@
                         <div class="stat-info">
                             <h3 id="stat-reports">0</h3>
                             <p>REPORTES</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="refreshLogs()">
+                        <div class="stat-icon" style="background: rgba(46, 204, 113, 0.2); color: #2ecc71;">
+                            <span class="iconify" data-icon="mdi:server-network"></span>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="stat-uptime">00:00</h3>
+                            <p>TIEMPO</p>
                         </div>
                     </div>
                 </div>
@@ -549,9 +549,6 @@
                 <div class="logs-section">
                     <div class="logs-header">
                         <h3><span class="iconify" data-icon="mdi:history"></span> REGISTRO DE ACTIVIDAD</h3>
-                        <button class="btn-small" onclick="refreshLogs()">
-                            <span class="iconify" data-icon="mdi:refresh"></span>
-                        </button>
                     </div>
 
                     <div class="logs-container">

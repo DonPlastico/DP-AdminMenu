@@ -5,8 +5,7 @@
    ========================================================================== */
 :root {
     /* --- COLORES PRINCIPALES --- */
-    --primary: #007bff;
-    --primary-dark: #0056b3;
+    --primary: #999999;
 
     /* --- ESTADOS (Éxito, Peligro, Aviso) --- */
     --success: #0ea021;
@@ -22,22 +21,19 @@
     --danger-badge: #a71d2a;
 
     /* --- FONDOS --- */
-    --bg-overlay: rgba(0, 0, 0, 0.6);
-    --bg-panel: #1a1a1a;
+    --bg-panel: rgba(0, 0, 0, 0.9);
     /* Fondo Principal */
-    --bg-element: #252525;
+    --bg-element: rgba(0, 0, 0, 0.9);
     /* Cabeceras, Tarjetas, Secciones */
-    --bg-input: #2a2a2a;
-    /* Inputs, Th de tablas */
-    --bg-table: #202020;
+    --bg-table: rgba(0, 0, 0, 0.9);
     /* Fondo contenedor tabla */
-    --bg-hover: #2c2c2c;
+    --bg-hover: rgba(255, 255, 255, 0.2);
     /* Hover en filas/tablas */
-    --bg-border: #333333;
+    --bg-border: rgba(255, 255, 255, 0.1);
     /* Bordes y separadores */
     --bg-button: #333333;
     /* Botones neutros */
-    --bg-button-hover: #444444;
+    --bg-button-hover: #999999;
     /* Hover neutro */
 
     /* --- TEXTOS --- */
@@ -45,14 +41,6 @@
     --text-secondary: #cccccc;
     --text-muted: #888888;
     --text-placeholder: #aaaaaa;
-
-    /* --- BORDES Y REDONDEADO --- */
-    --border-color: #333333;
-    --radius-xs: 3px;
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 8px;
-    --radius-xl: 10px;
 }
 
 /* ==========================================================================
@@ -86,7 +74,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--primary-dark);
+    background: var(--bg-border);
     border-radius: 2px;
 }
 
@@ -122,7 +110,7 @@ input[type=number]::-webkit-outer-spin-button {
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--bg-button);
     transition: opacity 0.5s ease-in-out;
 }
 
@@ -148,13 +136,13 @@ input[type=number]::-webkit-outer-spin-button {
    4. HEADER Y NAVEGACIÓN
    ========================================================================== */
 .header {
-    height: 90px;
+    height: 75px;
     background-color: var(--bg-element);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--bg-button);
 }
 
 .header-title {
@@ -169,14 +157,14 @@ input[type=number]::-webkit-outer-spin-button {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 6px;
+    gap: 4px;
 }
 
 .tab {
-    width: 35px;
-    height: 35px;
+    width: 32px;
+    height: 32px;
     background-color: var(--bg-button);
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -196,8 +184,8 @@ input[type=number]::-webkit-outer-spin-button {
 .tab.active {
     background-color: var(--primary);
     color: var(--text-main);
-    border-color: var(--primary-dark);
-    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    border-color: var(--bg-border);
+    box-shadow: 0 0 7px #FFFFFF;
 }
 
 /* ==========================================================================
@@ -240,7 +228,7 @@ input[type=number]::-webkit-outer-spin-button {
 .search-bar input {
     height: 100%;
     flex: 1;
-    background-color: var(--bg-input);
+    background-color: var(--bg-button);
     border: 1px solid var(--bg-border);
     color: var(--text-main);
     border-radius: 4px 0 0 4px;
@@ -280,7 +268,7 @@ button {
     background-color: var(--bg-button);
     color: var(--text-main);
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
     transition: background 0.5s;
@@ -424,7 +412,7 @@ input:checked+.slider:before {
     font-size: 13px;
     background-color: var(--bg-panel);
     border: 1px solid var(--bg-border);
-    border-radius: var(--radius-xs);
+    border-radius: 3px;
     cursor: pointer;
     color: var(--text-main);
     transition: all 0.5s;
@@ -546,8 +534,8 @@ input:checked+.slider:before {
 
 .report-card {
     background-color: var(--bg-table);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    border: 1px solid var(--bg-button);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -555,12 +543,12 @@ input:checked+.slider:before {
 }
 
 .rc-header {
-    background-color: var(--bg-input);
+    background-color: var(--bg-button);
     padding: 10px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--bg-button);
 }
 
 .rc-title {
@@ -622,16 +610,16 @@ input:checked+.slider:before {
     color: var(--text-placeholder);
     background-color: var(--bg-panel);
     padding: 10px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    border: 1px solid var(--bg-button);
 }
 
 .rc-footer {
     display: flex;
     gap: 5px;
     padding: 10px;
-    background-color: var(--bg-input);
-    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-button);
+    border-top: 1px solid var(--bg-button);
 }
 
 .rc-footer button {
@@ -669,7 +657,7 @@ input:checked+.slider:before {
 }
 
 .report-header {
-    background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+    background: linear-gradient(90deg, var(--bg-border), var(--primary));
     color: white;
     padding: 20px;
     font-size: 18px;
@@ -789,8 +777,8 @@ input:checked+.slider:before {
    ========================================================================== */
 .table-container {
     background-color: var(--bg-table);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    border: 1px solid var(--bg-button);
     overflow: hidden;
     height: 63vh;
     display: flex;
@@ -809,7 +797,7 @@ input:checked+.slider:before {
 }
 
 .admin-table thead {
-    background-color: var(--bg-input);
+    background-color: var(--bg-button);
     z-index: 10;
     flex: 0 0 auto;
     display: table;
@@ -847,7 +835,7 @@ input:checked+.slider:before {
 
 .admin-table td {
     padding: 6px 4px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--bg-button);
     vertical-align: middle;
     word-wrap: break-word;
     font-size: 10px;
@@ -892,7 +880,7 @@ input:checked+.slider:before {
 .admin-table td:nth-child(4),
 .admin-table td:nth-child(5),
 .admin-table td:nth-child(6) {
-    border-right: 1px solid var(--border-color);
+    border-right: 1px solid var(--bg-button);
 }
 
 
@@ -946,7 +934,7 @@ input:checked+.slider:before {
 .btn-mini {
     width: 32px;
     height: 32px;
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     border: none;
     cursor: pointer;
     color: white;
@@ -975,7 +963,7 @@ input:checked+.slider:before {
 }
 
 .btn-details:hover {
-    background-color: var(--primary-dark);
+    background-color: var(--bg-border);
 }
 
 .btn-extend {
@@ -991,7 +979,7 @@ input:checked+.slider:before {
     cursor: pointer;
     transition: all 0.5s ease;
     user-select: none;
-    background-color: var(--bg-input);
+    background-color: var(--bg-button);
     padding: 2px 5px;
     border-radius: 3px;
 }
@@ -1419,8 +1407,8 @@ input:checked+.slider:before {
 .hud-element {
     position: relative;
     background-color: var(--bg-element);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--bg-button);
+    border-radius: 6px;
     padding: 15px 20px;
     min-width: 130px;
     text-align: center;
@@ -1485,7 +1473,7 @@ input:checked+.slider:before {
 
 .key-badge {
     background-color: var(--bg-button);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--bg-button);
     color: var(--primary);
     padding: 2px 6px;
     border-radius: 4px;
@@ -1613,7 +1601,7 @@ input:checked+.slider:before {
     width: 400px;
     background-color: var(--bg-panel);
     border: 1px solid var(--bg-button-hover);
-    border-radius: var(--radius-lg);
+    border-radius: 8px;
     box-shadow: 0 0 30px rgba(0, 0, 0, 1);
     display: flex;
     flex-direction: column;
@@ -1624,7 +1612,7 @@ input:checked+.slider:before {
 .modal-header {
     background-color: var(--bg-element);
     padding: 15px;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-radius: 8px 8px 0 0;
     font-weight: bold;
     color: var(--text-main);
     border-bottom: 2px solid var(--primary);
@@ -1645,14 +1633,14 @@ input:checked+.slider:before {
     padding: 10px;
     background-color: var(--bg-element);
     gap: 10px;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-radius: 0 0 8px 8px;
 }
 
 .modal-footer button {
     flex: 1;
     padding: 10px;
     font-size: 12px;
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     border: none;
     cursor: pointer;
     font-weight: bold;
@@ -1683,7 +1671,7 @@ input:checked+.slider:before {
 .perm-switch-box {
     background-color: var(--bg-element);
     border: 1px solid var(--bg-button-hover);
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     padding: 10px;
 }
 
@@ -1737,7 +1725,7 @@ input:checked+.slider:before {
     border: 1px solid var(--bg-border);
     color: white;
     padding: 5px;
-    border-radius: var(--radius-xs);
+    border-radius: 3px;
     text-align: left;
 }
 
@@ -1753,7 +1741,7 @@ input:checked+.slider:before {
     background-color: var(--bg-element);
     padding: 5px 20px 10px;
     text-align: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--bg-button);
 }
 
 .range-slider {
@@ -1810,7 +1798,7 @@ input:checked+.slider:before {
 .weather-option {
     background-color: var(--bg-element);
     border: 1px solid var(--bg-button);
-    border-radius: var(--radius-md);
+    border-radius: 6px;
     padding: 15px 10px;
     display: flex;
     flex-direction: column;
@@ -1857,7 +1845,7 @@ input:checked+.slider:before {
 .weather-extras-container {
     padding: 0 30px 20px 30px;
     background-color: var(--bg-panel);
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--bg-button);
 }
 
 .extras-grid {
@@ -1869,7 +1857,7 @@ input:checked+.slider:before {
 .switch-card {
     background-color: var(--bg-element);
     border: 1px solid var(--bg-border);
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     padding: 10px 15px;
     display: flex;
     justify-content: space-between;
@@ -2914,7 +2902,7 @@ span#live-weather-text {
 /* 5. BOTÓN DE ACCIÓN (SPAWN) */
 .btn-spawn {
     margin-top: 5px;
-    background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 100%);
+    background: linear-gradient(90deg, var(--bg-border) 0%, var(--primary) 100%);
     color: white;
     border: none;
     padding: 12px;
@@ -3434,7 +3422,7 @@ input:checked+.slider:before {
     flex-direction: column;
     min-height: 0px;
     overflow: hidden;
-    max-height: 310px;
+    max-height: 329px;
     margin-bottom: 0px;
     border-bottom: none;
     border-radius: 8px 8px 0px 0px;
@@ -3533,7 +3521,7 @@ input:checked+.slider:before {
 .menu-footer {
     height: 50px;
     display: flex;
-    border-top: 2px solid var(--border-color);
+    border-top: 2px solid var(--bg-button);
     background-color: var(--bg-element);
     justify-content: center;
 }

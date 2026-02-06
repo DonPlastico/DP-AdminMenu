@@ -601,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="rc-footer">
                     ${assignBtn}
-                    <button>INFO JUGADOR</button>
+                    <button>INFORMACIÓN DEL JUGADOR</button>
                     <button class="btn-danger btn-delete" data-id="${rep.id}">CERRAR/BORRAR</button>
                 </div>
             `;
