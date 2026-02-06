@@ -24,7 +24,7 @@ local function GlobalRefresh()
     TriggerClientEvent('dpadmin:client:refreshAllData', -1)
 end
 
-print("^2[DP-Admin] Server arrancao y listo. Debug Mode: " .. tostring(Config.Debug) .. "^7")
+DebugLog("^2[DP-Admin] Server arrancao y listo. Debug Mode: " .. tostring(Config.Debug) .. "^7")
 
 -- ==========================================================================
 --      2. TAREAS EN SEGUNDO PLANO (THREADS)
@@ -52,12 +52,12 @@ end)
 -- BUCLE DE GRABACIÓN DE ESTADÍSTICAS
 Citizen.CreateThread(function()
     -- Opcional: Esperamos un poco al arrancar para no cargar la DB mientras inicia el server
-    Citizen.Wait(5000) 
+    Citizen.Wait(5000)
 
     while true do
         -- 1. Esperamos 30 minutos (1800000 ms) DENTRO del bucle
         -- Al ponerlo al principio, espera 30 min antes de la primera ejecución y entre cada una.
-        Citizen.Wait(1800000) 
+        Citizen.Wait(1800000)
 
         -- 2. Ejecutamos la lógica
         local currentPlayers = GetNumPlayerIndices()
@@ -77,7 +77,7 @@ Citizen.CreateThread(function()
 
         -- Limpieza de datos antiguos (más de 30 días)
         MySQL.query('DELETE FROM dp_stats WHERE created_at < NOW() - INTERVAL 30 DAY')
-        
+
         -- (El bucle llega aquí, sube arriba y vuelve a esperar 30 minutos)
     end
 end)
@@ -390,7 +390,7 @@ RegisterNetEvent('dpadmin:server:revokeBan', function(data)
     MySQL.update('UPDATE bans SET status = ? WHERE id = ?', {'revoked', data.banId}, function(affected)
         if affected > 0 then
             TriggerClientEvent('QBCore:Notify', src, 'Has perdonado el Ban #' .. data.banId, 'success')
-            
+
             -- Opcional: Si QBCore necesita que se borre la fila para desbanear:
             -- MySQL.query('DELETE FROM bans WHERE id = ?', {data.banId})
         end
@@ -408,7 +408,11 @@ end)
 
 -- Función auxiliar para extraer identificadores de forma segura
 local function ExtractIdentifiers(src)
-    local identifiers = { license = "Unknown", discord = "Unknown", ip = "Unknown" }
+    local identifiers = {
+        license = "Unknown",
+        discord = "Unknown",
+        ip = "Unknown"
+    }
     for _, v in pairs(GetPlayerIdentifiers(src)) do
         if string.sub(v, 1, string.len("license:")) == "license:" then
             identifiers.license = v
@@ -423,40 +427,36 @@ end
 
 RegisterNetEvent('dpadmin:server:banPlayer', function(targetSource, reason, expire)
     local src = source
-    
+
     -- CORRECCIÓN DEL ERROR:
     -- Si 'src' no es un número (porque lo llama el servidor), lo ponemos a 0
-    if type(src) ~= 'number' then src = 0 end
+    if type(src) ~= 'number' then
+        src = 0
+    end
 
     local Player = QBCore.Functions.GetPlayer(targetSource)
-    
+
     -- Definimos quién banea
     local BannerName = "Sistema / AutoBan"
     if src > 0 then
         local Banner = QBCore.Functions.GetPlayer(src)
-        if Banner then BannerName = Banner.PlayerData.name end
+        if Banner then
+            BannerName = Banner.PlayerData.name
+        end
     end
 
     if Player then
         local ids = ExtractIdentifiers(targetSource)
         local finalLicense = Player.PlayerData.license or ids.license
 
-        print("^3[DP-ADMIN]^7 Baneando a ID: " .. targetSource .. " por: " .. BannerName)
+        DebugLog("^3[DP-ADMIN]^7 Baneando a ID: " .. targetSource .. " por: " .. BannerName)
 
         MySQL.insert(
             'INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            {
-                Player.PlayerData.name,
-                finalLicense,
-                ids.discord,
-                ids.ip,
-                reason,
-                expire,
-                BannerName,
-                'active'
-            }, function(id)
+            {Player.PlayerData.name, finalLicense, ids.discord, ids.ip, reason, expire, BannerName, 'active'},
+            function(id)
                 DropPlayer(targetSource, "\n⛔ HAS SIDO BANEADO ⛔\nMotivo: " .. reason .. "\nAdmin: " .. BannerName)
-                
+
                 -- Solo notificamos al admin si es un jugador real
                 if src > 0 then
                     TriggerClientEvent('QBCore:Notify', src, 'Jugador baneado correctamente.', 'success')
@@ -464,7 +464,6 @@ RegisterNetEvent('dpadmin:server:banPlayer', function(targetSource, reason, expi
             end)
     end
 end)
-
 
 -- ==========================================================================
 --      COMANDO DE PRUEBA (ESTRUCTURA SEGÚN EL DOC DE QBCORE)
@@ -478,9 +477,9 @@ end)
 
 QBCore.Commands.Add('autoban', 'Test de baneo a ti mismo (10 min)', {}, false, function(source, args)
     local src = source
-    
+
     -- 10 minutos = 600 segundos
-    local expireDate = os.time() + 600 
+    local expireDate = os.time() + 600
 
     TriggerEvent('dpadmin:server:banPlayer', src, "Test Auto-Ban (10 Minutos)", expireDate)
 
@@ -988,7 +987,7 @@ RegisterNetEvent('dpadmin:server:log', function(action, details)
 
         -- Debug en consola (bonito)
         if Config.Debug then
-            print("^2[LOG]^7 " .. steamName .. " (" .. charName .. ") ejecutó: " .. action)
+            DebugLog("^2[LOG]^7 " .. steamName .. " (" .. charName .. ") ejecutó: " .. action)
         end
     end
 end)

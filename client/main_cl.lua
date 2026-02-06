@@ -376,7 +376,7 @@ local function RunJumpLoop()
             if not isMenuOpen then
                 DisableControlAction(0, 14, true);
                 DisableControlAction(0, 15, true)
-                if IsDisabledControlJustPressed(0, 15) then
+                if IsDisabledControlJustPressed(0, 15) or IsDisabledControlJustPressed(0, 261) then -- Arriba
                     if currentJumpIndex < #jumpMultipliers then
                         currentJumpIndex = currentJumpIndex + 1
                         SendNUIMessage({
@@ -385,7 +385,7 @@ local function RunJumpLoop()
                         })
                     end
                 end
-                if IsDisabledControlJustPressed(0, 14) then
+                if IsDisabledControlJustPressed(0, 14) or IsDisabledControlJustPressed(0, 262) then
                     if currentJumpIndex > 1 then
                         currentJumpIndex = currentJumpIndex - 1
                         SendNUIMessage({
@@ -1801,6 +1801,8 @@ end
 local minSpeed = 0.2
 local maxSpeed = 5.0
 local speedStep = 0.2
+local lastWheelChange = 0
+local wheelCooldown = 100 -- ms entre cambios
 
 function ToggleNoClip(state)
     noClipActive = state
@@ -1881,13 +1883,17 @@ function ToggleNoClip(state)
                     coords = vec3(coords.x + dy * currentSpeed, coords.y - dx * currentSpeed, coords.z)
                 end
 
-                -- =============================
-                --      ALTURA (ESPACIO / CTRL)
-                -- =============================
-                if IsControlPressed(0, 22) then -- Espacio (Subir)
+                -- ==========================================================================
+                --      ALTURA (ESPACIO/E para Subir | CTRL/Q para Bajar)
+                -- ==========================================================================
+
+                -- SUBIR: Se activa con Espacio (22) O con la Q (44)
+                if IsControlPressed(0, 22) or IsControlPressed(0, 44) then
                     coords = vec3(coords.x, coords.y, coords.z + currentSpeed)
                 end
-                if IsControlPressed(0, 36) then -- CTRL (Bajar)
+
+                -- BAJAR: Se activa con CTRL Izquierdo (36) O con la E (38)
+                if IsControlPressed(0, 36) or IsControlPressed(0, 38) then
                     coords = vec3(coords.x, coords.y, coords.z - currentSpeed)
                 end
 
@@ -1895,29 +1901,40 @@ function ToggleNoClip(state)
                 SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z, true, true, true)
 
                 -- =============================
-                --      AJUSTE DE VELOCIDAD
+                --      AJUSTE DE VELOCIDAD SUAVE
                 -- =============================
-                if IsControlJustPressed(0, 14) then -- Rueda Arriba (Aumentar)
-                    noClipSpeed = noClipSpeed + speedStep
-                    if noClipSpeed > maxSpeed then
-                        noClipSpeed = maxSpeed
+                local currentTime = GetGameTimer()
+
+                -- Solo procesar cambios si ha pasado el cooldown
+                if currentTime - lastWheelChange > wheelCooldown then
+                    -- RUEDA ARRIBA (Aumentar velocidad)
+                    if IsControlJustPressed(0, 15) then
+                        noClipSpeed = noClipSpeed + speedStep
+                        if noClipSpeed > maxSpeed then
+                            noClipSpeed = maxSpeed
+                        end
+
+                        SendNUIMessage({
+                            type = "updateNoClipSpeed",
+                            value = noClipSpeed
+                        })
+
+                        lastWheelChange = currentTime
+
+                        -- RUEDA ABAJO (Disminuir velocidad)
+                    elseif IsControlJustPressed(0, 14) then
+                        noClipSpeed = noClipSpeed - speedStep
+                        if noClipSpeed < minSpeed then
+                            noClipSpeed = minSpeed
+                        end
+
+                        SendNUIMessage({
+                            type = "updateNoClipSpeed",
+                            value = noClipSpeed
+                        })
+
+                        lastWheelChange = currentTime
                     end
-
-                    SendNUIMessage({
-                        type = "updateNoClipSpeed",
-                        value = noClipSpeed
-                    })
-
-                elseif IsControlJustPressed(0, 15) then -- Rueda Abajo (Disminuir)
-                    noClipSpeed = noClipSpeed - speedStep
-                    if noClipSpeed < minSpeed then
-                        noClipSpeed = minSpeed
-                    end
-
-                    SendNUIMessage({
-                        type = "updateNoClipSpeed",
-                        value = noClipSpeed
-                    })
                 end
             end
 
@@ -1965,3 +1982,139 @@ function ToggleNoClip(state)
         ResetEntityAlpha(ped)
     end
 end
+
+-- ==========================================================================
+--      8. REGISTER KEY MAPPINGS (STAFF HOTKEYS)
+-- ==========================================================================
+
+-- Función genérica para registrar atajos sin tecla asignada
+local function RegisterStaffKey(command, description, action)
+    RegisterCommand(command, function()
+        -- Solo permitir si es staff (podrías añadir aquí un check de QBCore si quieres)
+        action()
+    end, false)
+    -- El último parámetro "" asegura que NO tenga tecla por defecto
+    RegisterKeyMapping(command, 'Staff: ' .. description, 'keyboard', '')
+end
+
+-- 1. NOCLIP
+RegisterStaffKey('admin_noclip', 'Alternar NoClip', function()
+    ToggleNoClip(not noClipActive)
+end)
+
+-- 2. REVIVE
+RegisterStaffKey('admin_revive', 'Revivirse a sí mismo', function()
+    TriggerEvent('hospital:client:Revive')
+    TriggerServerEvent('dpadmin:server:log', 'HOTKEY', 'Se revivió usando atajo de teclado.')
+end)
+
+-- 3. GODMODE
+RegisterStaffKey('admin_godmode', 'Alternar Modo Dios', function()
+    godmodeActive = not godmodeActive
+    if godmodeActive then
+        RunGodmodeLoop()
+    end
+    QBCore.Functions.Notify("MODO DIOS: " .. (godmodeActive and "ON" or "OFF"), godmodeActive and "success" or "error")
+end)
+
+-- 4. INVISIBLE
+RegisterStaffKey('admin_invisible', 'Alternar Invisibilidad', function()
+    invisibleActive = not invisibleActive
+    if invisibleActive then
+        RunInvisibleLoop()
+    end
+    QBCore.Functions.Notify("INVISIBLE: " .. (invisibleActive and "ON" or "OFF"),
+        invisibleActive and "success" or "error")
+end)
+
+-- 5. BLIPS
+RegisterStaffKey('admin_blips', 'Alternar Blips de Jugadores', function()
+    blipsActive = not blipsActive
+    if blipsActive then
+        RunBlipsLoop()
+    end
+    QBCore.Functions.Notify("BLIPS: " .. (blipsActive and "ON" or "OFF"), blipsActive and "success" or "error")
+end)
+
+-- 6. TAGS / NOMBRES
+RegisterStaffKey('admin_tags', 'Alternar Tags de Jugadores', function()
+    tagsActive = not tagsActive
+    SendNUIMessage({
+        type = "toggleTagsUI",
+        show = tagsActive
+    })
+    if tagsActive then
+        RunTagsLoop()
+    end
+    QBCore.Functions.Notify("TAGS: " .. (tagsActive and "ON" or "OFF"), tagsActive and "success" or "error")
+end)
+
+-- 7. TPM (Teleport al Marcador)
+RegisterStaffKey('admin_tpm', 'TP al marcador del mapa', function()
+    -- Reutilizamos la lógica de triggerAction tpm
+    ExecuteCommand('tpm') -- Si tienes el comando tpm de QB, si no, se puede copiar la lógica aquí
+end)
+
+-- 8. BACK (Volver a posición anterior)
+RegisterStaffKey('admin_back', 'Volver a posición anterior', function()
+    if lastCoords then
+        SetEntityCoords(PlayerPedId(), lastCoords.x, lastCoords.y, lastCoords.z)
+        QBCore.Functions.Notify("Has vuelto atrás", "success")
+    else
+        QBCore.Functions.Notify("No hay posición guardada", "error")
+    end
+end)
+
+-- 9. Abrir Menú de Administración
+RegisterStaffKey('admin_weather', 'Abrir panel administrativo', function()
+    toggleMenu(true)
+end)
+
+-- 10. REPARAR VEHÍCULO
+RegisterStaffKey('admin_repair', 'Reparar vehículo actual', function()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if veh ~= 0 then
+        SetVehicleFixed(veh)
+        SetVehicleDirtLevel(veh, 0.0)
+        QBCore.Functions.Notify("Vehículo reparado", "success")
+    end
+end)
+
+-- 11. FORZAR DESBLOQUEO
+RegisterStaffKey('admin_unlock', 'Forzar desbloqueo de puertas', function()
+    local veh = QBCore.Functions.GetClosestVehicle()
+    if veh ~= 0 then
+        SetVehicleDoorsLocked(veh, 1)
+        QBCore.Functions.Notify("Puertas desbloqueadas", "success")
+    end
+end)
+
+-- 12. FORZAR BLOQUEO
+RegisterStaffKey('admin_lock', 'Forzar bloqueo de puertas', function()
+    local veh = QBCore.Functions.GetClosestVehicle()
+    if veh ~= 0 then
+        SetVehicleDoorsLocked(veh, 2)
+        QBCore.Functions.Notify("Puertas bloqueadas", "error")
+    end
+end)
+
+-- 13. LAVAR VEHÍCULO
+RegisterStaffKey('admin_wash', 'Lavar vehículo', function()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if veh ~= 0 then
+        SetVehicleDirtLevel(veh, 0.0)
+        QBCore.Functions.Notify("Vehículo limpio", "success")
+    end
+end)
+
+-- 14. HERRAMIENTAS DE DESARROLLO (Entity Info)
+RegisterStaffKey('admin_devtool', 'Alternar Información de Entidades', function()
+    entityInfoActive = not entityInfoActive
+    SendNUIMessage({
+        type = "toggleEntityUI",
+        show = entityInfoActive
+    })
+    if entityInfoActive then
+        RunEntityInfoLoop()
+    end
+end)

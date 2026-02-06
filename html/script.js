@@ -3177,7 +3177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function addAttachment(file) {
         if (pendingAttachments.length >= MAX_ATTACHMENTS) {
             // Puedes poner un sonido de error aquí si quieres
-            console.log("Límite de imágenes alcanzado");
+            log("Límite de imágenes alcanzado");
             return;
         }
         pendingAttachments.push(file);
