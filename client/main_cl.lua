@@ -1238,19 +1238,48 @@ RegisterNUICallback('triggerAction', function(data, cb)
         end)
         TriggerServerEvent('dpadmin:server:log', 'TPM', 'Se teletransportó al marcador del mapa.')
 
-    elseif action == 'back' then
+    elseif action == 'goto_point' then
         toggleMenu(false)
-        if lastCoords then
-            local entity = PlayerPedId()
-            if IsPedInAnyVehicle(entity, false) then
-                entity = GetVehiclePedIsUsing(entity)
-            end
-            SetEntityCoordsNoOffset(entity, lastCoords.x, lastCoords.y, lastCoords.z, false, false, false)
-            QBCore.Functions.Notify("Has vuelto a tu posición anterior", "success")
-        else
-            QBCore.Functions.Notify("No hay ninguna posición anterior guardada", "error")
+        local coords = data.coords
+        local entity = PlayerPedId()
+        
+        -- Si estás en un vehículo, teletransportamos el vehículo
+        if IsPedInAnyVehicle(entity, false) then
+            entity = GetVehiclePedIsUsing(entity)
         end
-        TriggerServerEvent('dpadmin:server:log', 'BACK', 'Regresó a su última posición.')
+
+        -- 1. Iniciamos el fundido a negro
+        DoScreenFadeOut(500)
+        while not IsScreenFadedOut() do Wait(0) end
+
+        -- 2. Guardamos posición actual (para el sistema BACK si lo usas luego)
+        lastCoords = GetEntityCoords(PlayerPedId())
+
+        -- 3. Congelamos y movemos
+        FreezeEntityPosition(entity, true)
+        SetEntityCoordsNoOffset(entity, coords.x, coords.y, coords.z, false, false, false)
+        
+        -- 4. Forzamos carga de la zona
+        RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+        NewLoadSceneStart(coords.x, coords.y, coords.z, coords.x, coords.y, coords.z, 50.0, 0)
+
+        -- 5. Bucle de espera con "Timeout" (Máximo 2.5 segundos)
+        local timeout = 0
+        while not HasCollisionLoadedAroundEntity(entity) and timeout < 250 do
+            Wait(10)
+            timeout = timeout + 1
+        end
+
+        -- 6. Limpieza y liberación
+        NewLoadSceneStop()
+        FreezeEntityPosition(entity, false)
+        
+        -- 7. Esperamos un poco antes de quitar el negro para que carguen texturas
+        Wait(1000)
+        DoScreenFadeIn(1000)
+        
+        QBCore.Functions.Notify("Teletransportado a destino", "success")
+        TriggerServerEvent('dpadmin:server:log', 'GOTO', 'TP Rápido ejecutado.')
 
         -- Acciones Vehículo
     elseif action == 'repair_vehicle' then
@@ -2053,16 +2082,6 @@ end)
 RegisterStaffKey('admin_tpm', 'TP al marcador del mapa', function()
     -- Reutilizamos la lógica de triggerAction tpm
     ExecuteCommand('tpm') -- Si tienes el comando tpm de QB, si no, se puede copiar la lógica aquí
-end)
-
--- 8. BACK (Volver a posición anterior)
-RegisterStaffKey('admin_back', 'Volver a posición anterior', function()
-    if lastCoords then
-        SetEntityCoords(PlayerPedId(), lastCoords.x, lastCoords.y, lastCoords.z)
-        QBCore.Functions.Notify("Has vuelto atrás", "success")
-    else
-        QBCore.Functions.Notify("No hay posición guardada", "error")
-    end
 end)
 
 -- 9. Abrir Menú de Administración
