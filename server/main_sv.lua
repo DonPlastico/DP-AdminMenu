@@ -1044,19 +1044,19 @@ RegisterNetEvent('dpadmin:server:toggleOption', function(option, state)
             Citizen.CreateThread(function()
                 -- 1. ANUNCIO 60 SEGUNDOS (Barra Visual)
                 local msg60 = string.format(Config.Lang.WhitelistAnnounce or "⚠️ WHITELIST EN %s SEGUNDOS", 60)
-                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg60, 30000)
+                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg60, 27000)
 
                 Citizen.Wait(30000) -- Esperamos 30s reales
 
                 -- 2. ANUNCIO 30 SEGUNDOS
                 local msg30 = string.format(Config.Lang.WhitelistAnnounce or "⚠️ WHITELIST EN %s SEGUNDOS", 30)
-                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg30, 20000)
+                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg30, 17000)
 
                 Citizen.Wait(20000) -- Esperamos 20s reales (Total acumulado: 50s)
 
                 -- 3. ANUNCIO 10 SEGUNDOS (FINAL)
                 local msg10 = string.format(Config.Lang.WhitelistAnnounce or "⚠️ WHITELIST EN %s SEGUNDOS", 10)
-                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg10, 10000)
+                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, msg10, 7000)
 
                 Citizen.Wait(10000) -- Esperamos 10s reales (Total acumulado: 60s)
 

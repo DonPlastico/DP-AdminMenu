@@ -55,5 +55,3 @@ Añade tus datos: Cuando pegues este prompt, pega debajo el objeto gotoLocations
 Librerías: Si la IA te pregunta, dile que prefieres usar JS nativo para el zoom/drag o una librería ligera como Leaflet.js si quieres algo muy profesional.
 
 Imágenes: Recuerda que para que el panel de la derecha funcione, tendrás que tomar fotos dentro del juego de cada lugar y guardarlas en una carpeta (ej: img/ubicaciones/bunker.jpg).
-
-- MEJORAR EL SISTEMA DE REPORTES, YA QUE QUIERO QUE PUEDAN METER IMAGENES EN UN REPORTE CON LO DE CNTR+V... tal y como está el del chat de administradores, con el BOT DE DISCORD...

@@ -16,21 +16,12 @@ Config.Commands = {
 }
 
 -- =========================================
---      CONFIGURACIÓN DE IMÁGENES
--- =========================================
--- Webhook para subir las imágenes pegadas en los reportes (Canal privado de logs de imágenes)
-Config.ImageWebhook = "TU_WEBHOOK_AQUI"
-
--- =========================================
 --      CONFIGURACION DE WHITELIST
 -- =========================================
 Config.Whitelist = {
     -- Si 'ForceUnlock' es true, la whitelist se desactiva ignorando la base de datos.
     -- Útil si te quedas fuera y no tienes acceso a la consola (se cambia desde el archivo y se reinicia el script).
     ForceUnlock = false,
-
-    -- Tiempo de cuenta atrás para expulsar jugadores (en segundos)
-    CountDown = 60,
 
     -- Permisos que BYPASSEAN la whitelist (no son expulsados)
     BypassRoles = {"god", "admin", "mod" -- Puedes añadir "whitelist" aquí si creas ese permiso en QB-Core

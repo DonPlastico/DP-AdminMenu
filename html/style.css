@@ -161,8 +161,8 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .tab {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     background-color: var(--bg-button);
     border-radius: 4px;
     display: flex;
@@ -178,14 +178,14 @@ input[type=number]::-webkit-outer-spin-button {
 .tab:hover {
     background-color: var(--bg-button-hover);
     color: var(--text-main);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
 }
 
 .tab.active {
     background-color: var(--primary);
     color: var(--text-main);
     border-color: var(--bg-border);
-    box-shadow: 0 0 7px #FFFFFF;
+    box-shadow: 0 0 5px #FFFFFF;
 }
 
 /* ==========================================================================
@@ -3712,6 +3712,16 @@ input:checked+.slider:before {
 
 .floating-save-btn:active {
     transform: translateX(-50%) scale(0.95);
+}
+
+.controles-mover_menu {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10002;
+    gap: 10px;
 }
 
 

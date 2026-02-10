@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'DP-AdminMenu'
 description 'DP-AdminMenu - Panel de Administración Avanzado'
-version '1.0.0'
+version '1.2.5'
 
 ui_page 'html/index.html'
 

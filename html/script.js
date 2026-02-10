@@ -683,11 +683,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') {
 
             // PASO 1: Soltar cualquier Input (Buscador) que tenga el foco
-            // Esto arregla el bug si estabas escribiendo
             if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
                 document.activeElement.blur();
                 return;
             }
+
+            // ==========================================================
+            // NUEVO: PRIORIDAD ALTA - CANCELAR MODO EDICIÓN (ARRASTRE)
+            // ==========================================================
+            if (isEditMode) {
+                cancelDragMode(); // Llamamos a la función que apaga el modo edición
+                return; // IMPORTANTE: Paramos aquí para NO cerrar el menú
+            }
+            // ==========================================================
 
             // PASO 2: Función auxiliar para comprobar visibilidad real de un modal
             const isVisible = (id) => {
@@ -698,7 +706,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (el.style.display === 'none') return false;
 
                 // Comprobamos el estilo real computado (CSS)
-                // Esto detecta si está oculto por hoja de estilos aunque no tenga inline
                 const style = window.getComputedStyle(el);
                 if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
 
@@ -706,8 +713,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             // --- A. PRIORIDAD: CERRAR MODALES SECUNDARIOS ---
-            // Si alguno de estos está abierto, lo cerramos y PARAMOS (return)
-
             if (isVisible('confirm-modal')) { closeConfirmation(); return; }
             if (isVisible('extend-modal')) { closeExtendModal(); return; }
             if (isVisible('image-modal')) { closeImageModal(); return; }
@@ -728,6 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isVisible('job-grades-modal')) { closeJobGradesModal(); return; }
             if (isVisible('gang-grades-modal')) { closeGangGradesModal(); return; }
             if (isVisible('goto-modal')) { closeGotoModal(); return; }
+            // Añadimos el nuevo modal de escala también por si acaso
+            if (isVisible('scale-modal')) { closeScaleModal(); return; }
 
             // --- B. CERRAR HUD DE ENTIDADES (DEV TOOL) ---
             if (document.getElementById('entity-info-hud') && document.getElementById('entity-info-hud').style.display !== 'none') {
@@ -736,7 +743,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // --- C. CERRAR MENÚ PRINCIPAL ---
-            // Si llegamos aquí, es que no había nada secundario abierto. Cerramos el gordo.
             fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST', body: '{}' });
         }
     });
@@ -4008,25 +4014,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Activar Modo Edición
     window.enableDragMode = () => {
         isEditMode = true;
+        const dragContainer = document.getElementById('admin-menu');
+
+        // --- CAMBIO: Referencia al nuevo contenedor de controles ---
+        const controls = document.getElementById('drag-controls');
+
         dragContainer.classList.add('draggable-mode');
-        if (saveBtn) saveBtn.style.display = 'block';
 
-        // FIX BUG 2: No usamos getBoundingClientRect para evitar el desplazamiento
-        // Simplemente forzamos que el transform-origin sea correcto y mantenemos
-        // las coordenadas top/left que ya tiene el elemento en su style.
+        // Mostramos el contenedor entero (usamos 'flex' para que los botones queden alineados)
+        if (controls) controls.style.display = 'flex';
 
+        // FIX BUG 2: Posicionamiento seguro
         dragContainer.style.transformOrigin = 'top left';
         dragContainer.style.transform = `scale(${currentScale / 100})`;
         dragContainer.style.margin = '0';
 
-        // Si por alguna razón no tuviera posición (primera vez), entonces sí usamos un fallback
         if (!dragContainer.style.left) {
             const rect = dragContainer.getBoundingClientRect();
             dragContainer.style.left = ((rect.left / window.innerWidth) * 100) + '%';
             dragContainer.style.top = ((rect.top / window.innerHeight) * 100) + '%';
         }
 
-        console.log("Modo edición activado. Posición congelada para evitar saltos.");
+        console.log("Modo edición activado.");
     };
 
     // 2. Guardar y Salir
@@ -4034,18 +4043,21 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditMode = false;
         const dragContainer = document.getElementById('admin-menu');
 
-        // Quitar modo visual
+        // --- CAMBIO: Ocultamos el contenedor ---
+        const controls = document.getElementById('drag-controls');
+
         dragContainer.classList.remove('draggable-mode');
-        if (saveBtn) saveBtn.style.display = 'none';
+
+        if (controls) controls.style.display = 'none';
 
         // Obtener datos finales
         const posData = {
             top: dragContainer.style.top,
             left: dragContainer.style.left,
-            scale: currentScale // <--- AGREGA ESTA LÍNEA
+            scale: currentScale
         };
 
-        fetch(`https://dp-adminmenu/saveMenuPos`, {
+        fetch(`https://${GetParentResourceName()}/saveMenuPos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json; charset=UTF-8' },
             body: JSON.stringify(posData)
@@ -4113,21 +4125,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Función para cancelar el arrastre (Escape)
+    window.cancelDragMode = () => {
+        isEditMode = false;
+        const dragContainer = document.getElementById('admin-menu');
+
+        // --- CAMBIO: Ocultamos el contenedor ---
+        const controls = document.getElementById('drag-controls');
+
+        if (dragContainer) dragContainer.classList.remove('draggable-mode');
+
+        if (controls) controls.style.display = 'none';
+
+        console.log("Modo edición cancelado.");
+    };
+
     // ==========================================
     // LÓGICA DE ESCALA
     // ==========================================
-    let currentScale = 100;
-    let originalScale = 100;
+    let currentScale = 90;
+    let originalScale = 90;
 
     window.previewScale = (val) => {
         val = parseInt(val);
 
-        // Si no es un número (está vacío), no hacemos nada o ponemos 100
+        // Si no es un número (está vacío), no hacemos nada o ponemos 90
         if (isNaN(val)) return;
 
-        // BLOQUEO DE SEGURIDAD: Forzamos que el valor esté entre 70 y 150
+        // BLOQUEO DE SEGURIDAD: Forzamos que el valor esté entre 70 y 117
         if (val < 70) val = 70;
-        if (val > 150) val = 150;
+        if (val > 117) val = 117;
 
         currentScale = val;
 

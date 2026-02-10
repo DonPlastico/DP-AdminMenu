@@ -1585,9 +1585,9 @@
                     AJUSTAR ESCALA</h3>
 
                 <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
-                    <input type="range" id="scale-slider" min="70" max="150" step="1" value="100"
+                    <input type="range" id="scale-slider" min="70" max="117" step="1" value="90"
                         style="flex: 1; accent-color: var(--primary);" oninput="previewScale(this.value)">
-                    <input type="number" id="scale-number" min="70" max="150" value="100"
+                    <input type="number" id="scale-number" min="70" max="117" value="90"
                         style="width: 60px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; padding: 5px; border-radius: 4px;"
                         oninput="previewScale(this.value)">
                 </div>
@@ -1647,8 +1647,17 @@
         <img class="modal-content" id="full-image">
     </div>
 
-    <div id="save-pos-btn" class="floating-save-btn" onclick="saveMenuPosition()" style="display: none;">
-        <span class="iconify" data-icon="mdi:content-save"></span> GUARDAR POSICIÓN
+    <div id="drag-controls" class="controles-mover_menu">
+        <div id="save-pos-btn" class="floating-btn save" onclick="saveMenuPosition()"
+            style="background: rgba(46, 204, 113, 0.9); padding: 10px 20px; border-radius: 30px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px; transition: 0.2s;">
+            <span class="iconify" data-icon="mdi:content-save"></span> GUARDAR POSICIÓN
+        </div>
+
+        <div class="floating-btn cancel" onclick="cancelDragMode()"
+            style="background: rgba(255, 68, 68, 0.9); padding: 10px 20px; border-radius: 30px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px; transition: 0.2s;">
+            <span class="iconify" data-icon="mdi:close-circle-outline" style="font-size: 20px;"></span> CANCELAR (ESC)
+        </div>
+
     </div>
 
     <audio id="audio-announce-in" src="sounds/alert.mp3" preload="auto"></audio>
