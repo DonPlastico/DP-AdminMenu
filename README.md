@@ -5,53 +5,55 @@ Cosas que no van:
 - EN EL <div class="page" id="home">, <button>INFORMACIÓN DEL JUGADOR</button> Y <div class="icon-btn" onclick="" data-tooltip="Detalles del Jugador"> QUE ME SALGA EL MENÚ DE DETALLES DEL JUGADOR
 
 - CAMBIAR EL MODEL DEL IR A:
-  Contexto del Proyecto: Estoy desarrollando un menú administrativo para un servidor de GTA V (FiveM) usando HTML, CSS y JS. Actualmente tengo un sistema de teletransporte basado en listas de texto (categorías y destinos), pero quiero evolucionarlo a un Mapa Táctico Interactivo. La estructura del proyecto es:
-  html/index.html, html/script.js, html/style.css (Interfaz NUI).
-  client/main_cl.lua (Lógica de FiveM para teletransporte).
-  fxmanifest.lua y config.lua.
+# CONTEXTO TÉCNICO: DESARROLLO DE MAPA TÁCTICO PARA DP-ADMINMENU (FIVE-M)
 
-Objetivo: Quiero transformar el actual modal de teletransporte (que lo tengo de manera que es listas de categorías y destinos) en un Mapa Táctico Interactivo usando la imagen MAP.webp. Al hacer clic en puntos específicos (blips) del mapa, debe aparecer un panel lateral de información detallada.
+**Contexto General:**
+Estoy desarrollando un script de administración avanzado llamado "DP-AdminMenu" para servidores FiveM con framework QB-Core. El sistema de teletransporte (GOTO) actual utiliza listas de texto, y deseo reemplazarlo completamente por un "Mapa Táctico Interactivo" visual.
 
-Recursos Proporcionados:
-Imagen del Mapa: Un mapa negro de GTA V con coordenadas que van aproximadamente desde x: -4000, y: -4000 hasta x: 4500, y: 8000.
-Estructura de Datos (JSON): Utilizo un objeto gotoLocations con categorías. Cada entrada tiene name, coords {x, y, z} e icon (MDI).
+**Arquitectura del Proyecto:**
+- Framework: QB-Core.
+- Base de datos: oxmysql.
+- Frontend: HTML5, CSS3 (Glassmorphism), JavaScript (Vanilla o Leaflet.js).
+- Backend: Lua (Client/Server).
+- Imagen del Mapa: `html/img/MAP.webp` (Mapa oscuro de GTA V).
+- Rango de Coordenadas: X [-4000 a 4500], Y [-4000 a 8000].
 
-Requerimientos de Integración:
-HTML (index.html): Debes proponer una reestructuración del div #goto-modal. En lugar de los paneles actuales, debe haber un contenedor para el mapa con soporte para zoom/arrastre y un panel lateral derecho para la información del destino.
-CSS (style.css): Necesito un diseño estilo "Admin Dashboard" moderno. El panel de información debe estar fuera del cuadro principal del mapa, con efectos de desenfoque (backdrop-filter) y animaciones de entrada.
-JS (script.js): - Implementar la lógica para dibujar blips sobre el mapa convirtiendo coordenadas de GTA V (x, y) a porcentajes de la imagen.
-Manejar el evento click en los blips para rellenar el panel de detalles (Nombre, Descripción, Imagen).
-El botón "IR AL LUGAR" debe enviar un NUICallback hacia el cliente de FiveM con las coordenadas seleccionadas.
-Lua (main_cl.lua): Asegúrate de que el código JS sea compatible con el callback que ya procesa el teletransporte en el script original.
+**Objetivo de la Tarea:**
+Reemplazar el modal `#goto-modal` por una interfaz de mapa interactivo que permita hacer Zoom y Arrastre (Drag). Al hacer clic en puntos específicos (Blips), se debe desplegar un panel lateral con información detallada y la opción de teletransporte.
 
-Requerimientos Técnicos:
-Conversión de Coordenadas: Necesito una función en JavaScript que convierta las coordenadas (x, y) del juego en porcentajes de CSS (top y left) para posicionar los blips sobre la imagen del mapa de forma precisa.Interfaz del Mapa:El contenedor del mapa debe permitir Zoom y Arrastre (Drag) para navegar por la isla.Los blips deben renderizarse dinámicamente sobre el mapa usando los iconos MDI especificados en mis datos.Panel de Detalles (Modal Derecho):Al hacer clic en un blip, se debe abrir un panel elegante a la derecha (fuera del menú principal).Este panel debe mostrar: Una imagen del lugar (basada en una nueva propiedad img en los datos), el Título, una Descripción detallada y dos botones: "IR AL LUGAR" (que ejecute la función de teletransporte) y "CERRAR".
-Estética: El diseño debe ser moderno, con fondos translúcidos (glassmorphism), bordes redondeados y animaciones suaves de entrada para el panel lateral y al salir, animaciones para practicamente TODO.
+**Requerimientos Detallados:**
 
-Datos de Ubicaciones: Utilizaré el objeto gotoLocations que ya tengo definido (con categorías como "MAPEOS", "ILEGAL", etc.). Debes añadir soporte para dos nuevas propiedades en cada destino: img (ruta de imagen) y description (texto informativo).
+1.  **Lógica de Posicionamiento (JS):**
+    - Crear una función matemática para convertir coordenadas vectoriales de GTA V (X, Y) a porcentajes de CSS (Top%, Left%) para que los blips se posicionen de forma exacta sobre la imagen `MAP.webp` independientemente de la resolución.
 
-Tarea: Genera el código necesario para client.lua, server.lua, config.lua, dpadmin.sql, index.html, script.js y style.css que reemplace el sistema de listas por este mapa interactivo. El mapa debe sentirse fluido y profesional, permitiendo al administrador ver visualmente dónde se va a teletransportar antes de confirmar. (OVBIAMENTE ESTO SOLO PUEDE ACCEDER LOS ADMINISTRADORES, AUNQUE AL MENÚ DEL DP-AdminMenu EN TEORIA SOLO PUEDEN ACCEDER MODS/ADMINS/STAFF/OWNERS)
+2.  **Interfaz de Usuario (HTML/CSS):**
+    - Rediseñar el modal `#goto-modal` para contener el div del mapa.
+    - Implementar un panel lateral derecho (Info Panel) con efecto "Glassmorphism" (blur de fondo), que aparezca con una animación suave al seleccionar un punto.
+    - El panel debe mostrar: Imagen del sitio, Título, Descripción y botones de "IR AL LUGAR" y "CERRAR".
 
-ESTRUCTURA:
-DP-AdminMenu:
-├── 📁 client
-│ └── 📄 main_cl.lua
-├── 📁 html
-│ ├── 🌐 index.html
-│ ├── 📄 script.js
-│ └── 🎨 style.css
-├── 📁 server
-│ └── 📄 main_sv.lua
-├── 🖼️ Captura de pantalla 2026-02-06 034209.png
-├── 🖼️ Captura de pantalla 2026-02-06 034250.png
-├── 📝 README.md
-├── 📄 config.lua
-├── 📄 dpadmin.sql
-└── 📄 fxmanifest.lua
+3.  **Interactividad (JS):**
+    - El mapa debe soportar Zoom con la rueda del ratón y desplazamiento arrastrando con el clic izquierdo.
+    - Los Blips deben generarse dinámicamente desde un objeto JSON `gotoLocations`, usando iconos de Material Design Icons (MDI).
 
-💡 Consejos para cuando lo use:
-Añade tus datos: Cuando pegues este prompt, pega debajo el objeto gotoLocations completo que hemos actualizado hoy para que la IA sepa qué puntos tiene que dibujar.
+4.  **Integración FiveM (Lua):**
+    - El botón "IR AL LUGAR" debe disparar un NUI Callback hacia `client/main_cl.lua`.
+    - La lógica de teletransporte debe asegurar que el jugador aparezca en las coordenadas {x, y, z} correctas y cargar el mapeado circundante.
 
-Librerías: Si la IA te pregunta, dile que prefieres usar JS nativo para el zoom/drag o una librería ligera como Leaflet.js si quieres algo muy profesional.
+5.  **Estructura de Datos Sugerida (Config.lua):**
+    ```lua
+    Config.GotoLocations = {
+        ["MAPEOS"] = {
+            { name = "Búnker", coords = vector3(2100.0, 3000.0, 50.0), icon = "mdi-shield", img = "bunker.jpg", description = "Base subterránea de alta seguridad." },
+        },
+    }
+    ```
 
-Imágenes: Recuerda que para que el panel de la derecha funcione, tendrás que tomar fotos dentro del juego de cada lugar y guardarlas en una carpeta (ej: img/ubicaciones/bunker.jpg).
+**Tarea a Realizar:**
+Genera el código completo y actualizado para:
+1.  **html/index.html**: Nueva estructura del modal y panel lateral.
+2.  **html/style.css**: Animaciones de entrada/salida, diseño del mapa y estilos del panel.
+3.  **html/script.js**: Lógica de conversión de coordenadas, manejo de zoom/drag y callbacks.
+4.  **client/main_cl.lua**: Recepción del callback y ejecución de `SetEntityCoords`.
+5.  **config.lua**: Ejemplo de la nueva tabla de ubicaciones con las propiedades `img` y `description`.
+
+*Nota: Prioriza un acabado visual extremadamente profesional y moderno, con animaciones fluidas para cada interacción.*

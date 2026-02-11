@@ -26,7 +26,9 @@ files {
     'html/style.css',
     'html/script.js',
     'html/sounds/alert.mp3',
-    'html/sounds/whoosh.mp3'
+    'html/sounds/whoosh.mp3',
+    'html/img/MAP.webp',
+    'html/img/Ubicaciones/*.png'
 }
 
 dependencies {

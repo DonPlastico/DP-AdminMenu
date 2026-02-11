@@ -3724,8 +3724,372 @@ input:checked+.slider:before {
     gap: 10px;
 }
 
+/* =======================================================
+   MAPA TÁCTICO & ESTILOS
+   ======================================================= */
 
+.tactical-map-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85vw;
+    height: 85vh;
+    background: #111;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+}
 
+/* Cabecera */
+.map-header {
+    height: 60px;
+    background: rgba(20, 20, 20, 0.95);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 10;
+}
+
+.map-title {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Viewport (La ventana donde se ve el mapa) */
+#map-viewport {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    /* IMPORTANTE: Oculta lo que se sale al hacer zoom */
+    background: #0a0a0a;
+    cursor: grab;
+}
+
+#map-viewport:active {
+    cursor: grabbing;
+}
+
+/* Contenido del Mapa (Imagen + Blips) */
+#map-content {
+    position: relative;
+    width: 2500px;
+    height: 3000px;
+    transform-origin: 0 0;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    transition: transform 0.05s linear;
+}
+
+#game-map {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    opacity: 0.8;
+    filter: sepia(20%) hue-rotate(180deg) saturate(80%) contrast(1.2);
+    /* Efecto táctico oscuro */
+}
+
+/* Blips (Puntos en el mapa) */
+.map-blip {
+    position: absolute;
+    width: 24px;
+    /* Tamaño base del icono */
+    height: 24px;
+
+    /* Centramos el punto y aplicamos la ESCALA INVERSA */
+    /* calc(1 / var(--current-zoom)) hace que si el zoom es 2, el blip sea 0.5 */
+    transform: translate(-50%, -50%) scale(calc(1 / var(--current-zoom, 1)));
+
+    /* Opcional: Para que el cambio de tamaño no sea brusco, pero cuidado con el rendimiento */
+    /* transition: transform 0.1s ease; */
+
+    z-index: 10;
+    pointer-events: auto;
+    cursor: pointer;
+
+    /* ... resto de tus estilos de colores y sombras ... */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    color: white;
+}
+
+/* Opcional: Efecto Hover para que crezca un poquito al pasar el ratón */
+.map-blip:hover {
+    z-index: 20;
+    /* Que se ponga encima de los demás */
+    /* Al hacer hover, multiplicamos la escala inversa por 1.5 para agrandarlo */
+    transform: translate(-50%, -50%) scale(calc(1.5 / var(--current-zoom, 1)));
+}
+
+/* Controles de Zoom */
+.map-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 20;
+}
+
+.map-controls button {
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.map-controls button:hover {
+    background: var(--primary);
+    color: black;
+}
+
+/* Panel Lateral (Glassmorphism) */
+#map-side-panel {
+    position: absolute;
+    top: 20px;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    background: rgba(15, 15, 15, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+}
+
+.hidden-panel {
+    transform: translateX(120%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.panel-image-container {
+    height: 180px;
+    width: 100%;
+    position: relative;
+    border-bottom: 2px solid var(--primary);
+}
+
+#panel-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+}
+
+.panel-content {
+    padding: 20px;
+    color: #eee;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-coords {
+    font-family: monospace;
+    color: var(--primary);
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+#panel-desc {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #bbb;
+    margin-bottom: 20px;
+    flex: 1;
+}
+
+.panel-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: 0.2s;
+}
+
+.action-btn.warp {
+    background: var(--success);
+    color: white;
+    box-shadow: 0 4px 15px rgba(14, 160, 33, 0.4);
+}
+
+.action-btn.warp:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+}
+
+.action-btn .cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+
+}
+
+.action-btn .cancel:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#map-filters-panel {
+    position: absolute;
+    top: 20px;
+    bottom: 20px;
+    left: 20px;
+    /* A LA IZQUIERDA */
+    width: 300px;
+    background: rgba(15, 15, 15, 0.85);
+    /* Un poco más oscuro */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    z-index: 60;
+    /* Por encima del mapa */
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+}
+
+/* Animación de entrada desde la izquierda */
+.hidden-panel-left {
+    transform: translateX(-120%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.panel-header h3 {
+    color: white;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.mini-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #ccc;
+    padding: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: 0.2s;
+}
+
+.mini-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* LISTA DE FILTROS */
+.filters-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 5px;
+}
+
+/* Estilo del Item de Filtro */
+.filter-item {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 10px;
+    border-radius: 6px;
+    color: #888;
+    cursor: pointer;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+/* Cuando está activo (seleccionado) */
+.filter-item.active {
+    background: rgba(46, 204, 113, 0.15);
+    border-color: rgba(46, 204, 113, 0.4);
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+}
+
+.filter-item:hover {
+    transform: translateX(2px);
+}
+
+/* Scrollbar fina para la lista */
+.filters-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.filters-container::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 2px;
+}
+
+/* Corrección para que el botón CERRAR FILTROS no sea gigante */
+#map-filters-panel .action-btn {
+    padding: 8px 0;
+    /* Mucho menos relleno vertical (antes heredaba 12px o 15px) */
+    font-size: 0.85rem;
+    /* Letra un poco más compacta */
+    height: auto;
+    /* Que la altura se ajuste al texto */
+    margin-top: 10px;
+    /* Separación con la lista */
+    flex: 0 0 auto;
+    /* Evita que se estire para llenar huecos vacíos */
+    line-height: 1;
+    /* Centrado vertical perfecto */
+}
 
 
 

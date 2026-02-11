@@ -1160,6 +1160,12 @@ RegisterNUICallback('triggerAction', function(data, cb)
     local action = data.action
     DebugLog("Action Trigger: " .. action)
 
+    if action == 'open_map_menu' then
+        toggleMenu(false) -- Cierra el menú de admin actual
+        TriggerEvent('dpadmin:client:openMap') -- Lanza el evento del mapa nuevo
+        return cb('ok') -- Termina aquí para no seguir leyendo
+    end
+
     if action == 'noclip' then
         -- ExecuteCommand('noclip') -- Comando externo (normalmente qb-admin)
         TriggerServerEvent('dpadmin:server:log', 'NOCLIP', 'Alternó el estado de NoClip.')
@@ -2025,6 +2031,101 @@ function ToggleNoClip(state)
         ResetEntityAlpha(ped)
     end
 end
+
+-- =======================================================
+--      NUEVO SISTEMA: EVENTOS DEL MAPA TÁCTICO
+-- =======================================================
+
+-- 1. Comando/Evento para abrir el mapa
+-- (Llama a esto desde donde quieras abrir el menú)
+RegisterNetEvent('dpadmin:client:openMap', function()
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = "openMap",
+        locations = Config.GotoLocations -- Enviamos la tabla del Config
+    })
+end)
+
+-- 2. Callback cuando haces click en "IR AL LUGAR"
+RegisterNUICallback('tpToLocation', function(data, cb)
+    local ped = PlayerPedId()
+    local x = tonumber(data.x)
+    local y = tonumber(data.y)
+    local z = tonumber(data.z)
+
+    if x and y then
+        -- Si estás en un vehículo, lo movemos contigo
+        if IsPedInAnyVehicle(ped, false) then
+            ped = GetVehiclePedIsUsing(ped)
+        end
+
+        -- 1. Pantalla en negro para transición suave
+        DoScreenFadeOut(500)
+        while not IsScreenFadedOut() do
+            Wait(0)
+        end
+
+        -- 2. Congelar para evitar caídas
+        FreezeEntityPosition(ped, true)
+
+        -- 3. Si la Z es 0 o nil (porque el mapa es 2D), buscamos suelo
+        if z == 0.0 or z == nil then
+            -- Intentamos una altura segura por defecto
+            z = 100.0
+            -- Pre-cargamos la zona en altura
+            RequestCollisionAtCoord(x, y, z)
+            NewLoadSceneStart(x, y, z, x, y, z, 50.0, 0)
+
+            -- Buscamos el suelo real
+            local foundGround = false
+            local zTry = 0.0
+            for i = 0, 100 do -- Buscamos hasta 1000 metros de altura
+                zTry = zTry + 10.0
+                RequestCollisionAtCoord(x, y, zTry)
+                if i % 5 == 0 then
+                    Wait(10)
+                end -- Pequeña espera cada 5 intentos
+
+                local ground, zPos = GetGroundZFor_3dCoord(x, y, zTry, false)
+                if ground then
+                    z = zPos + 1.0
+                    foundGround = true
+                    break
+                end
+            end
+        else
+            -- Si ya tenemos Z (del config), cargamos esa zona
+            RequestCollisionAtCoord(x, y, z)
+            NewLoadSceneStart(x, y, z, x, y, z, 50.0, 0)
+        end
+
+        -- 4. Mover entidad
+        SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
+
+        -- 5. Esperar a que las texturas carguen
+        local timeout = 0
+        while not HasCollisionLoadedAroundEntity(ped) and timeout < 200 do
+            Wait(10)
+            timeout = timeout + 1
+        end
+
+        -- 6. Limpieza
+        NewLoadSceneStop()
+        FreezeEntityPosition(ped, false)
+
+        Wait(500) -- Pequeña pausa dramática
+        DoScreenFadeIn(1000)
+
+        QBCore.Functions.Notify("Despliegue táctico completado", "success")
+    end
+    cb('ok')
+end)
+
+-- 3. Cerrar Menú (Solo si no tienes ya un callback 'closeMenu' repetido arriba)
+RegisterNUICallback('closeMenu', function(_, cb)
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
 
 -- ==========================================================================
 --      8. REGISTER KEY MAPPINGS (STAFF HOTKEYS)
