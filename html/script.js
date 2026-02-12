@@ -38,6 +38,8 @@ let isDragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 let isEditMode = false;
+let currentDetailsId = null;
+let wasDetailsOpen = false;
 
 // Estados de Botones (Toggle) - AQUÍ GUARDAMOS SI LA HERRAMIENTA ESTÁ ACTIVA
 const actionStates = {
@@ -197,6 +199,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const annUnitTrigger = document.getElementById('announce-unit-trigger');
     const annUnitWrapper = document.getElementById('announce-unit-wrapper');
 
+
+    // --- LÓGICA DE IDENTIFICADORES (SPOILER) ---
+    const identifiersBox = document.getElementById('pd-identifiers');
+
+    if (identifiersBox) {
+        // 1. Al hacer click DENTRO de la caja -> Revelar
+        identifiersBox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            identifiersBox.classList.add('revealed');
+        });
+    }
+
+    // 2. Al hacer click en CUALQUIER OTRO SITIO -> Ocultar de nuevo
+    document.addEventListener('click', (e) => {
+        if (identifiersBox && identifiersBox.classList.contains('revealed')) {
+            if (!identifiersBox.contains(e.target)) {
+                identifiersBox.classList.remove('revealed');
+            }
+        }
+    });
+
     // ==========================================================================
     // 4. NUI MESSAGE HANDLER (COMUNICACIÓN LUA -> JS)
     // ==========================================================================
@@ -212,16 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 mainAdminPanel.style.top = data.menuPosition.top;
                 mainAdminPanel.style.left = data.menuPosition.left;
 
-                // FIX BUG 1: Aplicar la escala guardada inmediatamente al abrir
                 currentScale = data.menuPosition.scale || 100;
 
-                // Actualizamos los inputs del modal para que coincidan con la BD
                 if (document.getElementById('scale-slider')) {
                     document.getElementById('scale-slider').value = currentScale;
                     document.getElementById('scale-number').value = currentScale;
                 }
 
-                mainAdminPanel.style.transformOrigin = 'top left'; // Importante mantener el origen
+                mainAdminPanel.style.transformOrigin = 'top left';
                 mainAdminPanel.style.transform = `scale(${currentScale / 100})`;
                 mainAdminPanel.style.margin = '0';
             }
@@ -232,13 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('menu-open');
             isDebugActive = data.debugMode;
 
-            // 1. ACTUALIZAMOS LAS VARIABLES GLOBALES
             allPlayers = data.players || [];
             allBans = data.bans || [];
             allJobs = data.jobs || [];
             allGangs = data.gangs || [];
 
-            // 2. RENDERIZAMOS USANDO ESAS VARIABLES O DATA DIRECTO
             renderPlayerList(allPlayers);
             renderReports(data.reports || []);
             renderBans(allBans);
@@ -246,7 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderJobList(allJobs);
             renderGangList(allGangs);
 
-            // Si la página activa es "status", recargamos los datos al abrir
             const activePage = document.querySelector('.page.active');
             if (activePage && activePage.id === 'status') {
                 loadStatusPage();
@@ -280,6 +298,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         selectedWeather = w.currentWeather;
                     }
                 });
+            }
+
+            if (wasDetailsOpen && currentDetailsId) {
+                // Buscamos si el jugador sigue en la lista
+                const lastPlayer = allPlayers.find(p => p.id === currentDetailsId);
+                if (lastPlayer) {
+                    // Pequeño delay para asegurar que el panel principal ya se vea
+                    setTimeout(() => {
+                        window.openPlayerDetails(lastPlayer);
+                    }, 150);
+                } else {
+                    wasDetailsOpen = false; // Si el jugador se fue, reseteamos la memoria
+                }
             }
 
             // --- CERRAR MENÚ ---
@@ -346,9 +377,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const soundIn = document.getElementById('audio-announce-in');
             const soundOut = document.getElementById('audio-announce-out');
 
-            // AJUSTAR VOLUMEN (Opcional, 0.1 a 1.0)
-            soundIn.volume = 0.4;
-            soundOut.volume = 0.3;
+            // AJUSTAR VOLUMEN
+            soundIn.volume = 0.6;
+            soundOut.volume = 0.4;
 
             marquee.innerText = data.message;
             marquee.style.animation = 'none';
@@ -451,6 +482,25 @@ document.addEventListener('DOMContentLoaded', () => {
             allGangs = data.gangs || [];
 
             renderPlayerList(allPlayers);
+
+            if (isDetailsOpen && currentDetailsId) {
+                // Buscamos al jugador que estamos mirando en la NUEVA lista actualizada
+                const target = allPlayers.find(p => p.id === currentDetailsId);
+
+                if (target) {
+                    // Si el jugador sigue ahí, refrescamos el modal para que se actualicen
+                    // los datos (de "Seleccionando..." a "Nombre Real")
+                    openPlayerDetails(target);
+                } else {
+                    // Si el jugador ya no está en la lista (se desconectó)
+                    const badgeEl = document.getElementById('pd-status-badge');
+                    if (badgeEl) {
+                        badgeEl.textContent = "DESCONECTADO";
+                        badgeEl.className = "status-badge offline";
+                    }
+                }
+            }
+
             renderJobList(allJobs, true);
             renderGangList(allGangs, true);
 
@@ -486,7 +536,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // ACTUALIZAR SOLO EL NÚMERO
             const num = document.getElementById('noclip-number');
             if (num) num.innerText = data.value.toFixed(1);
+
+        } else if (data.type === "toggleSpectateUI") {
+            const ui = document.getElementById('spectate-ui');
+            if (ui) {
+                ui.style.display = data.show ? "block" : "none";
+                if (data.show && data.targetName) {
+                    document.getElementById('spectate-target-name').innerText = data.targetName;
+                }
+            }
         }
+
     });
 
     // ==========================================================================
@@ -495,6 +555,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
+            // 1.Si cambias de pestaña, cierra el modal de detalles
+            if (typeof closePlayerDetails === 'function') {
+                closePlayerDetails();
+            }
+
             tabs.forEach(t => t.classList.remove('active'));
             pages.forEach(p => p.style.display = 'none'); // Oculta todas las páginas
 
@@ -519,11 +584,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.querySelector('[data-tab="home"]')) document.querySelector('[data-tab="home"]').click();
 
-    // 1. Bloquear Tab
-    document.addEventListener('keydown', (e) => { if (e.key === 'Tab') e.preventDefault(); });
+    // 1. Gestión de teclas especiales (keydown)
+    document.addEventListener('keydown', (e) => { 
+        // Bloquear Tab
+        if (e.key === 'Tab') e.preventDefault(); 
 
-    // 2. Gestionar ESCAPE (Cierre de menús y herramientas)
+        // Abrir Inventario al espectar (Tecla I)
+        if (e.key.toLowerCase() === 'i') {
+            const spectateUI = document.getElementById('spectate-ui');
+            // Solo si el HUD de espectar está visible en pantalla
+            if (spectateUI && spectateUI.style.display !== 'none') {
+                fetch(`https://${GetParentResourceName()}/triggerPlayerAction`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        targetId: currentDetailsId, 
+                        action: 'open_inventory_spectate' 
+                    })
+                });
+            }
+        }
+    });
+
+    // 2. Gestionar ESCAPE y BACKSPACE (Cierre de menús y herramientas)
     document.addEventListener('keyup', (e) => {
+        // --- LÓGICA PARA SALIR DE ESPECTAR (BACKSPACE) ---
+        if (e.key === 'Backspace') {
+            const spectateUI = document.getElementById('spectate-ui');
+            // Si el HUD de espectar está visible, enviamos la señal de parar
+            if (spectateUI && spectateUI.style.display !== 'none') {
+                fetch(`https://${GetParentResourceName()}/triggerPlayerAction`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'stop_spectate' })
+                });
+                return; // Detenemos aquí para no procesar nada más
+            }
+        }
+
+        // --- LÓGICA PARA CERRAR MENÚS (ESCAPE) ---
         if (e.key === 'Escape') {
 
             // PASO 1: Soltar cualquier Input (Buscador) que tenga el foco
@@ -532,28 +631,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ==========================================================
-            // NUEVO: PRIORIDAD ALTA - CANCELAR MODO EDICIÓN (ARRASTRE)
-            // ==========================================================
+            // PRIORIDAD ALTA - CANCELAR MODO EDICIÓN (ARRASTRE)
             if (isEditMode) {
-                cancelDragMode(); // Llamamos a la función que apaga el modo edición
-                return; // IMPORTANTE: Paramos aquí para NO cerrar el menú
+                cancelDragMode();
+                return;
             }
-            // ==========================================================
 
-            // PASO 2: Función auxiliar para comprobar visibilidad real de un modal
+            // PASO 2: Función auxiliar para comprobar visibilidad
             const isVisible = (id) => {
                 const el = document.getElementById(id);
                 if (!el) return false;
-
-                // Comprobamos el estilo inline
                 if (el.style.display === 'none') return false;
-
-                // Comprobamos el estilo real computado (CSS)
                 const style = window.getComputedStyle(el);
-                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-
-                return true;
+                return !(style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0');
             };
 
             // --- A. PRIORIDAD: CERRAR MODALES SECUNDARIOS ---
@@ -577,13 +667,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isVisible('job-grades-modal')) { closeJobGradesModal(); return; }
             if (isVisible('gang-grades-modal')) { closeGangGradesModal(); return; }
             if (isVisible('goto-modal')) { closeMapMenu(); return; }
-            // Añadimos el nuevo modal de escala también por si acaso
             if (isVisible('scale-modal')) { closeScaleModal(); return; }
 
             // --- B. CERRAR HUD DE ENTIDADES (DEV TOOL) ---
             if (document.getElementById('entity-info-hud') && document.getElementById('entity-info-hud').style.display !== 'none') {
                 toggleAction('entity_info');
                 return;
+            }
+
+            // --- GESTIÓN DE PERSISTENCIA PLAYER DETAILS ---
+            if (isVisible('player-details-modal')) {
+                wasDetailsOpen = true;
+                closePlayerDetails(); // Ejecuta tu animación de cierre
+            } else {
+                wasDetailsOpen = false;
             }
 
             // --- C. CERRAR MENÚ PRINCIPAL ---
@@ -594,6 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function hideAllLicenses() {
         document.querySelectorAll('.blur-content.revealed').forEach(el => el.classList.remove('revealed'));
     }
+
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('blur-content')) e.target.classList.add('revealed');
         else hideAllLicenses();
@@ -613,7 +711,16 @@ document.addEventListener('DOMContentLoaded', () => {
         list.forEach(player => {
             const card = document.createElement('div');
             card.className = 'player-card';
-            card.innerHTML = `<span class="id-badge">${player.id}</span> ${player.name}`;
+            // AÑADIDO: Evento onclick pasando los datos
+            card.onclick = function () {
+                openPlayerDetails({
+                    id: player.id,
+                    name: player.name,
+                    charName: player.charName || "Desconocido" // Aseguramos que tenga nombre
+                });
+            };
+
+            card.innerHTML = `<span class="id-badge">${player.id}</span> ${escapeHtml(player.name)}`;
             playerListContainer.appendChild(card);
         });
     }
@@ -724,7 +831,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="rc-footer">
                 ${assignBtn}
-                <button>INFORMACIÓN DEL JUGADOR</button>
+                <button onclick="openPlayerDetails({ id: '${rep.src || 0}', name: '${steamName}', charName: '${charName}' })">
+                    INFORMACIÓN DEL JUGADOR
+                </button>
                 <button class="btn-danger btn-delete" data-id="${rep.id}">CERRAR/BORRAR</button>
             </div>
         `;
@@ -1625,7 +1734,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="icon-actions">
-                                <div class="icon-btn" onclick="" data-tooltip="Detalles del Jugador">
+                                <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}', charName: '${escapeHtml(p.charName)}' })" data-tooltip="Detalles del Jugador">
                                     <span class="iconify" data-icon="mdi:account-details"></span>
                                 </div>
                                 <div class="icon-btn warn" onclick="openJobRankModal('${p.source}', '${p.name}', '${job.name}')" data-tooltip="Cambiar Rango">
@@ -1747,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
 
                             <div class="icon-actions">
-                                <div class="icon-btn" onclick="" data-tooltip="Detalles del Jugador">
+                                <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}', charName: '${escapeHtml(p.charName)}' })" data-tooltip="Detalles del Jugador">
                                     <span class="iconify" data-icon="mdi:account-details"></span>
                                 </div>
                                 <div class="icon-btn warn" onclick="openGangRankModal('${p.source}', '${p.name}', '${gang.name}')" data-tooltip="Cambiar Rango">
@@ -3989,10 +4098,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mapContent.style.transform = `translate(${mapState.pointX}px, ${mapState.pointY}px) scale(${mapState.scale})`;
 
-        // --- [NUEVO] ---
         // Actualizamos la variable CSS para que los blips sepan cuánto reducirse
         mapContent.style.setProperty('--current-zoom', mapState.scale);
-        // ----------------
     }
 
     window.mapZoomIn = function () {
@@ -4019,7 +4126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mapState.pointY = (viewH - mapH) / 2;
         // Aseguramos que la variable vuelva a 1
         mapContent.style.setProperty('--current-zoom', 1);
-        
+
         updateMapTransform();
         window.closeSidePanel();
     }
@@ -4124,7 +4231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditMode = true;
         const dragContainer = document.getElementById('admin-menu');
 
-        // --- CAMBIO: Referencia al nuevo contenedor de controles ---
+        // --- Referencia al nuevo contenedor de controles ---
         const controls = document.getElementById('drag-controls');
 
         dragContainer.classList.add('draggable-mode');
@@ -4151,7 +4258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditMode = false;
         const dragContainer = document.getElementById('admin-menu');
 
-        // --- CAMBIO: Ocultamos el contenedor ---
+        // --- Ocultamos el contenedor ---
         const controls = document.getElementById('drag-controls');
 
         dragContainer.classList.remove('draggable-mode');
@@ -4238,7 +4345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditMode = false;
         const dragContainer = document.getElementById('admin-menu');
 
-        // --- CAMBIO: Ocultamos el contenedor ---
+        // --- Ocultamos el contenedor ---
         const controls = document.getElementById('drag-controls');
 
         if (dragContainer) dragContainer.classList.remove('draggable-mode');
@@ -4321,7 +4428,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // B. FUNCIÓN: AÑADIR A LA COLA VISUAL
     function addReportAttachment(file) {
         if (reportAttachments.length >= 3) {
-            // Opcional: Sonido de error o notificación
+            // Sonido de error o notificación
             return;
         }
         reportAttachments.push(file);
@@ -4426,6 +4533,251 @@ document.addEventListener('DOMContentLoaded', () => {
         renderReportAttachments();
 
         window.closeReportMenu();
+    });
+
+    // --- LÓGICA PLAYER DETAILS ---
+
+    let isDetailsOpen = false;
+
+    // --- FUNCIÓN AUXILIAR PARA LAS BARRAS ---
+    function updateStatBar(idBase, value, overrideText = null) {
+        let val = Math.floor(value);
+        if (val > 100) val = 100;
+        if (val < 0) val = 0;
+
+        const bar = document.getElementById(idBase + '-bar');
+        const txt = document.getElementById(idBase + '-val');
+
+        if (bar) bar.style.width = val + '%';
+
+        if (txt) {
+            txt.textContent = overrideText ? overrideText : val + '%';
+
+            // Si hay texto especial, lo ponemos en rojo brillante y negrita
+            if (overrideText) {
+                txt.style.color = "#ff4444";
+                txt.style.fontWeight = "bold";
+                txt.style.fontSize = "9px"; // Un pelín más pequeño para que quepa el texto largo
+            } else {
+                txt.style.color = "";
+                txt.style.fontWeight = "";
+                txt.style.fontSize = "";
+            }
+        }
+    }
+
+    window.openPlayerDetails = function (playerData) {
+        const detailsModal = document.getElementById('player-details-modal');
+        const mainMenu = document.getElementById('admin-menu');
+
+        if (!detailsModal || !mainMenu) return;
+
+        if (playerData && playerData.id) {
+            currentDetailsId = playerData.id;
+        }
+
+        if (!isDetailsOpen) {
+            isDetailsOpen = true;
+            detailsModal.style.display = 'flex';
+            detailsModal.classList.remove('details-closing');
+            void detailsModal.offsetWidth;
+            detailsModal.classList.add('details-active');
+        }
+
+        // --- 1. DATOS INICIALES ---
+        if (playerData) {
+            document.getElementById('pd-charname').textContent = playerData.name || "Jugador";
+            document.getElementById('pd-ic-name').textContent = "Obteniendo datos...";
+            const badgeEl = document.getElementById('pd-status-badge');
+            const isOnline = (playerData.id && playerData.id != 0);
+            if (badgeEl) {
+                badgeEl.textContent = isOnline ? "EN LÍNEA" : "DESCONECTADO";
+                badgeEl.className = isOnline ? "status-badge online" : "status-badge offline";
+            }
+        }
+
+        // Reset visual
+        document.getElementById('pd-bank').textContent = "...";
+        document.getElementById('pd-citizenid').textContent = "...";
+        document.getElementById('pd-phone').textContent = "...";
+        document.getElementById('pd-identifiers').innerHTML = '<span>Cargando...</span>';
+
+        // --- 2. PETICIÓN AL SERVIDOR ---
+        fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetId: playerData.id })
+        })
+            .then(resp => resp.json())
+            .then(fullData => {
+                if (!fullData) return;
+
+                if (fullData.hasChar) {
+                    // --- CASO A: TIENE PJ ---
+                    document.getElementById('pd-ic-name').textContent = fullData.charName;
+                    document.getElementById('pd-ic-name').style.color = "";
+
+                    const fields = [
+                        { id: 'pd-bank', val: `$${(fullData.bank || 0).toLocaleString()}` },
+                        { id: 'pd-citizenid', val: fullData.citizenid || "N/A" },
+                        { id: 'pd-phone', val: fullData.phone || "Sin móvil" },
+                        { id: 'pd-job-label', val: `${fullData.job} | ${fullData.jobGrade}` },
+                        { id: 'pd-gang-label', val: `${fullData.gang} | ${fullData.gangGrade}` }
+                    ];
+
+                    fields.forEach(f => {
+                        const el = document.getElementById(f.id);
+                        if (el) {
+                            el.textContent = f.val;
+                            el.style.color = "";
+                            el.style.fontSize = "";
+                        }
+                    });
+
+                    if (document.getElementById('pd-job-boss')) document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
+                    if (document.getElementById('pd-gang-boss')) document.getElementById('pd-gang-boss').style.display = fullData.isGangBoss ? 'block' : 'none';
+
+                    // ACTUALIZAR BARRAS
+                    if (fullData.stats) {
+                        let healthStatus = null;
+                        let displayHealth = fullData.stats.health; // Por defecto, la vida real
+
+                        // Prioridad de estados y forzado de barra a 0
+                        if (fullData.stats.isDead) {
+                            healthStatus = "FALLECIDO";
+                            displayHealth = 0; // Fuerza barra vacía
+                        } else if (fullData.stats.inLastStand) {
+                            healthStatus = "HERIDO EN EL SUELO";
+                            displayHealth = 0; // Fuerza barra vacía aunque qb-ambulance diga 50%
+                        }
+
+                        // Aplicamos la salud (ya sea la real o el 0 forzado)
+                        updateStatBar('stat-health', displayHealth, healthStatus);
+
+                        // El resto de barras siguen igual
+                        updateStatBar('stat-armor', fullData.stats.armor);
+                        updateStatBar('stat-hunger', fullData.stats.hunger);
+                        updateStatBar('stat-thirst', fullData.stats.thirst);
+                    }
+
+                } else {
+                    // --- CASO B: SIN PJ ---
+                    const msg = "⚠️ SELECCIONAR PJ";
+                    document.getElementById('pd-ic-name').textContent = "Esperando selección...";
+                    document.getElementById('pd-ic-name').style.color = "#888";
+
+                    ['pd-bank', 'pd-citizenid', 'pd-phone', 'pd-job-label', 'pd-gang-label'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.textContent = msg;
+                            el.style.fontSize = "10px";
+                            el.style.color = "#ffbb33";
+                        }
+                    });
+
+                    updateStatBar('stat-health', 0);
+                    updateStatBar('stat-armor', 0);
+                    updateStatBar('stat-hunger', 0);
+                    updateStatBar('stat-thirst', 0);
+                }
+
+                // IDENTIFICADORES CORREGIDOS
+                const idList = document.getElementById('pd-identifiers');
+                if (idList) {
+                    idList.classList.remove('revealed'); // Asegurar que inicie borroso
+                    if (fullData.identifiers && fullData.identifiers.length > 0) {
+                        idList.textContent = `[${fullData.identifiers.join(', ')}]`;
+                    } else {
+                        idList.textContent = '[Sin identificadores]';
+                    }
+                }
+            })
+            .catch(err => console.error("Error en Fetch Details:", err));
+
+        syncDetailsPosition();
+    };
+
+    window.closePlayerDetails = function () {
+        // Dejamos de rastrear
+        currentDetailsId = null;
+
+        const detailsModal = document.getElementById('player-details-modal');
+
+        // Solo cerramos si está visible
+        if (detailsModal && isDetailsOpen) {
+            isDetailsOpen = false; // Marcamos como cerrado inmediatamente para evitar conflictos lógicos
+
+            // Quitamos la clase de entrada y ponemos la de salida
+            detailsModal.classList.remove('details-active');
+            detailsModal.classList.add('details-closing');
+
+            // Esperamos a que termine la animación (300ms) antes de hacer display:none
+            setTimeout(() => {
+                // Verificamos que no se haya vuelto a abrir durante la espera
+                if (!isDetailsOpen) {
+                    detailsModal.style.display = 'none';
+                    detailsModal.classList.remove('details-closing');
+                }
+            }, 300);
+        }
+    };
+
+    function syncDetailsPosition() {
+        if (!isDetailsOpen) return;
+
+        const mainMenu = document.getElementById('admin-menu');
+        const detailsModal = document.getElementById('player-details-modal');
+
+        // 1. Heredar Escala
+        detailsModal.style.transformOrigin = 'top right';
+        detailsModal.style.transform = `scale(${currentScale / 100})`;
+
+        // 2. Calcular posición
+        const menuRect = mainMenu.getBoundingClientRect();
+
+        // Calculamos la posición relativa a la ventana
+        // El modal debe estar a la izquierda del menú. 
+        // Left del menú - Ancho del modal (que es igual al ancho del menú)
+        // Obtenemos el ancho real del modal (incluyendo bordes)
+        const modalWidth = detailsModal.offsetWidth;
+
+        // Restamos el ancho del MODAL a la posición izquierda del menú principal
+        let detailsLeft = menuRect.left - modalWidth - 10; // El - 10 es un pequeño margen de separación
+        let detailsTop = menuRect.top;
+
+        // Si usas porcentajes en el CSS del menú, es mejor convertir a px temporalmente o calcular %
+        detailsModal.style.left = detailsLeft + 'px';
+        detailsModal.style.top = detailsTop + 'px';
+    }
+
+    // LISTENER PARA MOVER EL MODAL JUNTO AL MENÚ
+    document.addEventListener('mousemove', (e) => {
+        // Si estamos arrastrando el menú principal y el detalle está abierto...
+        if (isDragging && isDetailsOpen) {
+            syncDetailsPosition();
+        }
+    });
+
+    // Hacer que los valores se copien al portapapeles al hacer doble click
+    document.querySelectorAll('.pd-value').forEach(el => {
+        el.addEventListener('dblclick', function () {
+            const text = this.innerText.replace('$', '').replace(/,/g, ''); // Limpiamos formato si es dinero
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            textArea.remove();
+
+            // Opcional: Notificación visual rápida en el texto
+            const originalText = this.innerText;
+            this.innerText = "¡COPIADO!";
+            this.style.color = "var(--primary)";
+            setTimeout(() => {
+                this.innerText = originalText;
+                this.style.color = "";
+            }, 800);
+        });
     });
 
 }); // FIN DEL DOMContentLoaded

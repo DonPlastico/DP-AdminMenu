@@ -685,7 +685,7 @@ local function RunEntityInfoLoop()
             local hit, entity, hitCoords = GetEntityInView()
             local myPed = PlayerPedId()
 
-            -- CAMBIO 1: USAR HUESO DEL PECHO (SPINE3)
+            -- USAR BONE DEL PECHO (SPINE3)
             local startLaser = GetPedBoneCoords(myPed, 24818, 0.0, 0.0, 0.0)
 
             -- Si el rayo no toca nada, calculamos el final en el aire
@@ -824,7 +824,7 @@ local function toggleMenu(state)
     DebugLog("Menu puesto en: " .. tostring(state))
 
     if state then
-        -- 1. NUEVO: PEDIMOS LA POSICIÓN PRIMERO
+        -- 1. PEDIMOS LA POSICIÓN PRIMERO
         QBCore.Functions.TriggerCallback('dpadmin:server:getMenuPos', function(pos)
 
             -- 2. CARGA DE DATOS ORIGINAL (CASCADA)
@@ -1162,7 +1162,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
 
     if action == 'open_map_menu' then
         toggleMenu(false) -- Cierra el menú de admin actual
-        TriggerEvent('dpadmin:client:openMap') -- Lanza el evento del mapa nuevo
+        TriggerEvent('dpadmin:client:openMap') -- Lanza el evento del mapa
         return cb('ok') -- Termina aquí para no seguir leyendo
     end
 
@@ -2033,7 +2033,7 @@ function ToggleNoClip(state)
 end
 
 -- =======================================================
---      NUEVO SISTEMA: EVENTOS DEL MAPA TÁCTICO
+--              EVENTOS DEL MAPA TÁCTICO
 -- =======================================================
 
 -- 1. Comando/Evento para abrir el mapa
@@ -2125,6 +2125,25 @@ end)
 RegisterNUICallback('closeMenu', function(_, cb)
     SetNuiFocus(false, false)
     cb('ok')
+end)
+
+-- ==========================================================================
+--      NUI CALLBACK: DETALLES COMPLETOS (PUENTE JS <-> LUA)
+-- ==========================================================================
+RegisterNUICallback('getPlayerFullDetails', function(data, cb)
+    local targetId = tonumber(data.targetId)
+
+    if not targetId then
+        cb(nil)
+        return
+    end
+
+    -- Pedimos los datos al servidor (Callback que creamos arriba)
+    QBCore.Functions.TriggerCallback('dpadmin:server:getPlayerDetails', function(result)
+        -- 'result' contiene el JSON con banco, trabajo, identifiers...
+        -- Se lo devolvemos al JavaScript
+        cb(result)
+    end, targetId)
 end)
 
 -- ==========================================================================

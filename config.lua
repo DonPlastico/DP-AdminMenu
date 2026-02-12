@@ -1261,8 +1261,6 @@ Config.Lang = {
     ErrorNoTarget = "No hay objetivo",
     SuccessGodmodeOn = "MODO DIOS: ON",
     SuccessGodmodeOff = "MODO DIOS: OFF",
-
-    -- Nuevos textos para la Whitelist
     WhitelistKick = "⛔ EL SERVIDOR HA ACTIVADO LA WHITELIST. Acceso restringido a personal autorizado.",
     WhitelistEnterDeny = "⛔ WHITELIST ACTIVA: No tienes permisos para entrar en este momento.",
     WhitelistAnnounce = "⚠️ MANTENIMIENTO: La Whitelist se activará en %s segundos. Jugadores no autorizados serán expulsados.",

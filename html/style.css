@@ -3685,9 +3685,7 @@ input:checked+.slider:before {
     position: fixed;
     bottom: 30px;
     left: 50%;
-    /* Mantenemos el translateX(-50%) para que esté centrado */
     transform: translateX(-50%);
-
     background-color: #2ecc71;
     color: white;
     padding: 15px 30px;
@@ -3697,10 +3695,7 @@ input:checked+.slider:before {
     box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
     cursor: pointer;
     z-index: 99999;
-
     transition: transform 0.2s, background-color 0.2s;
-
-    /* Usamos un nombre NUEVO para no romper tu popIn */
     animation: floatBtnAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -3813,7 +3808,7 @@ input:checked+.slider:before {
     /* calc(1 / var(--current-zoom)) hace que si el zoom es 2, el blip sea 0.5 */
     transform: translate(-50%, -50%) scale(calc(1 / var(--current-zoom, 1)));
 
-    /* Opcional: Para que el cambio de tamaño no sea brusco, pero cuidado con el rendimiento */
+    /* Para que el cambio de tamaño no sea brusco, pero cuidado con el rendimiento */
     /* transition: transform 0.1s ease; */
 
     z-index: 10;
@@ -3828,7 +3823,7 @@ input:checked+.slider:before {
     color: white;
 }
 
-/* Opcional: Efecto Hover para que crezca un poquito al pasar el ratón */
+/* Efecto Hover para que crezca un poquito al pasar el ratón */
 .map-blip:hover {
     z-index: 20;
     /* Que se ponga encima de los demás */
@@ -4091,6 +4086,636 @@ input:checked+.slider:before {
     /* Centrado vertical perfecto */
 }
 
+/* ==========================================================================
+   10. MODAL: DETALLES DEL JUGADOR (SATÉLITE)
+   ========================================================================== */
+#admin-menu {
+    z-index: 100 !important;
+    position: relative;
+    /* Necesario para que z-index funcione */
+}
+
+/* El modal de detalles se queda por debajo (z-index menor) */
+.player-details-container {
+    z-index: 50 !important;
+    right: auto !important;
+    left: auto;
+    height: 76.5% !important;
+    border-radius: 5px;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    user-select: none;
+}
+
+/* Permitimos la selección ÚNICAMENTE en los valores (textos blancos/verdes) */
+.pd-value,
+#pd-charname,
+#pd-job-label,
+#pd-gang-label,
+.pd-identifiers-list.revealed {
+    user-select: text !important;
+    cursor: text;
+    /* Cambia el cursor para indicar que es copiable */
+}
+
+/* Aseguramos que los labels (títulos grises) nunca se seleccionen */
+.pd-label,
+.pd-section-title {
+    user-select: none !important;
+    pointer-events: none;
+    /* Hace que el ratón los ignore al arrastrar */
+}
+
+.details-active {
+    animation: slideOutFromMenu 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.details-closing {
+    animation: slideBackIntoMenu 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* --- HEADER PERSONALIZADO (ESTILO BANNER) --- */
+.pd-custom-header {
+    display: flex;
+    justify-content: space-between;
+    /* Separa izquierda (info) de derecha (botón) */
+    align-items: center;
+    height: auto !important;
+    /* Sobrescribe la altura fija del header normal */
+    min-height: 90px;
+    /* Altura suficiente para la foto */
+    padding: 15px 20px;
+    background-color: var(--bg-element);
+    /* Fondo oscuro */
+    border-bottom: 1px solid var(--bg-border);
+}
+
+/* Grupo Izquierdo (Foto + Texto) */
+.pd-left-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Cuadrado de Foto */
+.pd-avatar-square {
+    width: 50px;
+    /* Un pelín más pequeño para encajar mejor en header */
+    height: 50px;
+    background-color: #222;
+    border: 2px solid var(--bg-border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pd-avatar-square .iconify {
+    font-size: 30px;
+    color: #666;
+}
+
+/* Info: Nombre y Badge */
+.pd-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pd-info-wrapper h2 {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-main);
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+    /* Límite para que no empuje al botón cerrar */
+}
+
+/* Badges de Estado */
+.status-badge {
+    align-self: flex-start;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.status-badge.online {
+    background-color: rgba(14, 160, 33, 0.15);
+    color: #4cd137;
+    border: 1px solid rgba(14, 160, 33, 0.3);
+}
+
+.status-badge.offline {
+    background-color: rgba(255, 68, 68, 0.15);
+    color: #ff6b6b;
+    border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+/* Botón Cerrar (Integrado en el header) */
+.btn-close-text {
+    background-color: rgba(255, 68, 68, 0.1);
+    color: var(--danger-text);
+    border: 1px solid var(--danger);
+    padding: 6px 12px;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 4px;
+    transition: all 0.3s;
+    height: fit-content;
+}
+
+.btn-close-text:hover {
+    background-color: var(--danger);
+    color: white;
+}
+
+.pd-section-title {
+    font-size: 12px;
+    color: var(--primary);
+    /* Color del tema */
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+}
+
+/* Grilla de 2 columnas */
+.pd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+/* Cajas de datos */
+.pd-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.pd-box.full-width {
+    grid-column: span 2;
+    /* Ocupa las 2 columnas */
+}
+
+.mt-10 {
+    margin-top: 10px;
+}
+
+/* Etiquetas y Valores */
+.pd-label {
+    font-size: 9px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.pd-value {
+    font-size: 13px;
+    color: #fff;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pd-value.money {
+    color: #2ecc71;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+
+.pd-value.code {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+    color: #ccc;
+}
+
+/* Badges de Jefe */
+.pd-job-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.boss-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.boss-badge.job {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.boss-badge.gang {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+/* Contenedor de Identificadores (Estilo Spoiler) */
+.pd-identifiers-list {
+    /* Formato de Texto */
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    /* Un pelín más pequeño para que quepan mejor */
+    color: #ccc;
+
+    /* --- CAMBIOS CLAVE PARA AUTO-AJUSTE --- */
+    white-space: normal;
+    /* Permite que el texto salte de línea */
+    word-break: break-all;
+    /* Corta la palabra si es más larga que la caja (importante para licencias largas) */
+    height: auto;
+    /* La altura se ajusta al contenido */
+    overflow: visible;
+    /* Sin barras de scroll */
+    /* -------------------------------------- */
+
+    /* Caja */
+    background: rgba(0, 0, 0, 0.4);
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 5px;
+
+    /* EFECTO BORROSO (SPOILER) */
+    filter: blur(5px);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+/* Scrollbar fina para este elemento */
+.pd-identifiers-list::-webkit-scrollbar {
+    height: 4px;
+}
+
+.pd-identifiers-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 2px;
+}
+
+/* CLASE CUANDO ESTÁ REVELADO */
+.pd-identifiers-list.revealed {
+    filter: blur(0);
+    /* Sin desenfoque */
+    cursor: text;
+    /* Cursor de texto para seleccionar */
+    user-select: text;
+    /* Permite copiar */
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.id-tag {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: #888;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px 6px;
+    border-radius: 3px;
+    user-select: text;
+    /* Permite copiar */
+}
+
+.id-tag:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.pd-stat-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    font-weight: bold;
+    color: #ccc;
+    text-transform: uppercase;
+}
+
+.stat-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.progress-track {
+    width: 100%;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    background: grey;
+}
+
+/* Unificación total del Panel de Acciones */
+.pd-actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    /* Espacio vertical exacto entre todas las filas */
+    margin-top: 10px;
+}
+
+/* Forzamos que las rejillas de 2 y 3 no tengan márgenes internos */
+.pd-actions-list .grid-3,
+.pd-actions-list .grid-2 {
+    display: grid;
+    gap: 6px;
+    /* Espacio horizontal exacto entre botones de la misma fila */
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.pd-actions-list .grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.pd-actions-list .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* Ajuste de tamaño de los botones */
+.pd-actions-list button {
+    padding: 8px 4px !important;
+    /* Un poco más de aire (ancho/alto) */
+    font-size: 10px !important;
+    /* Texto legible */
+    line-height: 1.2;
+    height: auto;
+    min-height: 32px;
+    /* Altura mínima consistente para todos */
+    margin: 0 !important;
+}
+
+/* Asegurar que los botones de ancho completo respeten la altura */
+.pd-actions-list .full-width {
+    width: 100%;
+    display: block;
+}
+
+/* Contenedor de doble columna */
+.pd-dual-column {
+    display: flex;
+    gap: 10px;
+    /* Reducimos un poco el gap para que quepa mejor en el modal */
+    width: 100%;
+}
+
+.pd-column {
+    flex: 1;
+    /* Cada columna ocupa exactamente el 50% menos el gap */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenedores de listas */
+.pd-list-container {
+    background: rgba(0, 0, 0, 0.3);
+    /* Un poco más oscuro para dar profundidad */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    margin-top: 10px;
+    min-height: 120px;
+    /* Altura mínima para que no se vea vacío */
+    max-height: 220px;
+    /* Límite para que no rompa el modal hacia abajo */
+    overflow-y: auto;
+    padding: 8px;
+}
+
+/* Scrollbar fino para las listas internas */
+.pd-list-container::-webkit-scrollbar {
+    width: 3px;
+}
+
+.pd-list-container::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+}
+
+/* Mensajes de lista vacía */
+.pd-empty-msg {
+    color: #555;
+    font-size: 10px;
+    text-align: center;
+    padding: 40px 5px;
+    font-style: italic;
+    text-transform: uppercase;
+}
+
+/* Estilo para los items que aparecerán en estas listas */
+.pd-list-item {
+    background: rgba(255, 255, 255, 0.03);
+    margin-bottom: 5px;
+    padding: 8px;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 3px solid var(--primary);
+    transition: background 0.2s;
+}
+
+.pd-list-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.pd-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+    /* Evita que textos largos rompan la caja */
+}
+
+.pd-item-main {
+    font-size: 11px;
+    font-weight: bold;
+    color: #eee;
+    white-space: nowrap;
+    offset: hidden;
+    text-overflow: ellipsis;
+}
+
+.pd-item-sub {
+    font-size: 9px;
+    color: #888;
+}
+
+.pd-item-btn {
+    padding: 4px 6px;
+    font-size: 9px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.pd-item-btn:hover {
+    filter: brightness(1.2);
+}
+
+/* Ajuste del contenedor de cabecera para que la raya sea total */
+.pd-title-row.pd-section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 5px;
+    /* Espacio sobre la raya */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    /* Raya de extremo a extremo */
+    margin-bottom: 5px;
+}
+
+/* IMPORTANTE: Si tu clase .pd-section-title original tiene borde, 
+   asegúrate de que no entre en conflicto. Lo ideal es que sea así: */
+.pd-section-title {
+    color: #888;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    /* Quitamos el border-bottom de aquí si lo tenía antes */
+}
+
+.pd-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* El badge fucsia de la imagen */
+.pd-count-badge {
+    background-color: #c2185b;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* El botón de la derecha */
+.pd-header-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ccc;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.pd-header-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Contenedor de botones de sanción */
+.pd-punish-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+}
+
+/* Grupos de botones */
+.pd-punish-left,
+.pd-punish-right {
+    display: flex;
+    gap: 6px;
+}
+
+/* Ajuste de botones para que no se amontonen */
+.pd-punish-actions button {
+    padding: 8px 12px !important;
+    font-size: 10px !important;
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* El botón de aviso (gris por defecto) resalta entre los rojos */
+.pd-punish-right button:first-child {
+    background: rgba(255, 165, 0, 0.15);
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    color: #ffa726;
+}
+
+.pd-punish-right button:first-child:hover {
+    background: rgba(255, 165, 0, 0.3);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4308,5 +4933,32 @@ input:checked+.slider:before {
         top: -200px;
         /* Sale disparado hacia arriba */
         opacity: 0;
+    }
+}
+
+@keyframes slideOutFromMenu {
+    from {
+        opacity: 0;
+        transform: translateX(50px) scale(0.95);
+        /* Empieza "dentro" del menú principal */
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        /* Termina en su sitio */
+    }
+}
+
+@keyframes slideBackIntoMenu {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(50px) scale(0.95);
+        /* Se mete "dentro" del menú principal */
     }
 }
