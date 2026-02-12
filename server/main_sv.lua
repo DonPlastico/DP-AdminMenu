@@ -13,7 +13,7 @@ local savedWhitelist = GetResourceKvpInt('dp_whitelist_active')
 -- 2. APLICAMOS LA LÓGICA DEL FORCE UNLOCK
 if Config.Whitelist and Config.Whitelist.ForceUnlock then
     savedWhitelist = 0
-    print("^1[DP-ADMIN] 🔓 FORCE UNLOCK DETECTADO EN CONFIG. La Whitelist ha sido desactivada forzosamente.^7")
+    DebugLog("^1[DP-ADMIN] 🔓 FORCE UNLOCK DETECTADO EN CONFIG. La Whitelist ha sido desactivada forzosamente.^7")
 end
 
 -- 3. Cargamos el estado final
@@ -40,9 +40,7 @@ local function GlobalRefresh()
     SetTimeout(1000, function() -- Esperamos 1 segundo a que se calme la "tormenta"
         TriggerClientEvent('dpadmin:client:refreshAllData', -1)
         isRefreshPending = false
-        if Config.Debug then
-            print("^2[DP-ADMIN] Refresco Global enviado (Optimizado)^7")
-        end
+        DebugLog("^2[DP-ADMIN] Refresco Global enviado (Optimizado)^7")
     end)
 end
 
@@ -296,93 +294,236 @@ QBCore.Functions.CreateCallback('dpadmin:getItemList', function(source, cb)
     cb(itemList)
 end)
 
--- CALLBACK DETALLES COMPLETOS (PARA EL MODAL)
-QBCore.Functions.CreateCallback('dpadmin:server:getPlayerDetails', function(source, cb, targetId)
+-- ==========================================================================
+--      CALLBACK: DATOS DETALLADOS (PROPIEDADES + VEHÍCULOS + INFO)
+-- ==========================================================================
+QBCore.Functions.CreateCallback('dpadmin:server:getDetailedData', function(source, cb, targetId)
     local target = tonumber(targetId)
+    local Player = QBCore.Functions.GetPlayer(target)
 
-    -- 1. Verificamos si el jugador existe en el servidor (Nativo)
-    local steamName = GetPlayerName(target)
-    if not steamName then
-        return cb(nil) -- Si no hay nombre, el jugador se desconectó
+    -- Si el jugador no está online o no ha cargado, devolvemos nil
+    if not Player then
+        return cb(nil)
     end
 
-    -- 2. Recopilamos Identificadores (Siempre disponible)
-    local identifiers = {}
-    local numIds = GetNumPlayerIdentifiers(target)
-    for i = 0, numIds - 1 do
-        table.insert(identifiers, GetPlayerIdentifier(target, i))
-    end
+    local citizenid = Player.PlayerData.citizenid
+    local ped = GetPlayerPed(target)
 
-    -- 3. Preparamos la estructura de datos POR DEFECTO (Como si no tuviera PJ)
+    -- 1. ESTRUCTURA BASE
     local data = {
-        name = steamName, -- Nombre de Steam/Epic
-        identifiers = identifiers,
+        hasChar = true,
+        charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
+        citizenid = citizenid,
+        phone = Player.PlayerData.charinfo.phone or "Sin móvil",
 
-        -- Valores "Vacíos" por defecto
-        charName = "Seleccionando...",
-        citizenid = "---",
-        bank = 0,
-        cash = 0,
-        phone = "---",
-        job = "---",
-        jobGrade = "",
-        isJobBoss = false,
-        gang = "---",
-        gangGrade = "",
-        isGangBoss = false,
-        hasChar = false -- Bandera para saber en el JS si tiene PJ
+        -- Economía
+        bank = Player.PlayerData.money['bank'],
+        cash = Player.PlayerData.money['cash'],
+
+        -- Trabajo / Banda
+        job = Player.PlayerData.job.label,
+        jobGrade = Player.PlayerData.job.grade.name,
+        isJobBoss = Player.PlayerData.job.isboss,
+        gang = Player.PlayerData.gang.label,
+        gangGrade = Player.PlayerData.gang.grade.name,
+        isGangBoss = Player.PlayerData.gang.isboss,
+
+        -- Identificadores
+        identifiers = GetPlayerIdentifiers(target),
+
+        -- Stats (Salud, Hambre, etc.)
+        stats = {
+            health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or
+                (GetEntityHealth(ped) - 100),
+            armor = GetPedArmour(ped),
+            hunger = Player.PlayerData.metadata['hunger'],
+            thirst = Player.PlayerData.metadata['thirst'],
+            isDead = Player.PlayerData.metadata['isdead'],
+            inLastStand = Player.PlayerData.metadata['inlaststand']
+        },
+
+        -- Listas Vacías (Se llenan abajo)
+        vehicles = {},
+        properties = {}
     }
 
-    -- 4. Intentamos cargar el objeto QBCore (Si ya eligió personaje)
-    local Player = QBCore.Functions.GetPlayer(target)
-    if Player then
-        -- ¡SÍ TIENE PJ! Sobrescribimos con los datos reales
-        data.hasChar = true
-        data.charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname
-        data.citizenid = Player.PlayerData.citizenid
-        data.bank = Player.PlayerData.money['bank'] or 0
-        data.cash = Player.PlayerData.money['cash'] or 0
+    -- 2. CONSULTA SQL: VEHÍCULOS
+    -- Obtenemos todos los coches de este citizenid
+    local pVehicles = MySQL.query.await('SELECT * FROM player_vehicles WHERE citizenid = ?', {citizenid})
+    if pVehicles then
+        for _, v in pairs(pVehicles) do
+            local vehModel = v.vehicle
+            local sharedVeh = QBCore.Shared.Vehicles[vehModel]
 
-        -- ESTADÍSTICAS REALES DIRECTAS DEL PED
-        local ped = GetPlayerPed(target)
-        local health = GetEntityHealth(ped)
-        local maxHealth = GetEntityMaxHealth(ped)
-        local armor = GetPedArmour(ped)
+            -- Lógica "Inteligente" para el Icono
+            -- Si el coche existe en el Shared, cogemos su categoría real. Si no, 'unknown'.
+            local label = vehModel
+            local category = 'unknown'
 
-        -- Detectar estados de incapacidad de QBCore
-        local isDead = Player.PlayerData.metadata['isdead']
-        local inLastStand = Player.PlayerData.metadata['inlaststand']
+            if sharedVeh then
+                label = sharedVeh.name .. ' (' .. sharedVeh.brand .. ')'
+                category = sharedVeh.category and sharedVeh.category:lower() or 'unknown'
+            else
+                label = "Mod: " .. vehModel -- Si es un coche importado mal configurado
+            end
 
-        -- Cálculo universal de salud
-        local realHealth = 0
-        if maxHealth > 100 then
-            realHealth = math.floor(((health - 100) / (maxHealth - 100)) * 100)
+            table.insert(data.vehicles, {
+                model = vehModel,
+                label = label,
+                plate = v.plate,
+                garage = v.garage, -- Compatible con qb-garages / dp-garages
+                category = category -- Esto le dice al JS qué icono usar (avión, barco, coche...)
+            })
         end
-        
-        if realHealth < 0 then realHealth = 0 end
-        if realHealth > 100 then realHealth = 100 end
+    end
 
-        data.stats = {
-            health = realHealth, 
-            armor = armor,
-            hunger = Player.PlayerData.metadata['hunger'] or 100,
-            thirst = Player.PlayerData.metadata['thirst'] or 100,
-            -- [NUEVO] Mandamos el estado de salud crítico
-            isDead = isDead,
-            inLastStand = inLastStand
-        }
-        
-        data.phone = Player.PlayerData.charinfo.phone or "Sin móvil"
-        data.job = Player.PlayerData.job.label
-        data.jobGrade = Player.PlayerData.job.grade.name
-        data.isJobBoss = Player.PlayerData.job.isboss
-        data.gang = Player.PlayerData.gang.label
-        data.gangGrade = Player.PlayerData.gang.grade.name
-        data.isGangBoss = Player.PlayerData.gang.isboss
+    -- 3. CONSULTA SQL: PROPIEDADES (Casas + Apartamentos)
 
+    -- A. Casas (qb-houses)
+    local pHouses = MySQL.query.await('SELECT * FROM player_houses WHERE citizenid = ?', {citizenid})
+    if pHouses then
+        for _, h in pairs(pHouses) do
+            table.insert(data.properties, {
+                type = 'house',
+                name = h.house,
+                label = h.label or h.house,
+                hasGarage = (h.garage ~= nil) -- Si tiene coordenadas de garaje, es true
+            })
+        end
+    end
+
+    -- B. Apartamentos (apartments)
+    -- NOTA: Algunos servidores usan 'apartments', otros guardan en metadata. Ajustar si es necesario.
+    local pApts = MySQL.query.await('SELECT * FROM apartments WHERE citizenid = ?', {citizenid})
+    if pApts then
+        for _, a in pairs(pApts) do
+            table.insert(data.properties, {
+                type = 'apartment',
+                name = a.name, -- Ej: South Rockford Dr
+                label = "Apartamento #" .. (a.id or "?"),
+                hasGarage = false -- Los apartamentos suelen tener garaje público
+            })
+        end
     end
 
     cb(data)
+end)
+
+-- ==========================================================================
+--      EVENTO CENTRAL: ACCIONES DE JUGADOR (PANEL DE BOTONES)
+-- ==========================================================================
+local savedLocations = {} -- Tabla para guardar coordenadas antes de hacer BRING
+
+RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId)
+    local src = source
+    local targetSrc = tonumber(targetId)
+
+    -- Validaciones básicas
+    if not targetSrc then
+        return
+    end
+    local Target = QBCore.Functions.GetPlayer(targetSrc)
+    if not Target then
+        return TriggerClientEvent('QBCore:Notify', src, 'El jugador ya no está conectado.', 'error')
+    end
+
+    local tPed = GetPlayerPed(targetSrc)
+    local adminPed = GetPlayerPed(src)
+    local tName = GetPlayerName(targetSrc)
+
+    DebugLog("^3[DP-ADMIN ACTION]^7 Executing: " .. action .. " on " .. tName)
+
+    -- =======================================================
+    --      ACCIONES FUNCIONALES
+    -- =======================================================
+
+    if action == 'spectate' then
+        local coords = GetEntityCoords(tPed)
+        TriggerClientEvent('dpadmin:client:spectate', src, tPed, coords)
+
+    elseif action == 'kill' then
+        TriggerClientEvent('hospital:client:KillPlayer', targetSrc)
+        TriggerClientEvent('QBCore:Notify', src, 'Has matado a ' .. tName, 'success')
+
+    elseif action == 'revive' then
+        TriggerClientEvent('hospital:client:Revive', targetSrc)
+        TriggerClientEvent('QBCore:Notify', src, 'Has revivido a ' .. tName, 'success')
+
+    elseif action == 'freeze' then
+        FreezeEntityPosition(tPed, true)
+        TriggerClientEvent('QBCore:Notify', src, 'Jugador ' .. tName .. ' CONGELADO.', 'primary')
+
+    elseif action == 'unfreeze' then -- (Por si añades botón de descongelar)
+        FreezeEntityPosition(tPed, false)
+        TriggerClientEvent('QBCore:Notify', src, 'Jugador ' .. tName .. ' descongelado.', 'success')
+
+        -- --- LÓGICA DE BRING Y RETURN ---
+    elseif action == 'bring' then
+        -- 1. Guardamos dónde estaba ANTES de traerlo
+        savedLocations[targetSrc] = GetEntityCoords(tPed)
+
+        -- 2. Lo traemos
+        local coords = GetEntityCoords(adminPed)
+        SetEntityCoords(tPed, coords.x, coords.y, coords.z)
+        TriggerClientEvent('QBCore:Notify', src, 'Has traído a ' .. tName, 'success')
+        TriggerClientEvent('QBCore:Notify', targetSrc, 'Un administrador te ha traído.', 'primary')
+
+    elseif action == 'return' then
+        -- 1. Verificamos si hay posición guardada
+        if savedLocations[targetSrc] then
+            local loc = savedLocations[targetSrc]
+            SetEntityCoords(tPed, loc.x, loc.y, loc.z)
+
+            -- 2. Borramos la posición guardada y notificamos
+            savedLocations[targetSrc] = nil
+            TriggerClientEvent('QBCore:Notify', src, 'Jugador devuelto a su posición original.', 'success')
+            TriggerClientEvent('QBCore:Notify', targetSrc, 'Has sido devuelto a tu posición.', 'success')
+        else
+            TriggerClientEvent('QBCore:Notify', src, 'ERROR: No hay posición guardada (No has hecho Bring antes).',
+                'error')
+        end
+
+    elseif action == 'tp_to_player' then
+        local coords = GetEntityCoords(tPed)
+        SetEntityCoords(adminPed, coords.x, coords.y, coords.z)
+        TriggerClientEvent('QBCore:Notify', src, 'Te has teletransportado a ' .. tName, 'success')
+
+        -- --- INVENTARIO (EDITAR JUGADOR) ---
+    elseif action == 'open_inventory' then
+        -- Esto abre el inventario del Target EN LA PANTALLA DEL ADMIN
+        -- Funciona con qb-inventory estándar (y la mayoría de forks)
+        TriggerClientEvent("inventory:client:OpenPlayerInventory", src, targetSrc)
+
+    elseif action == 'clear_inventory' then
+        Target.Functions.ClearInventory()
+        TriggerClientEvent('QBCore:Notify', src, 'Inventario de ' .. tName .. ' borrado.', 'error')
+
+        -- --- MENÚ DE ROPA ---
+    elseif action == 'clothing_menu' then
+        -- Abre el menú de ropa en el cliente del JUGADOR
+        TriggerClientEvent('qb-clothing:client:openMenu', targetSrc)
+        TriggerClientEvent('QBCore:Notify', src, 'Menú de ropa abierto a ' .. tName, 'success')
+
+        -- =======================================================
+        --      ACCIONES DESACTIVADAS (Solo HTML/CSS visible)
+        -- =======================================================
+        -- Estas acciones existen en el HTML pero aquí no hacen nada por ahora
+    elseif action == 'screenshot' then
+        DebugLog("^3[DP-ADMIN SERVER] 📸 Ordenando captura al ID: " .. targetSrc .. " devuelta a Admin: " .. src ..
+                     "^7")
+        TriggerClientEvent('dpadmin:client:captureScreen', targetSrc, src)
+    elseif action == 'remove_stress' then
+        -- Desactivado por no uso
+    elseif action == 'ped_menu' then
+        -- Pendiente DP-PedsSystem
+    elseif action == 'dimension_menu' then
+        -- Pendiente sistema de modal
+    elseif action == 'set_job' or action == 'set_gang' or action == 'give_item' then
+        -- Pendiente lógica compleja
+    elseif action == 'add_cash' or action == 'remove_cash' or action == 'add_bank' or action == 'remove_bank' or action ==
+        'add_crypto' then
+        -- Pendiente lógica económica
+    end
 end)
 
 -- ==========================================================================
@@ -892,7 +1033,7 @@ RegisterCommand(Config.Commands.EmergencyWhitelist or "togglewhitelist_emergency
     end
     ServerStates.whitelist = not ServerStates.whitelist
     SetResourceKvpInt('dp_whitelist_active', ServerStates.whitelist and 1 or 0)
-    print("^1[DP-ADMIN] Whitelist Emergencia: " .. tostring(ServerStates.whitelist) .. "^7")
+    DebugLog("^1[DP-ADMIN] Whitelist Emergencia: " .. tostring(ServerStates.whitelist) .. "^7")
 end, true)
 
 QBCore.Functions.CreateCallback('dpadmin:server:getMenuPos', function(source, cb)
@@ -934,10 +1075,24 @@ RegisterNetEvent('dpadmin:server:uploadImage', function(base64Data)
     -- (Tu lógica de upload se mantiene, la he compactado, pero funciona igual)
 end)
 
+-- ==========================================================================
+--      SISTEMA DE SCREENSHOT (RELAY / PUENTE)
+-- ==========================================================================
+RegisterNetEvent('dpadmin:server:relayScreenshot', function(adminSource, base64Data)
+    -- El servidor recibe la imagen del jugador y la reenvía al Administrador
+    if adminSource and base64Data then
+        -- Opcional: Log para consola de servidor
+        DebugLog("Transfiriendo captura de pantalla al Admin ID: " .. adminSource)
+
+        TriggerClientEvent('dpadmin:client:receiveScreenshot', adminSource, base64Data)
+    end
+end)
+
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH
 AddEventHandler('playerJoining', function()
     GlobalRefresh()
 end)
+
 AddEventHandler('playerDropped', function()
     local src = source
     if adminsInGodmode[src] then
@@ -948,12 +1103,15 @@ AddEventHandler('playerDropped', function()
     end
     GlobalRefresh()
 end)
+
 AddEventHandler('QBCore:Server:OnPlayerUnload', function()
     GlobalRefresh()
 end)
+
 AddEventHandler('QBCore:Server:OnJobUpdate', function()
     GlobalRefresh()
 end)
+
 AddEventHandler('QBCore:Server:OnGangUpdate', function()
     GlobalRefresh()
 end)

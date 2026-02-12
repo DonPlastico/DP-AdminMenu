@@ -497,6 +497,7 @@ input:checked+.slider:before {
     overflow-y: auto;
 }
 
+/* 1. CLASE BASE (Asegúrate de tener esto) */
 .player-card {
     background-color: var(--bg-element);
     padding: 15px;
@@ -506,6 +507,22 @@ input:checked+.slider:before {
     align-items: center;
     border-left: 3px solid var(--primary);
     animation: slideInUp 0.5s ease-out forwards;
+
+    /* Propiedades de interacción */
+    cursor: pointer;
+    /* Manita al pasar el ratón */
+    transition: all 0.2s ease;
+    /* Suavidad al cambiar de color */
+}
+
+/* 2. CLASE HOVER (SIN MOVIMIENTO) */
+.player-card:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    /* Solo cambia el color de fondo */
+    filter: brightness(1.2);
+    /* Aumenta el brillo */
+
+    /* HE BORRADO EL 'transform' PARA QUE NO SE MUEVA NADA */
 }
 
 .id-badge {
@@ -4133,19 +4150,12 @@ input:checked+.slider:before {
     animation: slideBackIntoMenu 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
-/* --- HEADER PERSONALIZADO (ESTILO BANNER) --- */
 .pd-custom-header {
     display: flex;
     justify-content: space-between;
-    /* Separa izquierda (info) de derecha (botón) */
     align-items: center;
-    height: auto !important;
-    /* Sobrescribe la altura fija del header normal */
-    min-height: 90px;
-    /* Altura suficiente para la foto */
-    padding: 15px 20px;
+    padding: 15px;
     background-color: var(--bg-element);
-    /* Fondo oscuro */
     border-bottom: 1px solid var(--bg-border);
 }
 
@@ -4156,11 +4166,9 @@ input:checked+.slider:before {
     gap: 15px;
 }
 
-/* Cuadrado de Foto */
 .pd-avatar-square {
-    width: 50px;
-    /* Un pelín más pequeño para encajar mejor en header */
-    height: 50px;
+    width: 100px;
+    height: 60px;
     background-color: #222;
     border: 2px solid var(--bg-border);
     border-radius: 6px;
@@ -4218,12 +4226,11 @@ input:checked+.slider:before {
     border: 1px solid rgba(255, 68, 68, 0.3);
 }
 
-/* Botón Cerrar (Integrado en el header) */
 .btn-close-text {
     background-color: rgba(255, 68, 68, 0.1);
     color: var(--danger-text);
     border: 1px solid var(--danger);
-    padding: 6px 12px;
+    padding: 14px 20px;
     font-size: 10px;
     font-weight: bold;
     border-radius: 4px;
@@ -4422,7 +4429,7 @@ input:checked+.slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: bold;
     color: #ccc;
     text-transform: uppercase;
@@ -4436,7 +4443,7 @@ input:checked+.slider:before {
 
 .progress-track {
     width: 100%;
-    height: 12px;
+    height: 15px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     overflow: hidden;
@@ -4497,32 +4504,41 @@ input:checked+.slider:before {
     display: block;
 }
 
-/* Contenedor de doble columna */
+/* Contenedor padre (fila) */
 .pd-dual-column {
     display: flex;
     gap: 10px;
-    /* Reducimos un poco el gap para que quepa mejor en el modal */
     width: 100%;
+    /* Esto asegura que las columnas hijo (.pd-column) tengan la misma altura total */
+    align-items: stretch;
 }
 
+/* Columnas individuales (Izquierda y Derecha) */
 .pd-column {
     flex: 1;
-    /* Cada columna ocupa exactamente el 50% menos el gap */
+    /* 50% de ancho cada una */
     display: flex;
     flex-direction: column;
+    /* Organiza título arriba y lista abajo */
 }
 
-/* Contenedores de listas */
+/* Añadimos 'flex-grow: 1' para que la caja gris se estire 
+   hasta llenar el hueco que deja la columna padre.
+*/
 .pd-list-container {
     background: rgba(0, 0, 0, 0.3);
-    /* Un poco más oscuro para dar profundidad */
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 4px;
     margin-top: 10px;
+
+    /* ALTURA Y ESTIRAMIENTO */
+    flex-grow: 1;
+    /* <--- ESTA ES LA LÍNEA MÁGICA */
     min-height: 120px;
-    /* Altura mínima para que no se vea vacío */
+    /* Altura mínima si ambos están vacíos */
     max-height: 220px;
-    /* Límite para que no rompa el modal hacia abajo */
+    /* Límite máximo de scroll */
+
     overflow-y: auto;
     padding: 8px;
 }
@@ -4698,8 +4714,212 @@ input:checked+.slider:before {
     background: rgba(255, 165, 0, 0.3);
 }
 
+/* ==========================================================================
+   MODAL DE SCREENSHOT (CAPTURA DE PANTALLA)
+   ========================================================================== */
 
+/* --- 1. CABECERA (HEADER) --- */
+#screenshot-modal .pd-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    width: 100%;
+}
 
+#screenshot-modal .pd-header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#screenshot-modal .pd-icon-box {
+    font-size: 28px;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#screenshot-modal .pd-title-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#screenshot-modal .pd-title {
+    color: #ffffff !important;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+
+#screenshot-modal .pd-subtitle {
+    color: #666666 !important;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- 2. CONTENEDOR PRINCIPAL --- */
+#screenshot-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 5000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+}
+
+.screenshot-content {
+    background: var(--bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    width: 90%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+    overflow: hidden;
+}
+
+/* --- 3. CUERPO Y LOADER --- */
+.screenshot-body {
+    background: #080808;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    min-height: 400px;
+    position: relative;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* La imagen comienza invisible (recortada al 100% desde abajo) */
+#screenshot-img {
+    max-width: 100%;
+    max-height: 70vh;
+    border: 1px solid #333;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    display: block;
+
+    /* ESTADO INICIAL: OCULTO */
+    clip-path: inset(0 0 100% 0);
+}
+
+#screenshot-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    gap: 15px;
+}
+
+#screenshot-loader p {
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    animation: blink 1.5s infinite;
+    color: #888;
+}
+
+/* --- 4. FOOTER Y BOTONES --- */
+.screenshot-footer {
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-copy {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.btn-copy:hover {
+    filter: brightness(1.2);
+    transform: translateY(-1px);
+}
+
+.btn-close {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ccc;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: #fff;
+}
+
+/* Contenedor relativo para posicionar el láser */
+#screenshot-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* La barra láser (Cyberpunk Style) */
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #00ffcc;
+    /* Color Cian Neón */
+    box-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+    z-index: 10;
+    opacity: 0;
+    /* Oculta hasta que arranque la animación */
+}
+
+/* --- CLASES ACTIVAS (Se añaden con JS) --- */
+
+/* 1. Animación de la Foto: Se revela en 3 segundos */
+.printing-active #screenshot-img {
+    animation: printReveal 3s linear forwards;
+}
+
+/* 2. Animación del Láser: Baja acompañando el revelado */
+.printing-active .scan-line {
+    opacity: 1;
+    animation: scanMove 3s linear forwards;
+}
 
 
 
@@ -4960,5 +5180,46 @@ input:checked+.slider:before {
         opacity: 0;
         transform: translateX(50px) scale(0.95);
         /* Se mete "dentro" del menú principal */
+    }
+}
+
+/* Animación simple para el texto de carga */
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+
+
+/* KEYFRAMES */
+@keyframes printReveal {
+    0% {
+        clip-path: inset(0 0 100% 0);
+    }
+
+    100% {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes scanMove {
+    0% {
+        top: 0;
+    }
+
+    98% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 100%;
+        opacity: 0;
     }
 }

@@ -2128,22 +2128,118 @@ RegisterNUICallback('closeMenu', function(_, cb)
 end)
 
 -- ==========================================================================
---      NUI CALLBACK: DETALLES COMPLETOS (PUENTE JS <-> LUA)
+--      9. NUEVOS EVENTOS PARA EL MODAL DE DETALLES (PLAYER DETAILS)
 -- ==========================================================================
-RegisterNUICallback('getPlayerFullDetails', function(data, cb)
-    local targetId = tonumber(data.targetId)
 
-    if not targetId then
-        cb(nil)
+local isSpectating = false
+local lastSpectateCoords = nil
+
+-- 1. NUI CALLBACK: Acciones del Panel (Matar, Congelar, Espectear...)
+RegisterNUICallback('playerAction', function(data, cb)
+    -- Enviamos la acción al servidor (spectate, kill, freeze, etc.)
+    TriggerServerEvent('dpadmin:server:playerAction', data.action, data.targetId)
+    cb('ok')
+end)
+
+-- 2. EVENTO: Lógica del Espectador (Recibido desde Server)
+RegisterNetEvent('dpadmin:client:spectate', function(targetPed, targetCoords)
+    local myPed = PlayerPedId()
+
+    if not isSpectating then
+        -- ACTIVAR
+        isSpectating = true
+        lastSpectateCoords = GetEntityCoords(myPed) -- Guardamos posición original
+
+        -- Hacemos al admin invisible y sin colisión
+        SetEntityVisible(myPed, false, 0)
+        SetEntityCollision(myPed, false, false)
+        SetEntityInvincible(myPed, true)
+
+        -- TP cerca del objetivo para cargar sus texturas antes de espectear
+        SetEntityCoords(myPed, targetCoords.x, targetCoords.y, targetCoords.z - 10.0)
+        Citizen.Wait(500)
+
+        -- Activar modo espectador nativo
+        NetworkSetInSpectatorMode(true, targetPed)
+        QBCore.Functions.Notify('Espectando...', 'success')
+    else
+        -- DESACTIVAR
+        isSpectating = false
+        NetworkSetInSpectatorMode(false, targetPed)
+
+        -- Restaurar estado
+        SetEntityVisible(myPed, true, 0)
+        SetEntityCollision(myPed, true, true)
+        SetEntityInvincible(myPed, false)
+
+        -- Volver a posición original
+        if lastSpectateCoords then
+            SetEntityCoords(myPed, lastSpectateCoords.x, lastSpectateCoords.y, lastSpectateCoords.z)
+            lastSpectateCoords = nil
+        end
+        QBCore.Functions.Notify('Espectador desactivado', 'error')
+    end
+end)
+
+RegisterNUICallback('getPlayerFullDetails', function(data, cb)
+    QBCore.Functions.TriggerCallback('dpadmin:server:getDetailedData', function(result)
+        cb(result)
+    end, data.targetId)
+end)
+
+-- ==========================================================================
+--      10. SISTEMA DE SCREENSHOT (CON LOGS DE DEPURACIÓN)
+-- ==========================================================================
+
+-- 1. TARGET: ALGUIEN PIDE UNA FOTO TUYA (Se ejecuta en el JUGADOR)
+RegisterNetEvent('dpadmin:client:captureScreen', function(adminSource)
+    -- LOG 1: Confirmamos que llega la orden desde el servidor
+    DebugLog("^3[DP-ADMIN DEBUG] 📸 Petición de captura recibida. Admin ID: " .. tostring(adminSource) .. "^7")
+
+    -- Verificación de seguridad: ¿Existe el script necesario?
+    if GetResourceState('screenshot-basic') ~= 'started' then
+        DebugLog("^1[DP-ADMIN ERROR] ❌ El script 'screenshot-basic' NO está iniciado o no existe en el server.cfg^7")
         return
     end
 
-    -- Pedimos los datos al servidor (Callback que creamos arriba)
-    QBCore.Functions.TriggerCallback('dpadmin:server:getPlayerDetails', function(result)
-        -- 'result' contiene el JSON con banco, trabajo, identifiers...
-        -- Se lo devolvemos al JavaScript
-        cb(result)
-    end, targetId)
+    DebugLog("^3[DP-ADMIN DEBUG] ⏳ Solicitando foto a screenshot-basic...^7")
+
+    -- Usamos screenshot-basic
+    exports['screenshot-basic']:requestScreenshot({
+        encoding = 'jpg',
+        quality = 0.5
+    }, function(data)
+        -- LOG 2: Confirmamos que la foto se ha creado o ha fallado
+        if data then
+            DebugLog("^3[DP-ADMIN DEBUG] ✅ Foto generada! Tamaño: " .. string.len(tostring(data)) .. " caracteres.^7")
+            
+            -- Enviamos la imagen (data) de vuelta al servidor
+            TriggerServerEvent('dpadmin:server:relayScreenshot', adminSource, data)
+            DebugLog("^3[DP-ADMIN DEBUG] 📤 Enviando datos de vuelta al servidor...^7")
+        else
+            DebugLog("^1[DP-ADMIN ERROR] ❌ La foto se generó pero llegó VACÍA (nil). Fallo interno de screenshot-basic.^7")
+        end
+    end)
+end)
+
+-- 2. ADMIN: RECIBES LA FOTO DEL JUGADOR (Se ejecuta en el ADMIN)
+RegisterNetEvent('dpadmin:client:receiveScreenshot', function(base64Data)
+    DebugLog("^3[DP-ADMIN DEBUG] 📥 El servidor me ha devuelto la foto. Procesando...^7")
+
+    if not base64Data then
+        DebugLog("^1[DP-ADMIN ERROR] ❌ Los datos de la foto llegaron vacíos al Admin.^7")
+        return
+    end
+
+    -- Enviamos la imagen al NUI (JavaScript) para mostrarla en el modal
+    DebugLog("^3[DP-ADMIN DEBUG] 🖥️ Enviando imagen al NUI (Javascript)...^7")
+    
+    SendNUIMessage({
+        type = "updateScreenshot",
+        url = base64Data
+    })
+
+    QBCore.Functions.Notify("Imagen recibida correctamente", "success")
 end)
 
 -- ==========================================================================

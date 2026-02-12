@@ -537,16 +537,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const num = document.getElementById('noclip-number');
             if (num) num.innerText = data.value.toFixed(1);
 
-        } else if (data.type === "toggleSpectateUI") {
-            const ui = document.getElementById('spectate-ui');
-            if (ui) {
-                ui.style.display = data.show ? "block" : "none";
-                if (data.show && data.targetName) {
-                    document.getElementById('spectate-target-name').innerText = data.targetName;
-                }
+        } else if (data.type === 'updateScreenshot') {
+            const img = document.getElementById('screenshot-img');
+
+            if (img) {
+                // 1. Guardamos la foto (aunque esté oculta)
+                img.src = data.url;
+
+                // 2. Marcamos la bandera de "Recibido"
+                isImageReceived = true;
+
+                // 3. Intentamos mostrar
+                // (Si el timer de 10s no ha acabado, esta función no hará nada todavía)
+                tryShowScreenshot();
             }
         }
-
     });
 
     // ==========================================================================
@@ -584,45 +589,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.querySelector('[data-tab="home"]')) document.querySelector('[data-tab="home"]').click();
 
-    // 1. Gestión de teclas especiales (keydown)
-    document.addEventListener('keydown', (e) => { 
-        // Bloquear Tab
-        if (e.key === 'Tab') e.preventDefault(); 
+    // 1. Bloquear Tab
+    document.addEventListener('keydown', (e) => { if (e.key === 'Tab') e.preventDefault(); });
 
-        // Abrir Inventario al espectar (Tecla I)
-        if (e.key.toLowerCase() === 'i') {
-            const spectateUI = document.getElementById('spectate-ui');
-            // Solo si el HUD de espectar está visible en pantalla
-            if (spectateUI && spectateUI.style.display !== 'none') {
-                fetch(`https://${GetParentResourceName()}/triggerPlayerAction`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        targetId: currentDetailsId, 
-                        action: 'open_inventory_spectate' 
-                    })
-                });
-            }
-        }
-    });
-
-    // 2. Gestionar ESCAPE y BACKSPACE (Cierre de menús y herramientas)
+    // 2. Gestionar ESCAPE (Cierre de menús y herramientas)
     document.addEventListener('keyup', (e) => {
-        // --- LÓGICA PARA SALIR DE ESPECTAR (BACKSPACE) ---
-        if (e.key === 'Backspace') {
-            const spectateUI = document.getElementById('spectate-ui');
-            // Si el HUD de espectar está visible, enviamos la señal de parar
-            if (spectateUI && spectateUI.style.display !== 'none') {
-                fetch(`https://${GetParentResourceName()}/triggerPlayerAction`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'stop_spectate' })
-                });
-                return; // Detenemos aquí para no procesar nada más
-            }
-        }
-
-        // --- LÓGICA PARA CERRAR MENÚS (ESCAPE) ---
         if (e.key === 'Escape') {
 
             // PASO 1: Soltar cualquier Input (Buscador) que tenga el foco
@@ -668,6 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isVisible('gang-grades-modal')) { closeGangGradesModal(); return; }
             if (isVisible('goto-modal')) { closeMapMenu(); return; }
             if (isVisible('scale-modal')) { closeScaleModal(); return; }
+            if (isVisible('screenshot-modal')) { closeScreenshotModal(); return; }
 
             // --- B. CERRAR HUD DE ENTIDADES (DEV TOOL) ---
             if (document.getElementById('entity-info-hud') && document.getElementById('entity-info-hud').style.display !== 'none') {
@@ -4250,7 +4222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dragContainer.style.top = ((rect.top / window.innerHeight) * 100) + '%';
         }
 
-        console.log("Modo edición activado.");
+        log("Modo edición activado.");
     };
 
     // 2. Guardar y Salir
@@ -4352,7 +4324,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (controls) controls.style.display = 'none';
 
-        console.log("Modo edición cancelado.");
+        log("Modo edición cancelado.");
     };
 
     // ==========================================
@@ -4584,7 +4556,7 @@ document.addEventListener('DOMContentLoaded', () => {
             detailsModal.classList.add('details-active');
         }
 
-        // --- 1. DATOS INICIALES ---
+        // --- 1. DATOS INICIALES (HEADER) ---
         if (playerData) {
             document.getElementById('pd-charname').textContent = playerData.name || "Jugador";
             document.getElementById('pd-ic-name').textContent = "Obteniendo datos...";
@@ -4596,11 +4568,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Reset visual
+        // Reset visual de campos
         document.getElementById('pd-bank').textContent = "...";
         document.getElementById('pd-citizenid').textContent = "...";
         document.getElementById('pd-phone').textContent = "...";
         document.getElementById('pd-identifiers').innerHTML = '<span>Cargando...</span>';
+
+        // Limpiar listas antes de cargar
+        const propList = document.getElementById('pd-properties-list');
+        const vehList = document.getElementById('pd-vehicles-list');
+        if (propList) propList.innerHTML = '<div class="pd-empty-msg">Cargando...</div>';
+        if (vehList) vehList.innerHTML = '<div class="pd-empty-msg">Cargando...</div>';
 
         // --- 2. PETICIÓN AL SERVIDOR ---
         fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, {
@@ -4613,10 +4591,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!fullData) return;
 
                 if (fullData.hasChar) {
-                    // --- CASO A: TIENE PJ ---
+                    // ============================================================
+                    // CASO A: TIENE PERSONAJE (CARGAR TODO)
+                    // ============================================================
                     document.getElementById('pd-ic-name').textContent = fullData.charName;
                     document.getElementById('pd-ic-name').style.color = "";
 
+                    // 1. INFO GENERAL
                     const fields = [
                         { id: 'pd-bank', val: `$${(fullData.bank || 0).toLocaleString()}` },
                         { id: 'pd-citizenid', val: fullData.citizenid || "N/A" },
@@ -4637,31 +4618,124 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (document.getElementById('pd-job-boss')) document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
                     if (document.getElementById('pd-gang-boss')) document.getElementById('pd-gang-boss').style.display = fullData.isGangBoss ? 'block' : 'none';
 
-                    // ACTUALIZAR BARRAS
+                    // 2. ACTUALIZAR BARRAS DE ESTADO
                     if (fullData.stats) {
                         let healthStatus = null;
-                        let displayHealth = fullData.stats.health; // Por defecto, la vida real
+                        let displayHealth = fullData.stats.health;
 
-                        // Prioridad de estados y forzado de barra a 0
                         if (fullData.stats.isDead) {
                             healthStatus = "FALLECIDO";
-                            displayHealth = 0; // Fuerza barra vacía
+                            displayHealth = 0;
                         } else if (fullData.stats.inLastStand) {
                             healthStatus = "HERIDO EN EL SUELO";
-                            displayHealth = 0; // Fuerza barra vacía aunque qb-ambulance diga 50%
+                            displayHealth = 0;
                         }
 
-                        // Aplicamos la salud (ya sea la real o el 0 forzado)
                         updateStatBar('stat-health', displayHealth, healthStatus);
-
-                        // El resto de barras siguen igual
                         updateStatBar('stat-armor', fullData.stats.armor);
                         updateStatBar('stat-hunger', fullData.stats.hunger);
                         updateStatBar('stat-thirst', fullData.stats.thirst);
                     }
 
+                    // 3. RENDERIZADO DE PROPIEDADES (NUEVO)
+                    if (propList) {
+                        propList.innerHTML = '';
+                        const props = fullData.properties || [];
+                        const propCount = document.getElementById('pd-prop-count');
+                        if (propCount) propCount.innerText = props.length;
+
+                        if (props.length === 0) {
+                            propList.innerHTML = '<div class="pd-empty-msg">No se han encontrado propiedades.</div>';
+                        } else {
+                            props.forEach(p => {
+                                const icon = p.type === 'house' ? 'mdi:home' : 'mdi:office-building';
+                                const typeLabel = p.type === 'house' ? 'CASA' : 'APARTAMENTO';
+                                const garageBadge = p.hasGarage
+                                    ? '<span style="color:#2ecc71; font-size:9px; font-weight:bold; border:1px solid #2ecc71; padding:1px 4px; border-radius:3px; margin-left:5px;">GARAJE</span>'
+                                    : '';
+
+                                const item = document.createElement('div');
+                                item.className = 'pd-list-item';
+                                item.innerHTML = `
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="iconify" data-icon="${icon}" style="font-size:24px; color:#aaa;"></span>
+                                    <div class="pd-item-info">
+                                        <span class="pd-item-main">${p.label} ${garageBadge}</span>
+                                        <span class="pd-item-sub">${typeLabel} | ${p.name}</span>
+                                    </div>
+                                </div>
+                            `;
+                                propList.appendChild(item);
+                            });
+                        }
+                    }
+
+                    // 4. RENDERIZADO DE VEHÍCULOS (NUEVO)
+                    if (vehList) {
+                        vehList.innerHTML = '';
+                        const vehs = fullData.vehicles || [];
+                        const vehCount = document.getElementById('pd-veh-count');
+                        if (vehCount) vehCount.innerText = vehs.length;
+
+                        // Mapa de Iconos
+                        const vehIcons = {
+                            'car': 'mdi:car-sports',
+                            'bike': 'mdi:motorbike',
+                            'heli': 'mdi:helicopter',
+                            'plane': 'mdi:airplane',
+                            'boat': 'mdi:sail-boat',
+                            'truck': 'mdi:truck',
+                            'unknown': 'mdi:car'
+                        };
+
+                        if (vehs.length === 0) {
+                            vehList.innerHTML = '<div class="pd-empty-msg">El jugador no posee vehículos.</div>';
+                        } else {
+                            vehs.forEach(v => {
+                                // Icono inteligente
+                                let iconKey = 'unknown';
+                                if (['compacts', 'sedans', 'suvs', 'coupes', 'muscle', 'sports', 'classics', 'super', 'vans', 'utility'].includes(v.category)) iconKey = 'car';
+                                else if (['motorcycles', 'cycles'].includes(v.category)) iconKey = 'bike';
+                                else if (['helicopters'].includes(v.category)) iconKey = 'heli';
+                                else if (['planes'].includes(v.category)) iconKey = 'plane';
+                                else if (['boats'].includes(v.category)) iconKey = 'boat';
+                                else if (['commercial', 'industrial', 'service', 'military', 'offroad'].includes(v.category)) iconKey = 'truck';
+
+                                const icon = vehIcons[iconKey] || vehIcons['car'];
+
+                                // Matrícula
+                                const plateDisplay = v.plate
+                                    ? `<span style="font-family:monospace; background:#000; color:#ffb74d; padding:2px 6px; border-radius:3px; font-weight:bold;">${v.plate}</span>`
+                                    : `<span style="background:#5a1a1a; color:#ff8a80; padding:2px 6px; border-radius:3px; font-size:9px;">SIN MATRÍCULA</span>`;
+
+                                // Estado Garaje
+                                const garageState = v.garage
+                                    ? `<span style="color:#2ecc71;">EN: ${v.garage}</span>`
+                                    : `<span style="color:#e74c3c;">FUERA / DEPÓSITO</span>`;
+
+                                const item = document.createElement('div');
+                                item.className = 'pd-list-item';
+                                item.innerHTML = `
+                                <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                                    <span class="iconify" data-icon="${icon}" style="font-size:24px; color:var(--primary);"></span>
+                                    <div class="pd-item-info" style="flex:1;">
+                                        <span class="pd-item-main">${v.label}</span>
+                                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:2px;">
+                                            <span class="pd-item-sub">${garageState}</span>
+                                            ${plateDisplay}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                                vehList.appendChild(item);
+                            });
+                        }
+                    }
+
                 } else {
-                    // --- CASO B: SIN PJ ---
+                    // ============================================================
+                    // CASO B: SIN PERSONAJE (RESET)
+                    // ============================================================
                     const msg = "⚠️ SELECCIONAR PJ";
                     document.getElementById('pd-ic-name').textContent = "Esperando selección...";
                     document.getElementById('pd-ic-name').style.color = "#888";
@@ -4679,12 +4753,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStatBar('stat-armor', 0);
                     updateStatBar('stat-hunger', 0);
                     updateStatBar('stat-thirst', 0);
+
+                    // Limpiar listas si no hay PJ
+                    if (propList) propList.innerHTML = '<div class="pd-empty-msg">Selecciona un personaje.</div>';
+                    if (vehList) vehList.innerHTML = '<div class="pd-empty-msg">Selecciona un personaje.</div>';
                 }
 
-                // IDENTIFICADORES CORREGIDOS
+                // --- 5. IDENTIFICADORES (COMÚN) ---
                 const idList = document.getElementById('pd-identifiers');
                 if (idList) {
-                    idList.classList.remove('revealed'); // Asegurar que inicie borroso
+                    idList.classList.remove('revealed');
                     if (fullData.identifiers && fullData.identifiers.length > 0) {
                         idList.textContent = `[${fullData.identifiers.join(', ')}]`;
                     } else {
@@ -4779,5 +4857,95 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 800);
         });
     });
+
+    window.playerAction = (action) => {
+        // 1. Validar que tenemos un objetivo
+        if (!currentDetailsId) {
+            log("Error: No hay jugador seleccionado");
+            return;
+        }
+
+        // --- NUEVO: INTERCEPTOR PARA SCREENSHOT ---
+        if (action === 'screenshot') {
+            openScreenshotModal(); // Abre el modal en modo "Cargando..."
+        }
+        // ------------------------------------------
+
+        // 3. Enviar al NUI Callback
+        fetch(`https://${GetParentResourceName()}/playerAction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: action,
+                targetId: currentDetailsId
+            })
+        });
+    };
+
+    // ==========================================================================
+    // LÓGICA DE CAPTURA DE PANTALLA (CINEMÁTICA 5 SEGUNDOS)
+    // ==========================================================================
+
+    const screenshotModal = document.getElementById('screenshot-modal');
+    const screenshotWrapper = document.getElementById('screenshot-wrapper');
+    const screenshotImg = document.getElementById('screenshot-img');
+    const screenshotLoader = document.getElementById('screenshot-loader');
+    const loaderText = document.getElementById('loader-text');
+
+    let isImageReceived = false; 
+    let isTimeCompleted = false; 
+    let activeTimeouts = [];
+
+    // 1. ABRIR MODAL E INICIAR LA CUENTA ATRÁS
+    function openScreenshotModal() {
+        if (!screenshotModal) return;
+
+        screenshotModal.style.display = 'flex';
+        screenshotLoader.style.display = 'flex';
+        screenshotWrapper.style.display = 'none';
+        screenshotWrapper.classList.remove('printing-active');
+
+        if (loaderText) loaderText.innerText = "RECIBIENDO DATOS...";
+        if (screenshotImg) screenshotImg.src = "";
+
+        isImageReceived = false;
+        isTimeCompleted = false;
+
+        // Timer 1: A los 2.5 segundos cambiamos el texto
+        let t1 = setTimeout(() => {
+            if (loaderText) loaderText.innerText = "CARGANDO IMAGEN...";
+        }, 2500);
+
+        // Timer 2: A los 5 segundos, intentamos mostrar la foto
+        let t2 = setTimeout(() => {
+            isTimeCompleted = true; 
+            tryShowScreenshot();
+        }, 5000);
+
+        activeTimeouts.push(t1, t2);
+    }
+
+    // 2. INTENTAR MOSTRAR
+    function tryShowScreenshot() {
+        if (isImageReceived && isTimeCompleted) {
+            if (screenshotLoader) screenshotLoader.style.display = 'none';
+
+            if (screenshotWrapper) {
+                screenshotWrapper.style.display = 'flex';
+                setTimeout(() => {
+                    screenshotWrapper.classList.add('printing-active');
+                }, 50);
+            }
+        }
+    }
+
+    // 3. CERRAR MODAL
+    window.closeScreenshotModal = () => {
+        if (screenshotModal) {
+            screenshotModal.style.display = 'none';
+            activeTimeouts.forEach(t => clearTimeout(t));
+            activeTimeouts = [];
+        }
+    };
 
 }); // FIN DEL DOMContentLoaded

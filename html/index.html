@@ -1877,7 +1877,7 @@
                             <button onclick="playerAction('ped_menu')">MENÚ DE PED</button>
                         </div>
 
-                        <button class="btn-danger full-width" onclick="playerAction('change_routing')">CAMBIAR DE
+                        <button class="full-width" onclick="playerAction('change_routing')">CAMBIAR DE
                             DIMENSION</button>
 
                         <div class="grid-3">
@@ -1908,7 +1908,7 @@
                             <button onclick="playerAction('give_current_vehicle')">DAR VEHÍCULO SUBIDO</button>
                         </div>
 
-                        <button class="btn-danger full-width" onclick="playerToggle('cuffs')">PONER ESPOSAS / QUITAR
+                        <button class="btn-danger full-width" onclick="playerToggle('cuffs')">PONER ESPOSAS - QUITAR
                             ESPOSAS</button>
                     </div>
                 </div>
@@ -1967,6 +1967,42 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="screenshot-modal" style="display: none;">
+        <div class="screenshot-content">
+
+            <div class="pd-header">
+                <div class="pd-header-left">
+                    <div class="pd-icon-box">
+                        <span class="iconify" data-icon="mdi:camera-iris"></span>
+                    </div>
+                    <div class="pd-title-box">
+                        <div class="pd-title">CAPTURA DE PANTALLA</div>
+                        <div class="pd-subtitle">VISTA EN TIEMPO REAL DEL JUGADOR</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="screenshot-body">
+                <div id="screenshot-wrapper" style="display: none;">
+                    <img id="screenshot-img" src="" alt="Captura" />
+                    <div class="scan-line"></div>
+                </div>
+
+                <div id="screenshot-loader">
+                    <span class="iconify" data-icon="eos-icons:loading" style="font-size: 40px;"></span>
+                    <p id="loader-text">RECIBIENDO DATOS...</p>
+                </div>
+            </div>
+
+            <div class="screenshot-footer">
+                <button class="btn-close" onclick="closeScreenshotModal()">
+                    CERRAR VISTA
+                </button>
+            </div>
+
         </div>
     </div>
 
