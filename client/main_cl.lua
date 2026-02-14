@@ -2212,12 +2212,13 @@ RegisterNetEvent('dpadmin:client:captureScreen', function(adminSource)
         -- LOG 2: Confirmamos que la foto se ha creado o ha fallado
         if data then
             DebugLog("^3[DP-ADMIN DEBUG] ✅ Foto generada! Tamaño: " .. string.len(tostring(data)) .. " caracteres.^7")
-            
+
             -- Enviamos la imagen (data) de vuelta al servidor
             TriggerServerEvent('dpadmin:server:relayScreenshot', adminSource, data)
             DebugLog("^3[DP-ADMIN DEBUG] 📤 Enviando datos de vuelta al servidor...^7")
         else
-            DebugLog("^1[DP-ADMIN ERROR] ❌ La foto se generó pero llegó VACÍA (nil). Fallo interno de screenshot-basic.^7")
+            DebugLog(
+                "^1[DP-ADMIN ERROR] ❌ La foto se generó pero llegó VACÍA (nil). Fallo interno de screenshot-basic.^7")
         end
     end)
 end)
@@ -2233,13 +2234,68 @@ RegisterNetEvent('dpadmin:client:receiveScreenshot', function(base64Data)
 
     -- Enviamos la imagen al NUI (JavaScript) para mostrarla en el modal
     DebugLog("^3[DP-ADMIN DEBUG] 🖥️ Enviando imagen al NUI (Javascript)...^7")
-    
+
     SendNUIMessage({
         type = "updateScreenshot",
         url = base64Data
     })
 
     QBCore.Functions.Notify("Imagen recibida correctamente", "success")
+end)
+
+-- ==========================================================================
+--      APERTURA DE INVENTARIO (PUENTE DIRECTO)
+-- ==========================================================================
+RegisterNetEvent('dpadmin:client:execOpenInventory', function(targetId)
+    -- 1. Cerrar menú admin
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = "close" })
+    SendNUIMessage({ type = "closeMenu" })
+
+    -- 2. Esperar para que el foco NUI se limpie
+    SetTimeout(250, function()
+        -- 3. Llamamos al nuevo evento que creamos en el servidor del inventario
+        -- IMPORTANTE: Asegúrate de que el nombre coincide con el del paso 1
+        TriggerServerEvent("qb-inventory:server:adminForceOpen", tonumber(targetId))
+    end)
+end)
+
+-- ==========================================================================
+--      EVENTO PARA CERRAR EL MENÚ DESDE EL SERVIDOR (FORCE CLOSE)
+-- ==========================================================================
+RegisterNetEvent('dpadmin:client:forceCloseMenu', function()
+    -- 1. Quitamos el foco del ratón
+    SetNuiFocus(false, false)
+    
+    -- 2. Mandamos la señal al JS para que oculte todo
+    SendNUIMessage({
+        type = "close" -- Esto activará tu lógica de cierre en script.js
+    })
+end)
+
+-- ==========================================================================
+--      EJECUTAR COMANDO DE PEDS (PARA EL ADMIN)
+-- ==========================================================================
+RegisterNetEvent('dpadmin:client:openPedMenu', function(targetId)
+    -- 1. Cerrar el menú de admin (y el panel de detalles gracias al arreglo de antes)
+    SetNuiFocus(false, false)
+    SendNUIMessage({ type = "close" })
+
+    -- 2. Esperamos un poquito para que la UI desaparezca visualmente
+    Wait(100)
+
+    -- 3. Ejecutamos el comando como si lo escribieras tú en el chat
+    ExecuteCommand("verpeds " .. targetId)
+end)
+
+-- ==========================================================================
+--      CALLBACK DE DIMENSIONES
+-- ==========================================================================
+RegisterNUICallback('setDimension', function(data, cb)
+    -- data.targetId = ID del jugador
+    -- data.bucket = Número de la dimensión
+    TriggerServerEvent('dpadmin:server:setDimension', data.targetId, data.bucket)
+    cb('ok')
 end)
 
 -- ==========================================================================

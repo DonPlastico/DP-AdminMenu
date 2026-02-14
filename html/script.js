@@ -231,6 +231,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.type === 'open') {
             mainAdminPanel.style.display = 'flex';
 
+            // ==========================================================
+            // FIX DEFINITIVO: RESETEAR LA BANDERA DE "ABIERTO"
+            // ==========================================================
+            selectedPlayer = null;
+            wasDetailsOpen = false;
+            currentDetailsId = null;
+
+            // >>> ¡ESTA ES LA LÍNEA QUE FALTABA! <<<
+            if (typeof isDetailsOpen !== 'undefined') isDetailsOpen = false;
+            // (Usamos typeof por si acaso la variable se llama distinto, pero debería ser esa)
+
+            // 3. Limpieza visual
+            const detailsModal = document.getElementById('player-details-modal');
+            if (detailsModal) detailsModal.style.display = 'none';
+            document.querySelectorAll('.player-list-item').forEach(el => el.classList.remove('selected'));
+            // ==========================================================
+
             if (data.menuPosition) {
                 mainAdminPanel.style.top = data.menuPosition.top;
                 mainAdminPanel.style.left = data.menuPosition.left;
@@ -300,23 +317,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            if (wasDetailsOpen && currentDetailsId) {
-                // Buscamos si el jugador sigue en la lista
-                const lastPlayer = allPlayers.find(p => p.id === currentDetailsId);
-                if (lastPlayer) {
-                    // Pequeño delay para asegurar que el panel principal ya se vea
-                    setTimeout(() => {
-                        window.openPlayerDetails(lastPlayer);
-                    }, 150);
-                } else {
-                    wasDetailsOpen = false; // Si el jugador se fue, reseteamos la memoria
-                }
-            }
-
             // --- CERRAR MENÚ ---
         } else if (data.type === 'close') {
             document.body.classList.remove('menu-open');
             mainAdminPanel.style.display = 'none';
+
+            if (typeof closePlayerDetails === 'function') {
+                closePlayerDetails();
+            }
 
             // Limpiezas existentes
             hideAllLicenses();
@@ -551,6 +559,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 // (Si el timer de 10s no ha acabado, esta función no hará nada todavía)
                 tryShowScreenshot();
             }
+
+        } else if (data.action === 'close' || data.type === 'closeMenu') {
+            const detailsModal = document.getElementById('player-details-modal');
+            if (detailsModal) detailsModal.style.display = 'none';
+
+            const screenshotModal = document.getElementById('screenshot-modal');
+            if (screenshotModal) screenshotModal.style.display = 'none';
+
+            // Intenta ocultar cualquier contenedor genérico
+            const allContainers = document.querySelectorAll('.container');
+            allContainers.forEach(el => el.style.display = 'none');
+
+            selectedPlayer = null;
+
+            // >>> AÑADE ESTO AQUÍ TAMBIÉN <<<
+            if (typeof isDetailsOpen !== 'undefined') isDetailsOpen = false;
+
+            const allItems = document.querySelectorAll('.player-list-item');
+            allItems.forEach(item => item.classList.remove('selected'));
         }
     });
 
@@ -640,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isVisible('goto-modal')) { closeMapMenu(); return; }
             if (isVisible('scale-modal')) { closeScaleModal(); return; }
             if (isVisible('screenshot-modal')) { closeScreenshotModal(); return; }
+            if (isVisible('dimension-modal')) { closeDimensionModal(); return; }
 
             // --- B. CERRAR HUD DE ENTIDADES (DEV TOOL) ---
             if (document.getElementById('entity-info-hud') && document.getElementById('entity-info-hud').style.display !== 'none') {
@@ -650,10 +678,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- GESTIÓN DE PERSISTENCIA PLAYER DETAILS ---
             if (isVisible('player-details-modal')) {
                 wasDetailsOpen = true;
-                closePlayerDetails(); // Ejecuta tu animación de cierre
+                closePlayerDetails();
             } else {
                 wasDetailsOpen = false;
             }
+
+            selectedPlayer = null;
+            document.querySelectorAll('.player-list-item').forEach(item => item.classList.remove('selected'));
 
             // --- C. CERRAR MENÚ PRINCIPAL ---
             fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST', body: '{}' });
@@ -4865,13 +4896,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- NUEVO: INTERCEPTOR PARA SCREENSHOT ---
-        if (action === 'screenshot') {
-            openScreenshotModal(); // Abre el modal en modo "Cargando..."
+        // 2.  INTERCEPTOR PARA DIMENSIONES
+        if (action === 'dimension_menu') {
+            // Abrimos el modal que creamos antes pasando la ID del jugador
+            openDimensionModal(currentDetailsId);
+            return; // ¡IMPORTANTE! Detenemos aquí. No enviamos el fetch de abajo.
+            // La orden real se enviará cuando le des a "IR A LA DIMENSIÓN" en el modal.
         }
-        // ------------------------------------------
 
-        // 3. Enviar al NUI Callback
+        // 3. INTERCEPTOR PARA SCREENSHOT (Tu código existente)
+        if (action === 'screenshot') {
+            openScreenshotModal();
+        }
+
+        // 4. Enviar al NUI Callback (Para el resto de botones: Kick, Ban, Ropa, etc.)
         fetch(`https://${GetParentResourceName()}/playerAction`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4892,8 +4930,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenshotLoader = document.getElementById('screenshot-loader');
     const loaderText = document.getElementById('loader-text');
 
-    let isImageReceived = false; 
-    let isTimeCompleted = false; 
+    let isImageReceived = false;
+    let isTimeCompleted = false;
     let activeTimeouts = [];
 
     // 1. ABRIR MODAL E INICIAR LA CUENTA ATRÁS
@@ -4918,7 +4956,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Timer 2: A los 5 segundos, intentamos mostrar la foto
         let t2 = setTimeout(() => {
-            isTimeCompleted = true; 
+            isTimeCompleted = true;
             tryShowScreenshot();
         }, 5000);
 
@@ -4947,5 +4985,55 @@ document.addEventListener('DOMContentLoaded', () => {
             activeTimeouts = [];
         }
     };
+
+    // ==========================================================================
+    // LÓGICA DE DIMENSIONES (ROUTING BUCKETS)
+    // ==========================================================================
+    const dimModal = document.getElementById('dimension-modal');
+    const dimInput = document.getElementById('dim-input');
+    let selectedDimTarget = null; // Guardamos a quién se lo vamos a hacer
+
+    // 1. ABRIR EL MODAL
+    window.openDimensionModal = (targetId) => {
+        selectedDimTarget = targetId; // Guardamos la ID del jugador objetivo
+
+        if (dimInput) dimInput.value = "0"; // Por defecto sugerimos volver al mundo real
+        if (dimModal) dimModal.style.display = 'flex';
+
+        // Poner el foco en el input para escribir rápido
+        setTimeout(() => dimInput.focus(), 100);
+    }
+
+    // 2. CERRAR EL MODAL
+    window.closeDimensionModal = () => {
+        if (dimModal) dimModal.style.display = 'none';
+        selectedDimTarget = null;
+    }
+
+    // 3. BOTÓN "IR A LA DIMENSIÓN"
+    const btnDim = document.getElementById('btn-set-dimension');
+    if (btnDim) {
+        btnDim.addEventListener('click', () => {
+            if (!selectedDimTarget) return;
+
+            // Obtenemos el número
+            let bucketId = parseInt(dimInput.value);
+
+            // Seguridad: Si está vacío o es negativo, forzamos 0
+            if (isNaN(bucketId) || bucketId < 0) bucketId = 0;
+
+            // Enviamos la orden al cliente (Lua)
+            fetch(`https://${GetParentResourceName()}/setDimension`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    targetId: selectedDimTarget,
+                    bucket: bucketId
+                })
+            });
+
+            closeDimensionModal();
+        });
+    }
 
 }); // FIN DEL DOMContentLoaded

@@ -1,8 +1,4 @@
-QUITAR ESTRES, crear la funcion, script y todo ya que no tengo ESTRES en mi server por ahora.
-
-MENÚ DE PED, tengo que conectarlo con DP-PedsSystem y me da pereza ahora, por lo que quita todo menos el HTML/CSS...
-
-CAMBIAR DIMENSION HACER DE 0
+Para el boton <button onclick="playerAction('remove_stress')">QUITAR ESTRES</button>, crear la funcion, crearlo en el HUD, script y todo ya que no tengo ESTRES en mi server por ahora.
 
 PONER QUITAR ESPOSAS al igual que en el ACCIONES, pero para ponerselo al jugador seleccionado...
 
@@ -33,3 +29,7 @@ MODALS PARA:
 Sanciones y los botones de "Dar Propiedad/Vehículo".
 
 PONER DENTRO DE CADA div DE LISTA DE VEHICULOS/PROPIEDADES, a la derecha un botón de GPS, que al darle, te ponga en el gps ese garaje/propiedad...
+
+HACER que el PANEL DE STATUS se actualice solo cada que baje/suba la SALUD/BLINDAJE/HAMBRE/SED, que se actualice tanto el % como la barra... sin tener que salir del panel DETALLES para que cambien esos numeros...
+
+Hacer que el NOCLIP funcione con vehiculos, actualmente y uso NOCLIP, me baja del vehiculo y me voy. tambien hacer que si estoy en noclip, si me muevo o le doy a la Q o cualquiero OTRA tecla NO haga movimientos el personaje, es decir que esté CONGELADO el NPC, que no se mueva, que no corra al darle SHFT + W, que no se apolle en paredes al darle a la Q, etc

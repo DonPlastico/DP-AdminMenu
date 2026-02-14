@@ -488,11 +488,10 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId)
         SetEntityCoords(adminPed, coords.x, coords.y, coords.z)
         TriggerClientEvent('QBCore:Notify', src, 'Te has teletransportado a ' .. tName, 'success')
 
-        -- --- INVENTARIO (EDITAR JUGADOR) ---
     elseif action == 'open_inventory' then
-        -- Esto abre el inventario del Target EN LA PANTALLA DEL ADMIN
-        -- Funciona con qb-inventory estándar (y la mayoría de forks)
-        TriggerClientEvent("inventory:client:OpenPlayerInventory", src, targetSrc)
+        -- Le pasamos la pelota a tu cliente.
+        -- "targetSrc" es a quien quieres investigar.
+        TriggerClientEvent('dpadmin:client:execOpenInventory', src, targetSrc)
 
     elseif action == 'clear_inventory' then
         Target.Functions.ClearInventory()
@@ -500,8 +499,16 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId)
 
         -- --- MENÚ DE ROPA ---
     elseif action == 'clothing_menu' then
-        -- Abre el menú de ropa en el cliente del JUGADOR
+        -- 1. PRIMERO: Cerramos el menú de admin al jugador (por si lo tiene abierto)
+        TriggerClientEvent('dpadmin:client:forceCloseMenu', targetSrc)
+
+        -- 2. Esperamos un micro-instante para que el NUI se oculte bien
+        Wait(200)
+
+        -- 3. AHORA SÍ: Abrimos el menú de ropa
         TriggerClientEvent('qb-clothing:client:openMenu', targetSrc)
+
+        -- 4. Notificamos al admin que ejecutó la orden
         TriggerClientEvent('QBCore:Notify', src, 'Menú de ropa abierto a ' .. tName, 'success')
 
         -- =======================================================
@@ -515,7 +522,11 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId)
     elseif action == 'remove_stress' then
         -- Desactivado por no uso
     elseif action == 'ped_menu' then
-        -- Pendiente DP-PedsSystem
+        -- Le decimos a TU cliente (Admin) que ejecute la orden
+        TriggerClientEvent('dpadmin:client:openPedMenu', src, targetSrc)
+
+        -- Log (Opcional)
+        TriggerEvent('dpadmin:server:log', 'PED MENU', 'Abrió menú de peds para ID: ' .. targetSrc)
     elseif action == 'dimension_menu' then
         -- Pendiente sistema de modal
     elseif action == 'set_job' or action == 'set_gang' or action == 'give_item' then
@@ -1086,6 +1097,44 @@ RegisterNetEvent('dpadmin:server:relayScreenshot', function(adminSource, base64D
 
         TriggerClientEvent('dpadmin:client:receiveScreenshot', adminSource, base64Data)
     end
+end)
+
+-- ==========================================================================
+--      SISTEMA DE DIMENSIONES (ROUTING BUCKETS)
+-- ==========================================================================
+RegisterNetEvent('dpadmin:server:setDimension', function(targetId, bucket)
+    local src = source
+    local targetSrc = tonumber(targetId)
+    local bucketId = tonumber(bucket)
+
+    -- Validaciones
+    if not targetSrc or not bucketId then
+        return
+    end
+
+    local Target = QBCore.Functions.GetPlayer(targetSrc)
+    if not Target then
+        TriggerClientEvent('QBCore:Notify', src, 'El jugador no está conectado.', 'error')
+        return
+    end
+
+    -- LA MAGIA: SetPlayerRoutingBucket
+    -- Esto mueve al jugador (y su vehículo si conduce) a la dimensión paralela.
+    SetPlayerRoutingBucket(targetSrc, bucketId)
+
+    -- Notificaciones
+    if bucketId == 0 then
+        TriggerClientEvent('QBCore:Notify', src, 'Jugador devuelto al MUNDO NORMAL (0).', 'success')
+        TriggerClientEvent('QBCore:Notify', targetSrc, 'Un administrador te ha devuelto al mundo principal.', 'success')
+    else
+        TriggerClientEvent('QBCore:Notify', src, 'Jugador enviado a la DIMENSIÓN ' .. bucketId, 'primary')
+        TriggerClientEvent('QBCore:Notify', targetSrc, 'Has sido movido a la Dimensión Paralela #' .. bucketId,
+            'primary')
+    end
+
+    -- Log
+    TriggerEvent('dpadmin:server:log', 'DIMENSION',
+        'Cambió dimensión de ' .. GetPlayerName(targetSrc) .. ' a Bucket: ' .. bucketId)
 end)
 
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH
