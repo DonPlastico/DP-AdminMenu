@@ -190,7 +190,7 @@
                         <button id="btn-tags" onclick="toggleAction('tags')">TAGS / NOMBRES</button>
                         <button id="btn-tpm" onclick="triggerAction('tpm')">TPM</button>
                         <button id="btn-goto" onclick="triggerMapOpen()">MAPA TÁCTICO</button>
-                        <button id="btn-cuffs" onclick="toggleAction('cuffs')" class="full-width">PONERSE / QUITARSE
+                        <button id="btn-cuffs" onclick="toggleAction('cuffs')" class="full-width">PONER ESPOSAS - QUITAR
                             ESPOSAS</button>
                     </div>
                 </div>
@@ -1210,7 +1210,6 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn-confirm" id="btn-set-gang" style="flex: 2;">GUARDAR CAMBIOS</button>
-                    <button class="btn-danger" id="btn-fire-gang" style="flex: 1;">EXPULSAR</button>
                     <button class="btn-cancel" onclick="closeGangManageModal()" style="flex: 1;">CANCELAR</button>
                 </div>
             </div>
@@ -1830,6 +1829,26 @@
                                 <div class="progress-fill thirst" id="stat-thirst-bar" style="width: 0%;"></div>
                             </div>
                         </div>
+
+                        <div class="pd-stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label"><span class="iconify" data-icon="mdi:glass-wine"></span> ALCOHOL</span>
+                                <span class="stat-value" id="stat-alcohol-val">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill alcohol" id="stat-alcohol-bar"></div>
+                            </div>
+                        </div>
+
+                        <div class="pd-stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label"><span class="iconify" data-icon="mdi:run"></span> AGUANTE</span>
+                                <span class="stat-value" id="stat-stamina-val">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill stamina" id="stat-stamina-bar"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1840,8 +1859,7 @@
                         <div class="grid-3">
                             <button class="btn-danger" onclick="playerAction('spectate')">ESPECTEAR</button>
                             <button class="btn-danger" onclick="playerAction('screenshot')">HACER CAPTURA</button>
-                            <button class="btn-danger" onclick="playerAction('open_inventory')">ABRIR
-                                INVENTARIO</button>
+                            <button class="btn-danger" onclick="playerAction('remove_stress')">QUITAR ESTRES</button>
                         </div>
 
                         <div class="grid-2">
@@ -1857,7 +1875,7 @@
                             <button onclick="playerAction('revive')">REVIVIR</button>
                         </div>
                         <div class="grid-2">
-                            <button onclick="playerAction('remove_stress')">QUITAR ESTRES</button>
+                            <button onclick="playerAction('open_inventory')">ABRIR INVENTARIO</button>
                             <button onclick="playerAction('clear_inventory')">LIMPIAR INVENTARIO</button>
                         </div>
                         <div class="grid-2">
@@ -1865,18 +1883,16 @@
                             <button onclick="playerAction('ped_menu')">MENÚ DE PED</button>
                         </div>
 
-                        <button class="full-width" onclick="playerAction('dimension_menu')">CAMBIAR DE
-                            DIMENSION</button>
-
                         <div class="grid-3">
                             <button class="btn-danger" onclick="playerAction('set_job')">ASIGNAR TRABAJO</button>
                             <button class="btn-danger" onclick="playerAction('set_gang')">ASIGNAR BANDA</button>
-                            <button class="btn-danger" onclick="playerAction('give_item')">DAR ITEM</button>
+                            <button class="btn-danger" onclick="playerAction('dimension_menu')">CAMBIAR DE
+                                DIMENSION</button>
                         </div>
                         <div class="grid-3">
                             <button class="btn-danger" onclick="playerAction('remove_job')">RETIRAR TRABAJO</button>
                             <button class="btn-danger" onclick="playerAction('remove_gang')">RETIRAR BANDA</button>
-                            <button class="btn-danger" onclick="playerAction('tactical_map')">MAPA TACTICO</button>
+                            <button class="btn-danger" onclick="playerAction('tactical_map')">MAPA TÁCTICO</button>
                         </div>
 
                         <div class="grid-2">
@@ -1896,62 +1912,76 @@
                             <button onclick="playerAction('give_current_vehicle')">DAR VEHÍCULO SUBIDO</button>
                         </div>
 
-                        <button class="btn-danger full-width" onclick="playerToggle('cuffs')">PONER ESPOSAS - QUITAR
+                        <button class="btn-danger full-width" onclick="playerAction('cuff')">PONER/QUITAR
                             ESPOSAS</button>
                     </div>
                 </div>
 
                 <div class="pd-dual-column mt-20">
                     <div class="pd-column">
-                        <div class="pd-title-row pd-section-title">
-                            <div class="pd-title-group">
+                        <div class="pd-section-header">
+                            <div class="pd-section-title">
+                                <span class="iconify" data-icon="mdi:home-city"></span>
                                 <span>PROPIEDADES</span>
-                                <span class="pd-count-badge" id="pd-prop-count">0</span>
+                                <span class="pd-count-pill" id="pd-prop-count">0</span>
                             </div>
-                            <button class="pd-header-btn" onclick="playerAction('give_property')">DAR PROPIEDAD</button>
                         </div>
-
-                        <div class="pd-list-container" id="pd-properties-list">
-                            <div class="pd-empty-msg">No se han encontrado propiedades.</div>
+                        <div class="pd-card-list" id="pd-properties-list">
+                            <div class="pd-empty-state">
+                                <span class="iconify pd-empty-icon" data-icon="mdi:home-search-outline"></span>
+                                <span>Cargando...</span>
+                            </div>
                         </div>
                     </div>
 
                     <div class="pd-column">
-                        <div class="pd-title-row pd-section-title">
-                            <div class="pd-title-group">
+                        <div class="pd-section-header">
+                            <div class="pd-section-title">
+                                <span class="iconify" data-icon="mdi:car-key"></span>
                                 <span>VEHÍCULOS</span>
-                                <span class="pd-count-badge" id="pd-veh-count">0</span>
+                                <span class="pd-count-pill" id="pd-veh-count">0</span>
                             </div>
-                            <button class="pd-header-btn" onclick="playerAction('give_vehicle')">DAR VEHÍCULO</button>
                         </div>
-
-                        <div class="pd-list-container" id="pd-vehicles-list">
-                            <div class="pd-empty-msg">El jugador no posee vehículos.</div>
+                        <div class="pd-card-list" id="pd-vehicles-list">
+                            <div class="pd-empty-state">
+                                <span class="iconify pd-empty-icon" data-icon="mdi:car-off"></span>
+                                <span>Cargando...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-20">
-                    <div class="pd-title-row pd-section-title">
-                        <div class="pd-title-group">
-                            <span>SANCIONES</span>
-                            <span class="pd-count-badge" id="pd-punish-count">0</span>
+                    <div class="pd-section-header">
+                        <div class="pd-section-title">
+                            <span class="iconify" data-icon="mdi:gavel" style="color: #ff9800;"></span>
+                            <span style="color: #ffb74d;">HISTORIAL DE SANCIONES</span>
+                            <span class="pd-count-pill" id="pd-punish-count"
+                                style="background: rgba(255, 152, 0, 0.2); color: #ff9800;">0</span>
                         </div>
                     </div>
 
-                    <div class="pd-list-container" id="pd-punishments-list">
-                        <div class="pd-empty-msg">No hay sanciones registradas.</div>
+                    <div class="pd-card-list" id="pd-punishments-list" style="max-height: 150px;">
+                        <div class="pd-empty-state">
+                            <span class="iconify pd-empty-icon" data-icon="mdi:clipboard-check-outline"></span>
+                            <span>Historial limpio</span>
+                        </div>
                     </div>
 
-                    <div class="pd-punish-actions mt-10">
-                        <div class="pd-punish-left">
-                            <button class="btn-danger" onclick="playerAction('ban')">BANEAR JUGADOR</button>
-                            <button class="btn-danger" onclick="playerAction('kick')">EXPULSAR JUGADOR</button>
-                        </div>
-                        <div class="pd-punish-right">
-                            <button onclick="playerAction('warn')">DAR AVISO</button>
-                            <button class="btn-danger" onclick="playerAction('ck')">CK JUGADOR</button>
-                        </div>
+                    <div class="pd-punish-toolbar mt-10">
+                        <button class="btn-punish type-ban" onclick="playerAction('ban')">
+                            <span class="iconify" data-icon="mdi:account-cancel"></span> BANEAR
+                        </button>
+                        <button class="btn-punish type-kick" onclick="playerAction('kick')">
+                            <span class="iconify" data-icon="mdi:door-open"></span> KICK
+                        </button>
+                        <div style="flex-grow: 1;"></div> <button class="btn-punish type-warn"
+                            onclick="playerAction('warn')">
+                            <span class="iconify" data-icon="mdi:alert-circle"></span> WARN
+                        </button>
+                        <button class="btn-punish type-ck" onclick="playerAction('ck')">
+                            <span class="iconify" data-icon="mdi:skull"></span> CK
+                        </button>
                     </div>
                 </div>
             </div>

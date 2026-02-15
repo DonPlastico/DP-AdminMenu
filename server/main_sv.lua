@@ -339,7 +339,9 @@ QBCore.Functions.CreateCallback('dpadmin:server:getDetailedData', function(sourc
             hunger = Player.PlayerData.metadata['hunger'],
             thirst = Player.PlayerData.metadata['thirst'],
             isDead = Player.PlayerData.metadata['isdead'],
-            inLastStand = Player.PlayerData.metadata['inlaststand']
+            inLastStand = Player.PlayerData.metadata['inlaststand'],
+            alcohol = Player.PlayerData.metadata['alcohol'] or Player.PlayerData.metadata['isdrank'] or 0,
+            stamina = 100 -- Valor inicial visual, el real llega con el Live Stats
         },
 
         -- Listas Vacías (Se llenan abajo)
@@ -414,7 +416,7 @@ end)
 -- ==========================================================================
 local savedLocations = {} -- Tabla para guardar coordenadas antes de hacer BRING
 
-RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId)
+RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
     local src = source
     local targetSrc = tonumber(targetId)
 
@@ -497,7 +499,6 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId)
         Target.Functions.ClearInventory()
         TriggerClientEvent('QBCore:Notify', src, 'Inventario de ' .. tName .. ' borrado.', 'error')
 
-        -- --- MENÚ DE ROPA ---
     elseif action == 'clothing_menu' then
         -- 1. PRIMERO: Cerramos el menú de admin al jugador (por si lo tiene abierto)
         TriggerClientEvent('dpadmin:client:forceCloseMenu', targetSrc)
@@ -511,29 +512,110 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId)
         -- 4. Notificamos al admin que ejecutó la orden
         TriggerClientEvent('QBCore:Notify', src, 'Menú de ropa abierto a ' .. tName, 'success')
 
-        -- =======================================================
-        --      ACCIONES DESACTIVADAS (Solo HTML/CSS visible)
-        -- =======================================================
-        -- Estas acciones existen en el HTML pero aquí no hacen nada por ahora
     elseif action == 'screenshot' then
         DebugLog("^3[DP-ADMIN SERVER] 📸 Ordenando captura al ID: " .. targetSrc .. " devuelta a Admin: " .. src ..
                      "^7")
         TriggerClientEvent('dpadmin:client:captureScreen', targetSrc, src)
+
     elseif action == 'remove_stress' then
         -- Desactivado por no uso
+
     elseif action == 'ped_menu' then
         -- Le decimos a TU cliente (Admin) que ejecute la orden
         TriggerClientEvent('dpadmin:client:openPedMenu', src, targetSrc)
 
         -- Log (Opcional)
         TriggerEvent('dpadmin:server:log', 'PED MENU', 'Abrió menú de peds para ID: ' .. targetSrc)
+
     elseif action == 'dimension_menu' then
         -- Pendiente sistema de modal
-    elseif action == 'set_job' or action == 'set_gang' or action == 'give_item' then
-        -- Pendiente lógica compleja
+
+    elseif action == 'remove_job' then
+        -- Ponemos el trabajo por defecto de QB-Core (unemployed) con rango 0
+        -- El 'true' final silencia la notificación nativa de QB
+        Target.Functions.SetJob("unemployed", 0, true)
+
+        -- Notificaciones
+        if src == targetSrc then
+            TriggerClientEvent('QBCore:Notify', src, 'Te has puesto en modo Desempleado.', 'success')
+        else
+            TriggerClientEvent('QBCore:Notify', src, 'Has retirado el trabajo a ' .. tName, 'success')
+            TriggerClientEvent('QBCore:Notify', targetSrc, 'Un administrador ha retirado tu trabajo.', 'primary')
+        end
+
+        -- Refrescar la UI y Log
+        GlobalRefresh()
+        TriggerEvent('dpadmin:server:log', 'ACTION', 'Retiró trabajo a ' .. tName)
+
+    elseif action == 'remove_gang' then
+        -- Ponemos la banda por defecto (none) con rango 0
+        Target.Functions.SetGang("none", 0, true)
+
+        -- Notificaciones
+        if src == targetSrc then
+            TriggerClientEvent('QBCore:Notify', src, 'Te has salido de tu banda.', 'success')
+        else
+            TriggerClientEvent('QBCore:Notify', src, 'Has retirado la banda a ' .. tName, 'success')
+            TriggerClientEvent('QBCore:Notify', targetSrc, 'Un administrador te ha retirado de tu banda.', 'primary')
+        end
+
+        -- Refrescar la UI y Log
+        GlobalRefresh()
+        TriggerEvent('dpadmin:server:log', 'ACTION', 'Retiró banda a ' .. tName)
+
     elseif action == 'add_cash' or action == 'remove_cash' or action == 'add_bank' or action == 'remove_bank' or action ==
-        'add_crypto' then
-        -- Pendiente lógica económica
+        'add_crypto' or action == 'remove_crypto' then
+
+        -- Validamos que los datos extra existan
+        if not data or not data.amount then
+            return
+        end
+
+        local amount = tonumber(data.amount)
+        if not amount or amount <= 0 then
+            return
+        end
+
+        -- Definir tipo: cash, bank o crypto
+        local moneyType = "cash"
+        if action:find("bank") then
+            moneyType = "bank"
+        elseif action:find("crypto") then
+            moneyType = "crypto"
+        end
+
+        if action:find("add") then
+            -- DAR DINERO
+            Target.Functions.AddMoney(moneyType, amount, "Admin Action")
+            TriggerClientEvent('QBCore:Notify', src, 'Has entregado ' .. amount .. ' (' .. moneyType .. ') a ' .. tName,
+                'success')
+        else
+            -- QUITAR DINERO (Con validación de saldo)
+            local currentBalance = Target.PlayerData.money[moneyType]
+            if currentBalance >= amount then
+                Target.Functions.RemoveMoney(moneyType, amount, "Admin Action")
+                TriggerClientEvent('QBCore:Notify', src,
+                    'Has quitado ' .. amount .. ' (' .. moneyType .. ') a ' .. tName, 'success')
+            else
+                TriggerClientEvent('QBCore:Notify', src,
+                    'Error: El jugador solo tiene ' .. currentBalance .. ' de ' .. moneyType, 'error')
+            end
+        end
+
+        GlobalRefresh() -- Para que el panel de detalles muestre el nuevo saldo inmediatamente
+
+    elseif action == "cuff" then
+        -- Usamos las variables que ya definiste al principio del evento:
+        -- targetSrc (es la ID numérica)
+        TriggerClientEvent('police:client:GetCuffed', targetSrc, src)
+
+        -- Notificamos
+        -- Usamos 'Target' porque ya lo tienes definido en la línea 14
+        TriggerClientEvent('QBCore:Notify', src,
+            "Has alternado las esposas a: " .. Target.PlayerData.charinfo.firstname, "primary")
+
+        -- Log
+        TriggerEvent('dpadmin:server:log', 'ACTION', 'Esposó/Desesposó al jugador ' .. targetSrc)
     end
 end)
 
@@ -822,14 +904,39 @@ RegisterNetEvent('dpadmin:server:toggleDuty', function(targetId)
     end
 end)
 
-RegisterNetEvent('dpadmin:server:setJob', function(targetId, jobName, jobGrade)
+RegisterNetEvent('dpadmin:server:setJob', function(targetId, job, grade)
     local src = source
-    local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
-    if Target and QBCore.Shared.Jobs[jobName] then
-        Target.Functions.SetJob(jobName, tonumber(jobGrade) or 0)
-        TriggerClientEvent('QBCore:Notify', src, 'Trabajo cambiado correctamente', 'success')
-        TriggerClientEvent('dpadmin:client:refreshJobs', src)
-        GlobalRefresh()
+    local targetSrc = tonumber(targetId)
+    local targetPlayer = QBCore.Functions.GetPlayer(targetSrc)
+    local gradeLevel = tonumber(grade) or 0
+
+    if targetPlayer then
+        -- 1. VALIDACIÓN DE SEGURIDAD (Del código antiguo)
+        -- Esto evita que pongas un trabajo que no existe y buguees al personaje
+        if QBCore.Shared.Jobs[job] then
+
+            -- 2. ACCIÓN PRINCIPAL
+            targetPlayer.Functions.SetJob(job, gradeLevel)
+
+            -- 3. NOTIFICACIONES (Del código nuevo)
+            TriggerClientEvent('QBCore:Notify', src, "Trabajo actualizado a: " .. job .. " (" .. gradeLevel .. ")",
+                "success")
+            TriggerClientEvent('QBCore:Notify', targetSrc, "Tu trabajo ha sido actualizado por administración.",
+                "primary")
+
+            -- 4. LOGS (Del código nuevo)
+            TriggerEvent('dpadmin:server:log', 'JOB',
+                'Cambió trabajo de ' .. GetPlayerName(targetSrc) .. ' a ' .. job .. ' (' .. gradeLevel .. ')')
+
+            -- 5. REFRESCAR UI ADMIN (Del código antiguo)
+            -- Esto hace que si otro admin tiene el menú abierto, se le actualice la lista
+            GlobalRefresh()
+        else
+            TriggerClientEvent('QBCore:Notify', src, "El trabajo '" .. job .. "' no existe en la base de datos.",
+                "error")
+        end
+    else
+        TriggerClientEvent('QBCore:Notify', src, "El jugador ya no está conectado.", "error")
     end
 end)
 
@@ -846,12 +953,32 @@ end)
 
 RegisterNetEvent('dpadmin:server:setGang', function(targetId, gangName, gangGrade)
     local src = source
-    local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
-    if Target and (QBCore.Shared.Gangs[gangName] or gangName == "none") then
-        Target.Functions.SetGang(gangName, tonumber(gangGrade) or 0)
-        TriggerClientEvent('QBCore:Notify', src, 'Banda actualizada.', 'success')
-        GlobalRefresh()
+    local targetSrc = tonumber(targetId)
+    local Target = QBCore.Functions.GetPlayer(targetSrc)
+    local gradeLevel = tonumber(gangGrade) or 0
+
+    if not Target then
+        return
     end
+
+    -- Cambiar banda (El 'true' silencia el mensaje nativo de QB)
+    Target.Functions.SetGang(gangName, gradeLevel, true)
+
+    local gangLabel = (gangName == "none") and "Ninguna" or
+                          (QBCore.Shared.Gangs[gangName] and QBCore.Shared.Gangs[gangName].label or gangName)
+
+    -- Si el Admin es el mismo que el Target, solo enviamos 1
+    if src == targetSrc then
+        TriggerClientEvent('QBCore:Notify', src, 'Te has actualizado tu banda a: ' .. gangLabel, 'success')
+    else
+        -- Mensaje para el Administrador
+        TriggerClientEvent('QBCore:Notify', src, 'Banda de ' .. GetPlayerName(targetSrc) .. ' actualizada.', 'success')
+        -- Mensaje para el Jugador
+        TriggerClientEvent('QBCore:Notify', targetSrc, "Tu banda ha sido actualizada a: " .. gangLabel, "primary")
+    end
+
+    TriggerEvent('dpadmin:server:log', 'GANG', 'Cambió banda de ' .. GetPlayerName(targetSrc) .. ' a ' .. gangName)
+    GlobalRefresh()
 end)
 
 RegisterNetEvent('dpadmin:server:setGangGrade', function(targetId, gangGrade)
@@ -1083,7 +1210,6 @@ RegisterNetEvent('dpadmin:server:uploadImage', function(base64Data)
     if not webhook or webhook == "" then
         return
     end
-    -- (Tu lógica de upload se mantiene, la he compactado, pero funciona igual)
 end)
 
 -- ==========================================================================
@@ -1100,7 +1226,7 @@ RegisterNetEvent('dpadmin:server:relayScreenshot', function(adminSource, base64D
 end)
 
 -- ==========================================================================
---      SISTEMA DE DIMENSIONES (ROUTING BUCKETS)
+--              SISTEMA DE DIMENSIONES (ROUTING BUCKETS)
 -- ==========================================================================
 RegisterNetEvent('dpadmin:server:setDimension', function(targetId, bucket)
     local src = source
@@ -1137,6 +1263,106 @@ RegisterNetEvent('dpadmin:server:setDimension', function(targetId, bucket)
         'Cambió dimensión de ' .. GetPlayerName(targetSrc) .. ' a Bucket: ' .. bucketId)
 end)
 
+-- ==========================================================================
+--                           TP A UN PUNTO, A JUGADOR
+-- ==========================================================================
+
+RegisterNetEvent('dpadmin:server:teleportTargetTactical', function(targetId, coords)
+    local src = source
+    local targetSrc = tonumber(targetId)
+    local Target = QBCore.Functions.GetPlayer(targetSrc)
+
+    if Target then
+        local tPed = GetPlayerPed(targetSrc)
+
+        -- 1. GUARDAMOS LA POSICIÓN (Para el botón Regresar Jugador / Return)
+        -- Usamos la tabla savedLocations que ya tienes al principio de tu server.lua
+        savedLocations[targetSrc] = GetEntityCoords(tPed)
+
+        -- 2. TELETRANSPORTAMOS
+        -- Usamos coords.z o 100.0 si el mapa no envió una altura específica
+        local zCoord = coords.z or 100.0
+        SetEntityCoords(tPed, coords.x, coords.y, zCoord)
+
+        -- 3. NOTIFICACIONES
+        local tName = GetPlayerName(targetSrc)
+        TriggerClientEvent('QBCore:Notify', src, 'Has desplegado a ' .. tName .. ' mediante el mapa táctico.',
+            'success')
+        TriggerClientEvent('QBCore:Notify', targetSrc, 'Un administrador te ha desplegado tácticamente.', 'primary')
+
+        -- 4. LOG
+        TriggerEvent('dpadmin:server:log', 'ACTION',
+            'Mapa Táctico: Envió a ' .. tName .. ' a coords: ' .. coords.x .. ', ' .. coords.y)
+    else
+        TriggerClientEvent('QBCore:Notify', src, 'Error: El jugador ya no está conectado.', 'error')
+    end
+end)
+
+-- ==========================================================================
+--      SISTEMA LIVE STATS (Optimizado)
+-- ==========================================================================
+local AdminsWatching = {} -- Tabla para guardar qué admin mira a qué jugador
+
+-- 1. ACTIVAR/DESACTIVAR EL BUCLE
+RegisterNetEvent('dpadmin:server:toggleWatch', function(targetId, state)
+    local src = source
+    if state then
+        AdminsWatching[src] = targetId
+    else
+        AdminsWatching[src] = nil
+    end
+end)
+
+-- 2. RECIBIR DATOS DEL JUGADOR Y ENVIAR AL ADMIN
+RegisterNetEvent('dpadmin:server:receiveLiveStats', function(clientData)
+    local targetSrc = source
+    local tPlayer = QBCore.Functions.GetPlayer(targetSrc)
+    if not tPlayer then
+        return
+    end
+
+    local meta = tPlayer.PlayerData.metadata
+
+    -- Empaquetamos los datos frescos
+    local payload = {
+        health = clientData.health,
+        armor = clientData.armor,
+        stamina = clientData.stamina,
+        hunger = meta['hunger'] or 0,
+        thirst = meta['thirst'] or 0,
+        alcohol = meta['alcohol'] or meta['isdrank'] or 0
+    }
+
+    -- Buscamos qué admin está mirando a este jugador y se lo enviamos
+    for adminSrc, watchedTarget in pairs(AdminsWatching) do
+        if watchedTarget == targetSrc then
+            TriggerClientEvent('dpadmin:client:updateLiveStats', adminSrc, payload)
+        end
+    end
+end)
+
+-- 3. BUCLE DE CONTROL (Cada 1.5s pide datos a los jugadores observados)
+CreateThread(function()
+    while true do
+        Wait(1500)
+        local requestQueue = {}
+
+        -- Filtramos para no pedirle datos 2 veces al mismo jugador si 2 admins lo miran
+        for adminSrc, targetSrc in pairs(AdminsWatching) do
+            if GetPlayerPing(targetSrc) > 0 then
+                requestQueue[targetSrc] = true
+            else
+                AdminsWatching[adminSrc] = nil -- Limpieza si se desconectó
+            end
+        end
+
+        -- Pedimos el reporte a los clientes
+        for targetSrc, _ in pairs(requestQueue) do
+            TriggerClientEvent('dpadmin:client:reportLiveStats', targetSrc)
+        end
+    end
+end)
+
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH
 AddEventHandler('playerJoining', function()
     GlobalRefresh()
@@ -1144,13 +1370,20 @@ end)
 
 AddEventHandler('playerDropped', function()
     local src = source
+
     if adminsInGodmode[src] then
         adminsInGodmode[src] = nil
     end
+
     if AdminsOnDuty[src] then
         AdminsOnDuty[src] = nil
     end
+
     GlobalRefresh()
+
+    if AdminsWatching[src] then
+        AdminsWatching[src] = nil
+    end
 end)
 
 AddEventHandler('QBCore:Server:OnPlayerUnload', function()

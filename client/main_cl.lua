@@ -1724,7 +1724,9 @@ RegisterNUICallback('setJobGrade', function(data, cb)
 end)
 
 RegisterNUICallback('setGang', function(data, cb)
-    TriggerServerEvent('dpadmin:server:setGang', data.targetId, data.gang, data.grade)
+    if data.targetId and data.gang then
+        TriggerServerEvent('dpadmin:server:setGang', data.targetId, data.gang, data.grade)
+    end
     cb('ok')
 end)
 
@@ -2121,6 +2123,15 @@ RegisterNUICallback('tpToLocation', function(data, cb)
     cb('ok')
 end)
 
+-- Callback para el Mapa Táctico desde Detalles del Jugador
+RegisterNUICallback('teleportTargetToCoords', function(data, cb)
+    if data.targetId and data.coords then
+        -- Enviamos la ID del objetivo y las coordenadas al servidor
+        TriggerServerEvent('dpadmin:server:teleportTargetTactical', data.targetId, data.coords)
+    end
+    cb('ok')
+end)
+
 -- 3. Cerrar Menú (Solo si no tienes ya un callback 'closeMenu' repetido arriba)
 RegisterNUICallback('closeMenu', function(_, cb)
     SetNuiFocus(false, false)
@@ -2136,8 +2147,8 @@ local lastSpectateCoords = nil
 
 -- 1. NUI CALLBACK: Acciones del Panel (Matar, Congelar, Espectear...)
 RegisterNUICallback('playerAction', function(data, cb)
-    -- Enviamos la acción al servidor (spectate, kill, freeze, etc.)
-    TriggerServerEvent('dpadmin:server:playerAction', data.action, data.targetId)
+    -- Enviamos: 1. La acción, 2. La ID, 3. TODO el objeto data (donde va el 'amount' si existe)
+    TriggerServerEvent('dpadmin:server:playerAction', data.action, data.targetId, data)
     cb('ok')
 end)
 
@@ -2295,6 +2306,40 @@ RegisterNUICallback('setDimension', function(data, cb)
     -- data.targetId = ID del jugador
     -- data.bucket = Número de la dimensión
     TriggerServerEvent('dpadmin:server:setDimension', data.targetId, data.bucket)
+    cb('ok')
+end)
+
+-- ==========================================================================
+--      SISTEMA LIVE STATS (CLIENTE)
+-- ==========================================================================
+
+-- 1. EL ADMIN ME PIDE MIS DATOS (Soy el objetivo)
+RegisterNetEvent('dpadmin:client:reportLiveStats', function()
+    local ped = PlayerPedId()
+    local playerId = PlayerId()
+    
+    -- Calculamos Estamina (100 - lo que falta para cansarse)
+    -- En GTA, GetPlayerSprintStaminaRemaining devuelve cuanto le queda.
+    local staminaLevel = 100 - GetPlayerSprintStaminaRemaining(playerId)
+    
+    TriggerServerEvent('dpadmin:server:receiveLiveStats', {
+        health = GetEntityHealth(ped) - 100,
+        armor = GetPedArmour(ped),
+        stamina = staminaLevel
+    })
+end)
+
+-- 2. EL SERVIDOR ME ENVÍA LOS DATOS ACTUALIZADOS (Soy el Admin)
+RegisterNetEvent('dpadmin:client:updateLiveStats', function(data)
+    SendNUIMessage({
+        action = "UPDATE_LIVE_STATS",
+        stats = data
+    })
+end)
+
+-- CALLBACK PARA ACTIVAR/DESACTIVAR EL LIVE STATS DESDE JS
+RegisterNUICallback('toggleWatch', function(data, cb)
+    TriggerServerEvent('dpadmin:server:toggleWatch', data.targetId, data.state)
     cb('ok')
 end)
 

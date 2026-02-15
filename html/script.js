@@ -560,6 +560,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 tryShowScreenshot();
             }
 
+        } else if (data.action === "UPDATE_LIVE_STATS") {
+            // Solo actualizamos si el modal está realmente abierto
+            if (typeof isDetailsOpen !== 'undefined' && !isDetailsOpen) return;
+
+            const s = data.stats;
+            
+            // --- 1. HEALTH (Gestión especial para muertos) ---
+            // Solo pasamos texto si está muerto/herido para que salga ROJO
+            // Si está vivo, pasamos 'null' o nada para que salga BLANCO
+            let healthStatus = null;
+            if (s.health <= 0) { 
+                 // Dependiendo de tu lógica de muerte, a veces health llega negativo o 0
+                 // Si quieres detectar muerte real necesitas enviar isDead desde server, 
+                 // pero visualmente 0% está bien.
+            }
+            // Para Live Stats, mantenemos simple: solo valor numérico
+            updateStatBar('stat-health', s.health);
+
+            // --- 2. RESTO DE STATS (Sin 3er argumento para que sean BLANCOS) ---
+            updateStatBar('stat-armor', s.armor);
+            updateStatBar('stat-hunger', s.hunger);
+            updateStatBar('stat-thirst', s.thirst);
+
+            // --- 3. NUEVOS STATS ---
+            updateStatBar('stat-alcohol', s.alcohol);
+            updateStatBar('stat-stamina', s.stamina);
+
         } else if (data.action === 'close' || data.type === 'closeMenu') {
             const detailsModal = document.getElementById('player-details-modal');
             if (detailsModal) detailsModal.style.display = 'none';
@@ -1781,233 +1808,217 @@ document.addEventListener('DOMContentLoaded', () => {
     // 18. MÓDULO: BANDAS (GANGS)
     // ==========================================================================
     const gangListContainer = document.getElementById('gang-list-container');
-    const totalGangsCounter = document.getElementById('total-gangs'); // Asegúrate de tener este ID en HTML si usas contador
+    const totalGangsCounter = document.getElementById('total-gangs');
 
-    // Variables temporales para Gangs
+    // Variables globales para Bandas
     let selectedGangPlayerId = null;
     let selectedGangName = null;
 
-    // 1. RENDERIZADO INTELIGENTE DE BANDAS
-    function renderGangList(list, keepState = false) {
-        if (!gangListContainer) return;
-
-        // Memoria de acordeones abiertos
-        let openGangs = new Set();
-        if (keepState) {
-            const currentOpen = gangListContainer.querySelectorAll('.accordion-card.expanded');
-            currentOpen.forEach(card => {
-                const idBadge = card.querySelector('.id-badge');
-                if (idBadge) openGangs.add(idBadge.innerText);
-            });
-        }
-
-        gangListContainer.innerHTML = '';
-        if (totalGangsCounter) totalGangsCounter.innerText = list ? list.length : 0;
-
-        if (!list || list.length === 0) {
-            gangListContainer.innerHTML = '<div style="padding:15px; color:#888; text-align:center;">No se encontraron bandas activas.</div>';
-            return;
-        }
-
-        list.sort((a, b) => a.label.localeCompare(b.label));
-
-        list.forEach(gang => {
-            const card = document.createElement('div');
-            const isExpanded = keepState && openGangs.has(gang.name);
-            card.className = isExpanded ? 'accordion-card expanded' : 'accordion-card';
-
-            const playerCount = gang.players ? gang.players.length : 0;
-            const countClass = playerCount > 0 ? 'online-count-badge active' : 'online-count-badge';
-            const countText = playerCount > 0 ? `${playerCount} conectados` : '0 conectados';
-
-            // Cabecera
-            let html = `
-                <div class="accordion-header" onclick="toggleJobAccordion(this)">
-                    <span class="id-badge" style="text-transform:none; width:115px; text-align:center; background:#5a1a1a;">${gang.name}</span> 
-                    <span style="font-weight:bold; color:var(--text-main); margin-left:10px;">${gang.label}</span>
-                    <span class="${countClass}">${countText}</span>
-                    <span class="iconify accordion-icon" data-icon="mdi:chevron-down"></span>
-                </div>
-                <div class="accordion-content">
-            `;
-
-            // Contenido
-            if (playerCount === 0) {
-                html += `<div style="padding:20px; font-size:12px; color:#666; text-align:center; font-style:italic;">
-                            <span class="iconify" data-icon="mdi:sleep" style="font-size:20px; vertical-align:middle;"></span> 
-                            Nadie de esta banda conectado.
-                         </div>`;
-            } else {
-                gang.players.forEach(p => {
-                    // Reutilizamos clase .job-player-row para mantener el estilo visual exacto
-                    html += `
-                        <div class="job-player-row">
-                            <div class="jp-info">
-                                <span class="jp-id-badge">${p.source}</span>
-                                <div class="jp-names">
-                                    <div class="jp-char-name">${p.charName}</div>
-                                    <div class="jp-steam-name">(${p.name})</div>
-                                </div>
-                                
-                                <div class="jp-meta">
-                                    <div class="jp-grade" style="background:rgba(255, 50, 50, 0.1); border-color:rgba(255,50,50,0.2);">
-                                        <span class="iconify" data-icon="mdi:skull-crossbones-outline"></span>
-                                        ${p.gradeLabel} 
-                                        <span class="jp-grade-num" style="color:#ff6b6b;">${p.gradeLevel}</span>
-                                    </div>
-                                    </div>
-                            </div>
-
-                            <div class="icon-actions">
-                                <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}', charName: '${escapeHtml(p.charName)}' })" data-tooltip="Detalles del Jugador">
-                                    <span class="iconify" data-icon="mdi:account-details"></span>
-                                </div>
-                                <div class="icon-btn warn" onclick="openGangRankModal('${p.source}', '${p.name}', '${gang.name}')" data-tooltip="Cambiar Rango">
-                                    <span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span>
-                                </div>
-                                <div class="icon-btn danger" onclick="openGangManageModal('${p.source}', '${p.name}')" data-tooltip="Expulsar / Cambiar Banda">
-                                    <span class="iconify" data-icon="mdi:account-cancel-outline"></span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            html += `</div>`;
-            card.innerHTML = html;
-            gangListContainer.appendChild(card);
-        });
-    }
-
-    // 2. LÓGICA MODAL GESTIONAR BANDA (SELECTS)
     const gmModal = document.getElementById('gang-manage-modal');
     const gmName = document.getElementById('gm-player-name');
-
     const wrapGmGang = document.getElementById('wrap-gm-gang');
     const trigGmGang = document.getElementById('trig-gm-gang');
     const optsGmGang = document.getElementById('opts-gm-gang');
     const valGmGang = document.getElementById('val-gm-gang');
-
     const wrapGmGrade = document.getElementById('wrap-gm-grade');
     const trigGmGrade = document.getElementById('trig-gm-grade');
     const optsGmGrade = document.getElementById('opts-gm-grade');
     const valGmGrade = document.getElementById('val-gm-grade');
 
+    // 1. RENDERIZADO DE BANDAS
+    function renderGangList(list, keepState = false) {
+        if (!gangListContainer) return;
+        let openGangs = new Set();
+        if (keepState) {
+            gangListContainer.querySelectorAll('.accordion-card.expanded').forEach(card => {
+                const idBadge = card.querySelector('.id-badge');
+                if (idBadge) openGangs.add(idBadge.innerText);
+            });
+        }
+        gangListContainer.innerHTML = '';
+        if (totalGangsCounter) totalGangsCounter.innerText = list ? list.length : 0;
+        if (!list || list.length === 0) {
+            gangListContainer.innerHTML = '<div style="padding:15px; color:#888; text-align:center;">No se encontraron bandas activas.</div>';
+            return;
+        }
+        list.sort((a, b) => a.label.localeCompare(b.label));
+        list.forEach(gang => {
+            const card = document.createElement('div');
+            const isExpanded = keepState && openGangs.has(gang.name);
+            card.className = isExpanded ? 'accordion-card expanded' : 'accordion-card';
+            const playerCount = gang.players ? gang.players.length : 0;
+            const countClass = playerCount > 0 ? 'online-count-badge active' : 'online-count-badge';
+
+            card.innerHTML = `
+                <div class="accordion-header" onclick="toggleJobAccordion(this)">
+                    <span class="id-badge" style="text-transform:none; width:115px; text-align:center; background:#5a1a1a;">${gang.name}</span> 
+                    <span style="font-weight:bold; color:var(--text-main); margin-left:10px;">${gang.label}</span>
+                    <span class="${countClass}">${playerCount} conectados</span>
+                    <span class="iconify accordion-icon" data-icon="mdi:chevron-down"></span>
+                </div>
+                <div class="accordion-content">
+                    ${playerCount === 0 ? '<div style="padding:20px; color:#666; text-align:center; font-style:italic;">Nadie conectado.</div>' : ''}
+                </div>`;
+
+            const content = card.querySelector('.accordion-content');
+            if (gang.players) {
+                gang.players.forEach(p => {
+                    const row = document.createElement('div');
+                    row.className = 'job-player-row';
+                    row.innerHTML = `
+                        <div class="jp-info">
+                            <span class="jp-id-badge">${p.source}</span>
+                            <div class="jp-names">
+                                <div class="jp-char-name">${p.charName}</div>
+                                <div class="jp-steam-name">(${p.name})</div>
+                            </div>
+                            <div class="jp-meta">
+                                <div class="jp-grade" style="background:rgba(255, 50, 50, 0.1); border-color:rgba(255,50,50,0.2);">
+                                    <span class="iconify" data-icon="mdi:skull-crossbones-outline"></span>
+                                    ${p.gradeLabel} <span class="jp-grade-num" style="color:#ff6b6b;">${p.gradeLevel}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="icon-actions">
+                            <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}' })"><span class="iconify" data-icon="mdi:account-details"></span></div>
+                            <div class="icon-btn warn" onclick="openGangRankModal('${p.source}', '${escapeHtml(p.name)}', '${gang.name}')"><span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span></div>
+                            <div class="icon-btn danger" onclick="openGangManageModal('${p.source}', '${escapeHtml(p.name)}')"><span class="iconify" data-icon="mdi:account-cancel-outline"></span></div>
+                        </div>`;
+                    content.appendChild(row);
+                });
+            }
+            gangListContainer.appendChild(card);
+        });
+    }
+
+    // 2. MODAL GESTIONAR
     window.openGangManageModal = (playerId, playerName) => {
         selectedGangPlayerId = playerId;
         if (gmName) gmName.innerText = playerName;
-
         if (valGmGang) valGmGang.value = "";
         if (trigGmGang) trigGmGang.querySelector('span').innerText = "Seleccionar Banda...";
-
         if (valGmGrade) valGmGrade.value = "0";
         if (trigGmGrade) trigGmGrade.querySelector('span').innerText = "Primero elige una banda...";
         if (wrapGmGrade) wrapGmGrade.classList.add('disabled');
-
         populateGangOptions();
         if (gmModal) gmModal.style.display = 'flex';
     };
 
     window.closeGangManageModal = () => {
         if (gmModal) gmModal.style.display = 'none';
-        if (wrapGmGang) wrapGmGang.classList.remove('open');
-        if (wrapGmGrade) wrapGmGrade.classList.remove('open');
+        wrapGmGang?.classList.remove('open');
+        wrapGmGrade?.classList.remove('open');
     };
 
     function populateGangOptions() {
         if (!optsGmGang) return;
         optsGmGang.innerHTML = '';
-        const sortedGangs = [...allGangs].sort((a, b) => a.label.localeCompare(b.label));
-
-        sortedGangs.forEach(g => {
+        [...allGangs].sort((a, b) => a.label.localeCompare(b.label)).forEach(g => {
             const option = document.createElement('span');
             option.className = 'custom-option';
             option.innerText = g.label;
-            option.addEventListener('click', () => {
-                if (valGmGang) valGmGang.value = g.name;
-                if (trigGmGang) trigGmGang.querySelector('span').innerText = g.label;
-                if (wrapGmGang) wrapGmGang.classList.remove('open');
+            option.onclick = () => {
+                valGmGang.value = g.name;
+                trigGmGang.querySelector('span').innerText = g.label;
+                wrapGmGang.classList.remove('open');
                 populateGangGradeOptions(g);
-            });
+            };
             optsGmGang.appendChild(option);
         });
     }
 
     function populateGangGradeOptions(gangData) {
-        if (!optsGmGrade) return;
         optsGmGrade.innerHTML = '';
-        if (wrapGmGrade) wrapGmGrade.classList.remove('disabled');
-        if (valGmGrade) valGmGrade.value = "0";
-
-        let gradesArray = [];
-        if (gangData.grades) {
-            for (const [level, data] of Object.entries(gangData.grades)) {
-                gradesArray.push({ level: parseInt(level), name: data.name });
-            }
-        }
+        wrapGmGrade.classList.remove('disabled');
+        valGmGrade.value = "0";
+        let gradesArray = Object.entries(gangData.grades || {}).map(([lvl, data]) => ({ level: parseInt(lvl), name: data.name }));
         gradesArray.sort((a, b) => a.level - b.level);
-
-        if (trigGmGrade) trigGmGrade.querySelector('span').innerText = gradesArray.length > 0 ? `${gradesArray[0].name} (0)` : "Sin rangos";
+        trigGmGrade.querySelector('span').innerText = gradesArray.length > 0 ? `${gradesArray[0].name} (0)` : "Sin rangos";
 
         gradesArray.forEach(grade => {
             const option = document.createElement('span');
             option.className = 'custom-option';
             option.innerText = `${grade.name} (${grade.level})`;
-            option.addEventListener('click', () => {
-                if (valGmGrade) valGmGrade.value = grade.level;
-                if (trigGmGrade) trigGmGrade.querySelector('span').innerText = option.innerText;
-                if (wrapGmGrade) wrapGmGrade.classList.remove('open');
-            });
+            option.onclick = () => {
+                valGmGrade.value = grade.level;
+                trigGmGrade.querySelector('span').innerText = option.innerText;
+                wrapGmGrade.classList.remove('open');
+            };
             optsGmGrade.appendChild(option);
         });
     }
 
-    // Listeners Selects Gangs
-    if (trigGmGang) {
-        trigGmGang.addEventListener('click', (e) => {
-            if (wrapGmGang) wrapGmGang.classList.toggle('open');
-            if (wrapGmGrade) wrapGmGrade.classList.remove('open');
-            e.stopPropagation();
+    // BOTÓN GUARDAR CAMBIOS (Actualizado con Auto-Refresco)
+    document.getElementById('btn-set-gang')?.addEventListener('click', () => {
+        const newGang = valGmGang.value;
+        const newGrade = valGmGrade.value || 0;
+        if (!newGang || !selectedGangPlayerId) return;
+
+        fetch(`https://${GetParentResourceName()}/setGang`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetId: selectedGangPlayerId, gang: newGang, grade: newGrade })
         });
-    }
-    if (trigGmGrade) {
-        trigGmGrade.addEventListener('click', (e) => {
-            if (wrapGmGrade && !wrapGmGrade.classList.contains('disabled')) wrapGmGrade.classList.toggle('open');
-            if (wrapGmGang) wrapGmGang.classList.remove('open');
-            e.stopPropagation();
+
+        const targetId = selectedGangPlayerId;
+        closeGangManageModal();
+        if (isDetailsOpen && currentDetailsId == targetId) {
+            setTimeout(() => window.openPlayerDetails({ id: targetId }), 500);
+        }
+    });
+
+    // BOTÓN EXPULSAR
+    document.getElementById('btn-fire-gang')?.addEventListener('click', () => {
+        const targetId = selectedGangPlayerId;
+        showConfirmationModal(`¿Expulsar de su banda?`, () => {
+            fetch(`https://${GetParentResourceName()}/setGang`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetId: targetId, gang: "none", grade: 0 })
+            });
+            if (isDetailsOpen && currentDetailsId == targetId) {
+                setTimeout(() => window.openPlayerDetails({ id: targetId }), 500);
+            }
         });
-    }
+        closeGangManageModal();
+    });
+
+    // Selectores UI
+    trigGmGang?.addEventListener('click', (e) => {
+        wrapGmGang.classList.toggle('open');
+        wrapGmGrade.classList.remove('open');
+        e.stopPropagation();
+    });
+
+    trigGmGrade?.addEventListener('click', (e) => {
+        if (!wrapGmGrade.classList.contains('disabled')) wrapGmGrade.classList.toggle('open');
+        wrapGmGang.classList.remove('open');
+        e.stopPropagation();
+    });
 
     // Botones Acción
     const btnSetGang = document.getElementById('btn-set-gang');
     if (btnSetGang) {
-        btnSetGang.addEventListener('click', () => {
-            const newGang = valGmGang ? valGmGang.value : null;
-            const newGrade = valGmGrade ? valGmGrade.value : 0;
-            if (!newGang) return;
+        // Usamos onclick en lugar de addEventListener para asegurar que solo haya UNO
+        btnSetGang.onclick = function () {
+            const targetId = selectedGangPlayerId;
+            const gang = document.getElementById('val-gm-gang').value;
+            const grade = document.getElementById('val-gm-grade').value;
+
+            if (!targetId || !gang) return;
 
             fetch(`https://${GetParentResourceName()}/setGang`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetId: selectedGangPlayerId, gang: newGang, grade: newGrade })
+                body: JSON.stringify({
+                    targetId: targetId,
+                    gang: gang,
+                    grade: grade
+                })
             });
-            closeGangManageModal();
-        });
-    }
 
-    const btnFireGang = document.getElementById('btn-fire-gang');
-    if (btnFireGang) {
-        btnFireGang.addEventListener('click', () => {
-            showConfirmationModal(`¿Expulsar a <b>${gmName ? gmName.innerText : 'Jugador'}</b> de su banda?`, () => {
-                fetch(`https://${GetParentResourceName()}/setGang`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ targetId: selectedGangPlayerId, gang: "none", grade: 0 })
-                });
-            });
             closeGangManageModal();
-        });
+        };
     }
 
     // 3. LÓGICA MODAL RANGO BANDA (SIMPLE)
@@ -2234,12 +2245,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // A. BOTÓN DEL MODAL "GESTIONAR" (CAMBIAR TRABAJO Y RANGO)
     const btnSetJob = document.getElementById('btn-set-job');
     if (btnSetJob) {
-        btnSetJob.addEventListener('click', () => {
+        // Usamos .onclick para asegurar que solo haya 1 evento activo y no se dupliquen
+        btnSetJob.onclick = () => {
             const newJob = valJmJob ? valJmJob.value : null;
             const newGrade = valJmGrade ? valJmGrade.value : 0;
-            if (!newJob) return;
 
-            // ESTA ES LA LÍNEA QUE FALTABA:
+            // CORRECCIÓN: Usamos 'selectedJobPlayerId' que es la variable real de tu script
+            if (!newJob || !selectedJobPlayerId) return;
+
+            // Enviar al servidor
             fetch(`https://${GetParentResourceName()}/setJob`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2251,12 +2265,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             closeJobManageModal();
-            // Truco: Recargamos la lista tras 500ms para ver el cambio
-            setTimeout(() => {
-                // Aquí podrías llamar a una función para refrescar si la tuvieras, 
-                // o cerrar y abrir el menú.
-            }, 500);
-        });
+
+            // === LÓGICA DE AUTO-REFRESCO ===
+            // Si el panel de detalles está abierto Y estamos editando a la misma persona
+            if (typeof isDetailsOpen !== 'undefined' && isDetailsOpen && currentDetailsId == selectedJobPlayerId) {
+                // Esperamos un poquito (500ms) a que la base de datos guarde el cambio
+                setTimeout(() => {
+                    if (typeof window.openPlayerDetails === 'function') {
+                        // Recargamos los detalles para ver el nuevo trabajo al instante
+                        window.openPlayerDetails({ id: selectedJobPlayerId });
+                    }
+                }, 500);
+            }
+        };
     }
 
     // B. BOTÓN DEL MODAL "DESPEDIR"
@@ -4185,16 +4206,49 @@ document.addEventListener('DOMContentLoaded', () => {
         if (panel) panel.classList.add('hidden-panel');
     }
 
+    // --- BOTÓN DE TELETRANSPORTE (DENTRO DEL PANEL LATERAL DEL MAPA) ---
     const btnTp = document.getElementById('btn-tp');
     if (btnTp) {
         btnTp.onclick = function () {
             if (!mapState.selectedCoords) return;
-            fetch(`https://${GetParentResourceName()}/tpToLocation`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ x: mapState.selectedCoords.x, y: mapState.selectedCoords.y, z: mapState.selectedCoords.z })
-            });
+
+            // Extraemos las coordenadas del punto seleccionado en el mapa
+            const coords = {
+                x: mapState.selectedCoords.x,
+                y: mapState.selectedCoords.y,
+                z: mapState.selectedCoords.z
+            };
+
+            if (mapTargetId) {
+                // MODO TÁCTICO: Mandamos al jugador seleccionado en "Detalles"
+                fetch(`https://${GetParentResourceName()}/teleportTargetToCoords`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetId: mapTargetId,
+                        coords: coords
+                    })
+                });
+
+                // IMPORTANTE: Limpiamos el target para que la próxima vez que 
+                // abras el mapa desde el menú principal sea para TI.
+                mapTargetId = null;
+            } else {
+                // MODO NORMAL: Teletransporte para el Administrador
+                fetch(`https://${GetParentResourceName()}/tpToLocation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        x: coords.x,
+                        y: coords.y,
+                        z: coords.z
+                    })
+                });
+            }
+
+            // Cerramos el panel lateral y el modal del mapa
             window.closeSidePanel();
+            window.closeMapMenu(); // Usamos tu función de cerrar
         };
     }
 
@@ -4205,7 +4259,15 @@ document.addEventListener('DOMContentLoaded', () => {
             window.closeSidePanel();
             window.closeFilterPanel();
         }
-        fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+
+        // Reseteamos el target al cerrar por si acaso
+        mapTargetId = null;
+
+        fetch(`https://${GetParentResourceName()}/closeMenu`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
     }
 
     window.addEventListener('message', function (event) {
@@ -4577,6 +4639,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (playerData && playerData.id) {
             currentDetailsId = playerData.id;
+
+            // [NUEVO - LIVE STATS] Iniciar suscripción al abrir
+            fetch(`https://${GetParentResourceName()}/toggleWatch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetId: playerData.id, state: true })
+            });
         }
 
         if (!isDetailsOpen) {
@@ -4605,11 +4674,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pd-phone').textContent = "...";
         document.getElementById('pd-identifiers').innerHTML = '<span>Cargando...</span>';
 
-        // Limpiar listas antes de cargar
-        const propList = document.getElementById('pd-properties-list');
-        const vehList = document.getElementById('pd-vehicles-list');
-        if (propList) propList.innerHTML = '<div class="pd-empty-msg">Cargando...</div>';
-        if (vehList) vehList.innerHTML = '<div class="pd-empty-msg">Cargando...</div>';
+        // Limpiezas previas con animación de carga
+        ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:loading" style="animation: spin 1s linear infinite; display: inline-block;"></span><span>Cargando...</span></div>';
+        });
 
         // --- 2. PETICIÓN AL SERVIDOR ---
         fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, {
@@ -4649,7 +4718,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (document.getElementById('pd-job-boss')) document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
                     if (document.getElementById('pd-gang-boss')) document.getElementById('pd-gang-boss').style.display = fullData.isGangBoss ? 'block' : 'none';
 
-                    // 2. ACTUALIZAR BARRAS DE ESTADO
+                    // 2. ACTUALIZAR BARRAS DE ESTADO (Inicial estático)
                     if (fullData.stats) {
                         let healthStatus = null;
                         let displayHealth = fullData.stats.health;
@@ -4666,64 +4735,64 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateStatBar('stat-armor', fullData.stats.armor);
                         updateStatBar('stat-hunger', fullData.stats.hunger);
                         updateStatBar('stat-thirst', fullData.stats.thirst);
+                        // Aquí cargamos los valores iniciales de Alcohol y Estamina estáticos
+                        updateStatBar('stat-alcohol', fullData.stats.alcohol || 0);
+                        updateStatBar('stat-stamina', fullData.stats.stamina || 100);
                     }
 
-                    // 3. RENDERIZADO DE PROPIEDADES (NUEVO)
+                    // ===========================================
+                    // 3. RENDERIZADO DE PROPIEDADES (CARDS)
+                    // ===========================================
+                    const propList = document.getElementById('pd-properties-list');
+                    const props = fullData.properties || [];
+                    const propCount = document.getElementById('pd-prop-count');
+                    if (propCount) propCount.innerText = props.length;
+
                     if (propList) {
                         propList.innerHTML = '';
-                        const props = fullData.properties || [];
-                        const propCount = document.getElementById('pd-prop-count');
-                        if (propCount) propCount.innerText = props.length;
-
                         if (props.length === 0) {
-                            propList.innerHTML = '<div class="pd-empty-msg">No se han encontrado propiedades.</div>';
+                            propList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:home-search-outline"></span><span>Sin propiedades</span></div>`;
                         } else {
                             props.forEach(p => {
-                                const icon = p.type === 'house' ? 'mdi:home' : 'mdi:office-building';
-                                const typeLabel = p.type === 'house' ? 'CASA' : 'APARTAMENTO';
-                                const garageBadge = p.hasGarage
-                                    ? '<span style="color:#2ecc71; font-size:9px; font-weight:bold; border:1px solid #2ecc71; padding:1px 4px; border-radius:3px; margin-left:5px;">GARAJE</span>'
-                                    : '';
+                                const icon = p.type === 'house' ? 'mdi:home-variant' : 'mdi:office-building';
+                                const typeLabel = p.type === 'house' ? 'Casa' : 'Apto';
+                                const garageBadge = p.hasGarage ? `<span class="pd-badge badge-garage">Garage</span>` : '';
 
                                 const item = document.createElement('div');
-                                item.className = 'pd-list-item';
+                                item.className = 'pd-card type-property';
                                 item.innerHTML = `
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <span class="iconify" data-icon="${icon}" style="font-size:24px; color:#aaa;"></span>
-                                    <div class="pd-item-info">
-                                        <span class="pd-item-main">${p.label} ${garageBadge}</span>
-                                        <span class="pd-item-sub">${typeLabel} | ${p.name}</span>
-                                    </div>
+                            <div class="pd-card-icon"><span class="iconify" data-icon="${icon}" style="color: #e040fb;"></span></div>
+                            <div class="pd-card-content">
+                                <div class="pd-card-title">${p.label}</div>
+                                <div class="pd-card-subtitle">
+                                    <span class="pd-badge badge-house">${typeLabel}: ${p.name}</span>
+                                    ${garageBadge}
                                 </div>
-                            `;
+                            </div>`;
                                 propList.appendChild(item);
                             });
                         }
                     }
 
-                    // 4. RENDERIZADO DE VEHÍCULOS (NUEVO)
+                    // ===========================================
+                    // 4. RENDERIZADO DE VEHÍCULOS (CARDS)
+                    // ===========================================
+                    const vehList = document.getElementById('pd-vehicles-list');
+                    const vehs = fullData.vehicles || [];
+                    const vehCount = document.getElementById('pd-veh-count');
+                    if (vehCount) vehCount.innerText = vehs.length;
+
                     if (vehList) {
                         vehList.innerHTML = '';
-                        const vehs = fullData.vehicles || [];
-                        const vehCount = document.getElementById('pd-veh-count');
-                        if (vehCount) vehCount.innerText = vehs.length;
-
-                        // Mapa de Iconos
-                        const vehIcons = {
-                            'car': 'mdi:car-sports',
-                            'bike': 'mdi:motorbike',
-                            'heli': 'mdi:helicopter',
-                            'plane': 'mdi:airplane',
-                            'boat': 'mdi:sail-boat',
-                            'truck': 'mdi:truck',
-                            'unknown': 'mdi:car'
-                        };
-
                         if (vehs.length === 0) {
-                            vehList.innerHTML = '<div class="pd-empty-msg">El jugador no posee vehículos.</div>';
+                            vehList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:car-off"></span><span>Sin vehículos</span></div>`;
                         } else {
+                            const vehIcons = {
+                                'car': 'mdi:car-sports', 'bike': 'mdi:motorbike', 'heli': 'mdi:helicopter',
+                                'plane': 'mdi:airplane', 'boat': 'mdi:sail-boat', 'truck': 'mdi:truck', 'unknown': 'mdi:car'
+                            };
+
                             vehs.forEach(v => {
-                                // Icono inteligente
                                 let iconKey = 'unknown';
                                 if (['compacts', 'sedans', 'suvs', 'coupes', 'muscle', 'sports', 'classics', 'super', 'vans', 'utility'].includes(v.category)) iconKey = 'car';
                                 else if (['motorcycles', 'cycles'].includes(v.category)) iconKey = 'bike';
@@ -4732,33 +4801,54 @@ document.addEventListener('DOMContentLoaded', () => {
                                 else if (['boats'].includes(v.category)) iconKey = 'boat';
                                 else if (['commercial', 'industrial', 'service', 'military', 'offroad'].includes(v.category)) iconKey = 'truck';
 
-                                const icon = vehIcons[iconKey] || vehIcons['car'];
-
-                                // Matrícula
-                                const plateDisplay = v.plate
-                                    ? `<span style="font-family:monospace; background:#000; color:#ffb74d; padding:2px 6px; border-radius:3px; font-weight:bold;">${v.plate}</span>`
-                                    : `<span style="background:#5a1a1a; color:#ff8a80; padding:2px 6px; border-radius:3px; font-size:9px;">SIN MATRÍCULA</span>`;
-
-                                // Estado Garaje
-                                const garageState = v.garage
-                                    ? `<span style="color:#2ecc71;">EN: ${v.garage}</span>`
-                                    : `<span style="color:#e74c3c;">FUERA / DEPÓSITO</span>`;
+                                const finalIcon = vehIcons[iconKey] || vehIcons['car'];
+                                const plateBadge = v.plate ? `<span class="pd-badge badge-plate">${v.plate}</span>` : `<span class="pd-badge badge-out">SIN PLACA</span>`;
+                                const garageBadge = v.garage ? `<span class="pd-badge badge-garage">EN: ${v.garage}</span>` : `<span class="pd-badge badge-out">FUERA</span>`;
 
                                 const item = document.createElement('div');
-                                item.className = 'pd-list-item';
+                                item.className = 'pd-card type-vehicle';
                                 item.innerHTML = `
-                                <div style="display:flex; align-items:center; gap:10px; width:100%;">
-                                    <span class="iconify" data-icon="${icon}" style="font-size:24px; color:var(--primary);"></span>
-                                    <div class="pd-item-info" style="flex:1;">
-                                        <span class="pd-item-main">${v.label}</span>
-                                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:2px;">
-                                            <span class="pd-item-sub">${garageState}</span>
-                                            ${plateDisplay}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
+                            <div class="pd-card-icon"><span class="iconify" data-icon="${finalIcon}" style="color: #00bcd4;"></span></div>
+                            <div class="pd-card-content">
+                                <div class="pd-card-title">${v.label}</div>
+                                <div class="pd-card-subtitle">${plateBadge} ${garageBadge}</div>
+                            </div>`;
                                 vehList.appendChild(item);
+                            });
+                        }
+                    }
+
+                    // ===========================================
+                    // 5. RENDERIZADO DE SANCIONES (CARDS)
+                    // ===========================================
+                    const punishList = document.getElementById('pd-punishments-list');
+                    const history = fullData.history || [];
+                    const punishCount = document.getElementById('pd-punish-count');
+                    if (punishCount) punishCount.innerText = history.length;
+
+                    if (punishList) {
+                        punishList.innerHTML = '';
+                        if (history.length === 0) {
+                            punishList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:clipboard-check-outline"></span><span>Historial limpio</span></div>`;
+                        } else {
+                            history.forEach(h => {
+                                let icon = 'mdi:alert';
+                                let typeClass = 'type-warn';
+                                if (h.type === 'ban') { icon = 'mdi:account-cancel'; typeClass = 'type-ban'; }
+                                if (h.type === 'kick') { icon = 'mdi:door-open'; typeClass = 'type-kick'; }
+
+                                const item = document.createElement('div');
+                                item.className = 'pd-card type-punish';
+                                item.innerHTML = `
+                            <div class="pd-card-icon"><span class="iconify" data-icon="${icon}" style="color: #ff9800;"></span></div>
+                            <div class="pd-card-content">
+                                <div class="pd-card-title">${h.reason || 'Sin motivo'}</div>
+                                <div class="pd-card-subtitle">
+                                    <span class="pd-badge badge-punish">${(h.type || 'WARN').toUpperCase()}</span>
+                                    <span style="font-size:9px; color:#888;">Por: ${h.admin || '?'}</span>
+                                </div>
+                            </div>`;
+                                punishList.appendChild(item);
                             });
                         }
                     }
@@ -4784,10 +4874,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStatBar('stat-armor', 0);
                     updateStatBar('stat-hunger', 0);
                     updateStatBar('stat-thirst', 0);
+                    // Resetear nuevos stats
+                    updateStatBar('stat-alcohol', 0);
+                    updateStatBar('stat-stamina', 100);
 
-                    // Limpiar listas si no hay PJ
-                    if (propList) propList.innerHTML = '<div class="pd-empty-msg">Selecciona un personaje.</div>';
-                    if (vehList) vehList.innerHTML = '<div class="pd-empty-msg">Selecciona un personaje.</div>';
+                    ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.innerHTML = `<div class="pd-empty-state"><span>Esperando selección...</span></div>`;
+                    });
                 }
 
                 // --- 5. IDENTIFICADORES (COMÚN) ---
@@ -4807,14 +4901,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.closePlayerDetails = function () {
-        // Dejamos de rastrear
+        // Detener rastreo para ahorrar recursos
+        fetch(`https://${GetParentResourceName()}/toggleWatch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetId: null, state: false })
+        });
+
         currentDetailsId = null;
 
         const detailsModal = document.getElementById('player-details-modal');
 
         // Solo cerramos si está visible
         if (detailsModal && isDetailsOpen) {
-            isDetailsOpen = false; // Marcamos como cerrado inmediatamente para evitar conflictos lógicos
+            isDetailsOpen = false;
 
             // Quitamos la clase de entrada y ponemos la de salida
             detailsModal.classList.remove('details-active');
@@ -4822,7 +4922,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Esperamos a que termine la animación (300ms) antes de hacer display:none
             setTimeout(() => {
-                // Verificamos que no se haya vuelto a abrir durante la espera
                 if (!isDetailsOpen) {
                     detailsModal.style.display = 'none';
                     detailsModal.classList.remove('details-closing');
@@ -4889,27 +4988,61 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Variables de estado para los modales reutilizados
+    let mapTargetId = null;
+
     window.playerAction = (action) => {
-        // 1. Validar que tenemos un objetivo
+        // Validar que tenemos un objetivo
         if (!currentDetailsId) {
             log("Error: No hay jugador seleccionado");
             return;
         }
 
-        // 2.  INTERCEPTOR PARA DIMENSIONES
-        if (action === 'dimension_menu') {
-            // Abrimos el modal que creamos antes pasando la ID del jugador
-            openDimensionModal(currentDetailsId);
-            return; // ¡IMPORTANTE! Detenemos aquí. No enviamos el fetch de abajo.
-            // La orden real se enviará cuando le des a "IR A LA DIMENSIÓN" en el modal.
+        // --- 1. Interceptamos acciones de Dinero y Dimensión para abrir el modal
+        const moneyActions = ['add_cash', 'remove_cash', 'add_bank', 'remove_bank', 'add_crypto', 'remove_crypto'];
+
+        if (moneyActions.includes(action) || action === 'dimension_menu') {
+            // Si es 'dimension_menu', el segundo parámetro es null. Si es dinero, pasamos la acción.
+            const mode = (action === 'dimension_menu') ? null : action;
+            openDimensionModal(currentDetailsId, mode);
+            return;
         }
 
-        // 3. INTERCEPTOR PARA SCREENSHOT (Tu código existente)
+        // --- 2. INTERCEPTOR PARA MAPA TÁCTICO ---
+        if (action === 'tactical_map') {
+            mapTargetId = currentDetailsId;
+            const mainMenu = document.getElementById('admin-menu');
+            if (mainMenu) mainMenu.style.display = 'none';
+
+            if (typeof triggerMapOpen === 'function') {
+                triggerMapOpen();
+            }
+            return;
+        }
+
+        // --- 3. INTERCEPTORES DE GESTIÓN (TRABAJO/BANDA) ---
+        if (action === 'set_job' || action === 'set_gang') {
+            const nameEl = document.getElementById('pd-charname');
+            const name = nameEl ? nameEl.textContent : "Jugador";
+            if (action === 'set_job') openJobManageModal(currentDetailsId, name);
+            else openGangManageModal(currentDetailsId, name);
+            return;
+        }
+
+        // --- 4. INTERCEPTOR PARA DIMENSIONES ---
+        if (action === 'dimension_menu') {
+            currentMoneyAction = null; // Nos aseguramos de limpiar el modo dinero
+            openDimensionModal(currentDetailsId);
+            return;
+        }
+
+        // --- 5. INTERCEPTOR PARA SCREENSHOT ---
         if (action === 'screenshot') {
             openScreenshotModal();
+            return;
         }
 
-        // 4. Enviar al NUI Callback (Para el resto de botones: Kick, Ban, Ropa, etc.)
+        // --- 6. ENVÍO GENÉRICO (Resto de botones: Revive, Kill, Freeze, etc.) ---
         fetch(`https://${GetParentResourceName()}/playerAction`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4987,53 +5120,89 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ==========================================================================
-    // LÓGICA DE DIMENSIONES (ROUTING BUCKETS)
+    // LÓGICA MULTIUSO: DIMENSIONES Y DINERO (MODAL DINÁMICO)
     // ==========================================================================
     const dimModal = document.getElementById('dimension-modal');
     const dimInput = document.getElementById('dim-input');
-    let selectedDimTarget = null; // Guardamos a quién se lo vamos a hacer
+    let selectedDimTarget = null;
+    let currentMoneyAction = null; // Variable para saber si es Dinero o Dimensión
 
-    // 1. ABRIR EL MODAL
-    window.openDimensionModal = (targetId) => {
-        selectedDimTarget = targetId; // Guardamos la ID del jugador objetivo
+    // ABRIR EL MODAL (Ahora acepta un segundo parámetro opcional 'action')
+    window.openDimensionModal = (targetId, action = null) => {
+        selectedDimTarget = targetId;
+        currentMoneyAction = action; // Si es null, es modo Dimensión
 
-        if (dimInput) dimInput.value = "0"; // Por defecto sugerimos volver al mundo real
+        const title = dimModal.querySelector('h3');
+        const desc = dimModal.querySelector('p');
+        const label = dimModal.querySelector('label');
+        const btn = document.getElementById('btn-set-dimension');
+
+        if (action) {
+            // --- MODO DINERO ---
+            const config = {
+                add_cash: { t: "DAR EFECTIVO", d: "Añade dinero físico a la billetera.", l: "CANTIDAD EN $", b: "ENTREGAR DINERO EFECTIVO" },
+                remove_cash: { t: "QUITAR EFECTIVO", d: "Retira dinero de la billetera.", l: "CANTIDAD EN $", b: "QUITAR DINERO EFECTIVO" },
+                add_bank: { t: "DAR BANCO", d: "Añade fondos a la cuenta bancaria.", l: "CANTIDAD EN $", b: "ENTREGAR DINERO EN BANCO" },
+                remove_bank: { t: "QUITAR BANCO", d: "Retira fondos de la cuenta bancaria.", l: "CANTIDAD EN $", b: "QUITAR DINERO EN BANCO" },
+                add_crypto: { t: "DAR CRIPTO", d: "Añade criptomonedas al balance.", l: "CANTIDAD DE CRIPTOS", b: "ENTREGAR CRIPTOS" },
+                remove_crypto: { t: "QUITAR CRIPTO", d: "Retira criptomonedas del balance.", l: "CANTIDAD DE CRIPTOS", b: "QUITAR CRIPTOS" }
+            };
+            const c = config[action];
+            title.innerText = c.t;
+            desc.innerText = c.d;
+            label.innerText = c.l;
+            btn.innerText = c.b;
+            dimInput.value = "";
+            dimInput.placeholder = "Cantidad...";
+        } else {
+            // --- MODO DIMENSIÓN (Default) ---
+            title.innerText = "VIAJE DIMENSIONAL";
+            desc.innerHTML = 'Estás a punto de mover a este jugador a una realidad paralela.<br><strong style="color: #fff;">Dimensión 0</strong> es el mundo normal.';
+            label.innerText = "NÚMERO DE DIMENSIÓN";
+            btn.innerText = "MANDAR A LA DIMENSIÓN";
+            dimInput.value = "0";
+        }
+
         if (dimModal) dimModal.style.display = 'flex';
-
-        // Poner el foco en el input para escribir rápido
         setTimeout(() => dimInput.focus(), 100);
     }
 
-    // 2. CERRAR EL MODAL
     window.closeDimensionModal = () => {
         if (dimModal) dimModal.style.display = 'none';
         selectedDimTarget = null;
+        currentMoneyAction = null;
     }
 
-    // 3. BOTÓN "IR A LA DIMENSIÓN"
+    // EL BOTÓN DE CONFIRMACIÓN (Dual)
     const btnDim = document.getElementById('btn-set-dimension');
     if (btnDim) {
-        btnDim.addEventListener('click', () => {
+        btnDim.onclick = () => { // Usamos .onclick para evitar duplicar eventos
             if (!selectedDimTarget) return;
+            let val = parseInt(dimInput.value);
 
-            // Obtenemos el número
-            let bucketId = parseInt(dimInput.value);
-
-            // Seguridad: Si está vacío o es negativo, forzamos 0
-            if (isNaN(bucketId) || bucketId < 0) bucketId = 0;
-
-            // Enviamos la orden al cliente (Lua)
-            fetch(`https://${GetParentResourceName()}/setDimension`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    targetId: selectedDimTarget,
-                    bucket: bucketId
-                })
-            });
-
+            if (currentMoneyAction) {
+                // CASO DINERO
+                if (isNaN(val) || val < 1) return;
+                fetch(`https://${GetParentResourceName()}/playerAction`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: currentMoneyAction,
+                        targetId: selectedDimTarget,
+                        amount: val
+                    })
+                });
+            } else {
+                // CASO DIMENSIÓN
+                if (isNaN(val) || val < 0) val = 0;
+                fetch(`https://${GetParentResourceName()}/setDimension`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetId: selectedDimTarget, bucket: val })
+                });
+            }
             closeDimensionModal();
-        });
+        };
     }
 
 }); // FIN DEL DOMContentLoaded
