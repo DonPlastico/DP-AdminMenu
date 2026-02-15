@@ -150,13 +150,18 @@ local jumpActive = false
 local currentJumpIndex = 2
 local jumpMultipliers = {0.1, 1.0, 3.0, 5.0, 8.0, 10.0, 15.0}
 
--- Noclip
+-- Variables de Estado
 local noClipActive = false
 local isNoClipLoopRunning = false
+local noClipEntity = nil -- La entidad que realmente moveremos
+
+-- Variables de Velocidad
 local noClipSpeed = 1.0
 local minSpeed = 0.2
-local maxSpeed = 5.0
-local speedStep = 0.2
+local maxSpeed = 15.0 -- Aumentado para poder ir rápido en aviones/coches
+local speedStep = 0.5
+local lastWheelChange = 0
+local wheelCooldown = 50
 
 -- Entity Info
 local isCursorModeActive = false
@@ -964,19 +969,18 @@ AddEventHandler('onResourceStop', function(resourceName)
     -- 2. LIMPIEZA DE EMERGENCIA DEL NOCLIP
     -- Esto asegura que no te quedes invisible ni congelado si reinicias
     local ped = PlayerPedId()
-    SetEntityVisible(ped, true, false)
-    FreezeEntityPosition(ped, false)
-    SetEntityCollision(ped, true, true)
-    SetEntityVelocity(ped, 0.0, 0.0, 0.0)
-    ResetEntityAlpha(ped)
+    local veh = GetVehiclePedIsIn(ped, false)
+    local entity = (veh ~= 0) and veh or ped
+
+    SetEntityVisible(entity, true, false)
+    FreezeEntityPosition(entity, false)
+    SetEntityCollision(entity, true, true)
+    SetEntityVelocity(entity, 0.0, 0.0, 0.0)
+    ResetEntityAlpha(entity)
 
     -- 3. Limpieza de Foco (Por si te pilló con el menú abierto)
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
-end)
-
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    ForceResetAll()
 end)
 
 -- Listeners globales (Viento y Olas)
@@ -1138,6 +1142,7 @@ RegisterNetEvent('dpadmin:client:refreshAllData', function()
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    ForceResetAll()
     Citizen.Wait(2000)
     TriggerServerEvent('dpadmin:server:playerFullyLoaded')
 end)
@@ -1829,22 +1834,19 @@ RegisterNUICallback('saveMenuPos', function(data, cb)
     cb('ok')
 end)
 
--- Función auxiliar para obtener la dirección de la cámara
+-- Funciones matemáticas auxiliares para la cámara
 local function GetCamDirection()
     local heading = GetGameplayCamRelativeHeading() + GetEntityHeading(PlayerPedId())
     local pitch = GetGameplayCamRelativePitch()
-
     local x = -math.sin(heading * math.pi / 180.0)
     local y = math.cos(heading * math.pi / 180.0)
     local z = math.sin(pitch * math.pi / 180.0)
-
     local len = math.sqrt(x * x + y * y + z * z)
     if len ~= 0 then
         x = x / len
         y = y / len
         z = z / len
     end
-
     return x, y, z
 end
 
@@ -1859,18 +1861,32 @@ function ToggleNoClip(state)
     noClipActive = state
     local ped = PlayerPedId()
 
+    -- Detectar entidad inicial
+    local veh = GetVehiclePedIsIn(ped, false)
+    local inVehicle = (veh ~= 0)
+    noClipEntity = inVehicle and veh or ped
+
+    -- ===========================
+    --      ACTIVAR NOCLIP
+    -- ===========================
     if noClipActive then
-        -- SI YA HAY UN BUCLE CORRIENDO, PARAMOS
         if isNoClipLoopRunning then
             return
-        end
-
-        -- ===========================
-        --      ACTIVAR NOCLIP
-        -- ===========================
+        end -- Evitar doble ejecución
         isNoClipLoopRunning = true
 
-        -- 1. ACTIVAMOS EL HUD VISUAL
+        -- Configuración inicial "Fantasma"
+        FreezeEntityPosition(noClipEntity, true)
+        SetEntityCollision(noClipEntity, false, false)
+        SetEntityVisible(noClipEntity, false, false)
+        SetEntityAlpha(noClipEntity, 51, false)
+
+        -- Si estamos a pie, limpiamos tareas para que no se quede corriendo
+        if not inVehicle then
+            ClearPedTasksImmediately(ped)
+        end
+
+        -- HUD ON
         SendNUIMessage({
             type = "toggleNoClipUI",
             show = true,
@@ -1878,159 +1894,195 @@ function ToggleNoClip(state)
         })
 
         Citizen.CreateThread(function()
-            -- Configuración inicial: Fantasma
-            SetEntityVisible(ped, false, false)
-            SetEntityLocallyVisible(ped)
-            SetEntityAlpha(ped, 51, false)
-            SetEntityCollision(ped, false, false)
-            FreezeEntityPosition(ped, true)
-
             while noClipActive do
                 Wait(0)
-                local ped = PlayerPedId()
 
-                -- Refuerzo visual constante
-                SetEntityVisible(ped, false, false)
-                SetEntityLocallyVisible(ped)
+                -- Actualizar entidad dinámicamente (por si entras/sales de un coche siendo admin)
+                ped = PlayerPedId()
+                veh = GetVehiclePedIsIn(ped, false)
+                inVehicle = (veh ~= 0)
+                local currentTarget = inVehicle and veh or ped
 
-                local coords = GetEntityCoords(ped)
-                local dx, dy, dz = GetCamDirection()
+                -- Si cambiamos de entidad (subimos/bajamos de coche), actualizamos propiedades
+                if noClipEntity ~= currentTarget then
+                    -- Restauramos la entidad vieja
+                    SetEntityVisible(noClipEntity, true, false)
+                    SetEntityCollision(noClipEntity, true, true)
+                    ResetEntityAlpha(noClipEntity)
+                    FreezeEntityPosition(noClipEntity, false)
 
-                -- CÁLCULO DE VELOCIDAD
+                    -- Configuramos la nueva
+                    noClipEntity = currentTarget
+                    FreezeEntityPosition(noClipEntity, true)
+                    SetEntityCollision(noClipEntity, false, false)
+                    SetEntityVisible(noClipEntity, false, false)
+                    SetEntityAlpha(noClipEntity, 51, false)
+                end
+
+                -- REFUERZO VISUAL Y DE COLISIÓN CONSTANTE
+                SetEntityVisible(noClipEntity, false, false)
+                SetEntityLocallyVisible(noClipEntity)
+
+                -- =========================================================
+                --      BLOQUEO DE CONTROLES (PARA QUE NO CORRA/DISPARE)
+                -- =========================================================
+                DisableControlAction(0, 30, true) -- Move LR
+                DisableControlAction(0, 31, true) -- Move UD
+                DisableControlAction(0, 32, true) -- Move Up (W)
+                DisableControlAction(0, 33, true) -- Move Down (S)
+                DisableControlAction(0, 34, true) -- Move Left (A)
+                DisableControlAction(0, 35, true) -- Move Right (D)
+                DisableControlAction(0, 44, true) -- Cover (Q)
+                DisableControlAction(0, 37, true) -- Weapon Wheel (Tab)
+                DisableControlAction(0, 266, true) -- Move
+                DisableControlAction(0, 267, true) -- Move
+                DisableControlAction(0, 268, true) -- Move
+                DisableControlAction(0, 269, true) -- Move
+
+                -- >>> AÑADE ESTO AQUÍ PARA LA RADIO <<<
+                DisableControlAction(0, 85, true) -- RADIO WHEEL (La Q)
+                DisableControlAction(0, 81, true) -- NEXT RADIO STATION
+                DisableControlAction(0, 82, true) -- PREV RADIO STATION
+                DisableControlAction(0, 83, true) -- NEXT RADIO TRACK
+                DisableControlAction(0, 84, true) -- PREV RADIO TRACK
+
+                -- SI ESTAMOS EN VEHÍCULO, FORZAR SILENCIO
+                if inVehicle then
+                    SetVehRadioStation(noClipEntity, "OFF")
+                end
+
+                -- =========================================================
+                --      ROTACIÓN: LA ENTIDAD MIRA A LA CÁMARA
+                -- =========================================================
+                local camRot = GetGameplayCamRot(0)
+                SetEntityHeading(noClipEntity, camRot.z)
+
+                -- =========================================================
+                --      CÁLCULOS MATEMÁTICOS DE MOVIMIENTO
+                -- =========================================================
+                local coords = GetEntityCoords(noClipEntity)
+
+                -- Obtener vectores de dirección
+                local fwdX, fwdY, fwdZ = GetCamDirection()
+
+                -- Calcular vector derecho (Cross Product aproximado) para A y D
+                local vecRightX = fwdY
+                local vecRightY = -fwdX
+
+                -- Velocidad actual con modificadores
                 local currentSpeed = noClipSpeed
-
-                -- MODIFICADORES DE TECLAS
-                if IsControlPressed(0, 21) then -- SHIFT (Turbo)
-                    currentSpeed = currentSpeed * 3
-                elseif IsControlPressed(0, 19) then -- ALT IZQUIERDO (Tortuga/Precisión)
-                    currentSpeed = currentSpeed * 0.1 -- Se mueve al 10% de la velocidad base
+                if IsDisabledControlPressed(0, 21) then -- SHIFT (Turbo)
+                    currentSpeed = currentSpeed * 4.0
+                elseif IsDisabledControlPressed(0, 19) then -- ALT (Lento)
+                    currentSpeed = currentSpeed * 0.1
                 end
 
-                -- =============================
-                --      MOVIMIENTOS (WASD)
-                -- =============================
+                -- =========================================================
+                --      INPUTS DE MOVIMIENTO
+                -- =========================================================
+                local newPos = coords
 
-                -- ADELANTE (W)
-                if IsControlPressed(0, 32) then
-                    coords = vec3(coords.x + dx * currentSpeed, coords.y + dy * currentSpeed,
-                        coords.z + dz * currentSpeed)
+                -- W (Adelante)
+                if IsDisabledControlPressed(0, 32) then
+                    newPos = vec3(newPos.x + fwdX * currentSpeed, newPos.y + fwdY * currentSpeed,
+                        newPos.z + fwdZ * currentSpeed)
                 end
-
-                -- ATRÁS (S)
-                if IsControlPressed(0, 269) or IsControlPressed(0, 33) then
-                    coords = vec3(coords.x - dx * currentSpeed, coords.y - dy * currentSpeed,
-                        coords.z - dz * currentSpeed)
+                -- S (Atrás)
+                if IsDisabledControlPressed(0, 33) or IsDisabledControlPressed(0, 269) then
+                    newPos = vec3(newPos.x - fwdX * currentSpeed, newPos.y - fwdY * currentSpeed,
+                        newPos.z - fwdZ * currentSpeed)
                 end
-
-                -- IZQUIERDA (A) - Calculamos el vector perpendicular
-                -- Matemáticamente: (-dy, dx) nos da el vector izquierdo en plano horizontal
-                if IsControlPressed(0, 34) then
-                    coords = vec3(coords.x - dy * currentSpeed, coords.y + dx * currentSpeed, coords.z)
+                -- A (Izquierda)
+                if IsDisabledControlPressed(0, 34) then
+                    newPos = vec3(newPos.x - vecRightX * currentSpeed, newPos.y - vecRightY * currentSpeed, newPos.z)
                 end
-
-                -- DERECHA (D)
-                -- Matemáticamente: (dy, -dx) nos da el vector derecho en plano horizontal
-                if IsControlPressed(0, 35) or IsControlPressed(0, 9) then
-                    coords = vec3(coords.x + dy * currentSpeed, coords.y - dx * currentSpeed, coords.z)
+                -- D (Derecha)
+                if IsDisabledControlPressed(0, 35) then
+                    newPos = vec3(newPos.x + vecRightX * currentSpeed, newPos.y + vecRightY * currentSpeed, newPos.z)
                 end
-
-                -- ==========================================================================
-                --      ALTURA (ESPACIO/E para Subir | CTRL/Q para Bajar)
-                -- ==========================================================================
-
-                -- SUBIR: Se activa con Espacio (22) O con la Q (44)
-                if IsControlPressed(0, 22) or IsControlPressed(0, 44) then
-                    coords = vec3(coords.x, coords.y, coords.z + currentSpeed)
+                -- Q / Espacio (Subir vertical)
+                if IsDisabledControlPressed(0, 22) or IsDisabledControlPressed(0, 44) then
+                    newPos = vec3(newPos.x, newPos.y, newPos.z + (currentSpeed * 0.5))
                 end
-
-                -- BAJAR: Se activa con CTRL Izquierdo (36) O con la E (38)
-                if IsControlPressed(0, 36) or IsControlPressed(0, 38) then
-                    coords = vec3(coords.x, coords.y, coords.z - currentSpeed)
+                -- E / Control (Bajar vertical)
+                if IsDisabledControlPressed(0, 36) or IsDisabledControlPressed(0, 38) then
+                    newPos = vec3(newPos.x, newPos.y, newPos.z - (currentSpeed * 0.5))
                 end
 
                 -- APLICAR NUEVA POSICIÓN
-                SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z, true, true, true)
+                SetEntityCoordsNoOffset(noClipEntity, newPos.x, newPos.y, newPos.z, true, true, true)
 
-                -- =============================
-                --      AJUSTE DE VELOCIDAD SUAVE
-                -- =============================
-                local currentTime = GetGameTimer()
-
-                -- Solo procesar cambios si ha pasado el cooldown
-                if currentTime - lastWheelChange > wheelCooldown then
-                    -- RUEDA ARRIBA (Aumentar velocidad)
-                    if IsControlJustPressed(0, 15) then
-                        noClipSpeed = noClipSpeed + speedStep
-                        if noClipSpeed > maxSpeed then
-                            noClipSpeed = maxSpeed
-                        end
-
+                -- =========================================================
+                --      CONTROL RUEDA RATÓN (VELOCIDAD)
+                -- =========================================================
+                local time = GetGameTimer()
+                if time - lastWheelChange > wheelCooldown then
+                    if IsControlJustPressed(0, 15) then -- Rueda Arriba
+                        noClipSpeed = math.min(noClipSpeed + speedStep, maxSpeed)
                         SendNUIMessage({
                             type = "updateNoClipSpeed",
                             value = noClipSpeed
                         })
-
-                        lastWheelChange = currentTime
-
-                        -- RUEDA ABAJO (Disminuir velocidad)
-                    elseif IsControlJustPressed(0, 14) then
-                        noClipSpeed = noClipSpeed - speedStep
-                        if noClipSpeed < minSpeed then
-                            noClipSpeed = minSpeed
-                        end
-
+                        lastWheelChange = time
+                    elseif IsControlJustPressed(0, 14) then -- Rueda Abajo
+                        noClipSpeed = math.max(noClipSpeed - speedStep, minSpeed)
                         SendNUIMessage({
                             type = "updateNoClipSpeed",
                             value = noClipSpeed
                         })
-
-                        lastWheelChange = currentTime
+                        lastWheelChange = time
                     end
                 end
             end
 
-            -- AL SALIR DEL BUCLE
+            -- ===========================
+            --      SALIR DEL BUCLE
+            -- ===========================
             isNoClipLoopRunning = false
-
-            -- 2. OCULTAMOS EL HUD
             SendNUIMessage({
                 type = "toggleNoClipUI",
                 show = false
             })
 
-            -- Limpieza de seguridad
-            SetEntityVisible(ped, true, false)
-            FreezeEntityPosition(ped, false)
-            SetEntityCollision(ped, true, true)
-            ResetEntityAlpha(ped)
+            -- Restaurar entidad
+            FreezeEntityPosition(noClipEntity, false)
+            SetEntityCollision(noClipEntity, true, true)
+            SetEntityVisible(noClipEntity, true, false)
+            ResetEntityAlpha(noClipEntity)
+
+            -- Si es un coche, ponerlo bien en el suelo para que no rebote
+            if IsEntityAVehicle(noClipEntity) then
+                SetVehicleOnGroundProperly(noClipEntity)
+            end
         end)
 
     else
         -- ===========================
-        --      DESACTIVAR (CON ATERRIZAJE)
+        --      DESACTIVAR (OFF)
         -- ===========================
-
-        -- 3. OCULTAMOS EL HUD
         SendNUIMessage({
             type = "toggleNoClipUI",
             show = false
         })
 
-        local coords = GetEntityCoords(ped)
-        local rayHandle = StartShapeTestRay(coords.x, coords.y, coords.z, coords.x, coords.y, coords.z - 500.0, 1, ped,
-            0)
-        local _, hit, endCoords, _, _ = GetShapeTestResult(rayHandle)
+        if DoesEntityExist(noClipEntity) then
+            FreezeEntityPosition(noClipEntity, false)
+            SetEntityCollision(noClipEntity, true, true)
+            SetEntityVisible(noClipEntity, true, false)
+            SetEntityVelocity(noClipEntity, 0.0, 0.0, 0.0)
+            ResetEntityAlpha(noClipEntity)
 
-        if hit == 1 then
-            SetEntityCoordsNoOffset(ped, endCoords.x, endCoords.y, endCoords.z + 1.0, true, true, true)
+            -- Intentar aterrizaje suave si estamos cerca del suelo
+            local coords = GetEntityCoords(noClipEntity)
+            local found, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z, false)
+            if found and (coords.z - groundZ) < 10.0 then
+                SetEntityCoordsNoOffset(noClipEntity, coords.x, coords.y, groundZ, true, true, true)
+            end
+
+            if IsEntityAVehicle(noClipEntity) then
+                SetVehicleOnGroundProperly(noClipEntity)
+            end
         end
-
-        -- Restaurar estado normal
-        SetEntityVisible(ped, true, false)
-        FreezeEntityPosition(ped, false)
-        SetEntityCollision(ped, true, true)
-        SetEntityVelocity(ped, 0.0, 0.0, 0.0)
-        ResetEntityAlpha(ped)
     end
 end
 
@@ -2260,8 +2312,12 @@ end)
 RegisterNetEvent('dpadmin:client:execOpenInventory', function(targetId)
     -- 1. Cerrar menú admin
     SetNuiFocus(false, false)
-    SendNUIMessage({ action = "close" })
-    SendNUIMessage({ type = "closeMenu" })
+    SendNUIMessage({
+        action = "close"
+    })
+    SendNUIMessage({
+        type = "closeMenu"
+    })
 
     -- 2. Esperar para que el foco NUI se limpie
     SetTimeout(250, function()
@@ -2277,7 +2333,7 @@ end)
 RegisterNetEvent('dpadmin:client:forceCloseMenu', function()
     -- 1. Quitamos el foco del ratón
     SetNuiFocus(false, false)
-    
+
     -- 2. Mandamos la señal al JS para que oculte todo
     SendNUIMessage({
         type = "close" -- Esto activará tu lógica de cierre en script.js
@@ -2290,7 +2346,9 @@ end)
 RegisterNetEvent('dpadmin:client:openPedMenu', function(targetId)
     -- 1. Cerrar el menú de admin (y el panel de detalles gracias al arreglo de antes)
     SetNuiFocus(false, false)
-    SendNUIMessage({ type = "close" })
+    SendNUIMessage({
+        type = "close"
+    })
 
     -- 2. Esperamos un poquito para que la UI desaparezca visualmente
     Wait(100)
@@ -2317,11 +2375,11 @@ end)
 RegisterNetEvent('dpadmin:client:reportLiveStats', function()
     local ped = PlayerPedId()
     local playerId = PlayerId()
-    
+
     -- Calculamos Estamina (100 - lo que falta para cansarse)
     -- En GTA, GetPlayerSprintStaminaRemaining devuelve cuanto le queda.
     local staminaLevel = 100 - GetPlayerSprintStaminaRemaining(playerId)
-    
+
     TriggerServerEvent('dpadmin:server:receiveLiveStats', {
         health = GetEntityHealth(ped) - 100,
         armor = GetPedArmour(ped),
@@ -2341,6 +2399,118 @@ end)
 RegisterNUICallback('toggleWatch', function(data, cb)
     TriggerServerEvent('dpadmin:server:toggleWatch', data.targetId, data.state)
     cb('ok')
+end)
+
+-- ====================================================================
+--      LÓGICA PUPPET MASTER (CONTROL REMOTO)
+-- ====================================================================
+
+-- PARA EL ADMIN (EL CONTROLADOR)
+RegisterNetEvent('dpadmin:client:startControlling', function(targetServerId, targetCoords)
+    local ped = PlayerPedId()
+
+    -- 1. Teleport a la posición de la víctima
+    SetEntityCoords(ped, targetCoords.x, targetCoords.y, targetCoords.z)
+
+    -- 2. Clonar Apariencia
+    local targetPlayer = GetPlayerFromServerId(targetServerId)
+    if targetPlayer ~= -1 then
+        local targetPed = GetPlayerPed(targetPlayer)
+        local targetModel = GetEntityModel(targetPed)
+
+        -- Cargamos modelo
+        if IsModelInCdimage(targetModel) and IsModelValid(targetModel) then
+            RequestModel(targetModel)
+            while not HasModelLoaded(targetModel) do
+                Wait(0)
+            end
+            SetPlayerModel(PlayerId(), targetModel)
+            ped = PlayerPedId() -- Actualizar referencia del ped nuevo
+            SetModelAsNoLongerNeeded(targetModel)
+
+            -- Copiamos ropa exacta
+            ClonePedToTarget(targetPed, ped)
+        end
+    end
+end)
+
+RegisterNetEvent('dpadmin:client:stopControlling', function()
+    -- Restauramos el skin original del Admin
+    TriggerServerEvent('qb-clothes:loadPlayerSkin') -- O el evento que use tu server para cargar skin
+
+    -- Opcional: Si usas illenium-appearance u otro, usa su export:
+    -- exports['illenium-appearance']:setPlayerAppearance(appearance)
+end)
+
+-- ====================================================================
+--      LÓGICA VÍCTIMA (ESPECTADOR OBLIGADO)
+-- ====================================================================
+local isBeingControlled = false
+
+RegisterNetEvent('dpadmin:client:startSpectatingTarget', function(adminServerId)
+    isBeingControlled = true
+    local ped = PlayerPedId()
+
+    -- 1. Nos hacemos invisibles
+    SetEntityVisible(ped, false, false)
+    SetEntityCollision(ped, false, false)
+    FreezeEntityPosition(ped, true)
+
+    -- 2. Activamos el espectador UNA SOLA VEZ (no en bucle)
+    Citizen.CreateThread(function()
+        -- Esperamos a que el ped del admin cargue
+        local adminPed = nil
+        while isBeingControlled do
+            Wait(100)
+            local adminPlayer = GetPlayerFromServerId(adminServerId)
+            if adminPlayer ~= -1 and NetworkIsPlayerActive(adminPlayer) then
+                local foundPed = GetPlayerPed(adminPlayer)
+                if DoesEntityExist(foundPed) then
+                    adminPed = foundPed
+                    break -- Ya lo encontramos, salimos de este bucle de búsqueda
+                end
+            end
+        end
+
+        -- Si encontramos al admin y seguimos siendo controlados, activamos la cámara
+        if isBeingControlled and adminPed then
+            NetworkSetInSpectatorMode(true, adminPed)
+        end
+    end)
+
+    -- 3. Bucle SOLO para bloquear teclas (mucho más estable)
+    Citizen.CreateThread(function()
+        while isBeingControlled do
+            Wait(0)
+            DisableAllControlActions(0)
+            EnableControlAction(0, 245, true) -- Chat
+            EnableControlAction(0, 38, true) -- E (Opcional)
+        end
+    end)
+
+    QBCore.Functions.Notify("Un admin ha tomado el control. Estás especteando sus acciones.", "primary", 10000)
+end)
+
+RegisterNetEvent('dpadmin:client:stopSpectatingTarget', function()
+    isBeingControlled = false
+    local ped = PlayerPedId()
+
+    -- 1. FORZAMOS APAGADO DE ESPECTADOR
+    -- El segundo parámetro 'ped' le dice al juego: "Pon la cámara en MÍ"
+    NetworkSetInSpectatorMode(false, ped)
+
+    -- 2. Restaurar estado físico
+    FreezeEntityPosition(ped, false)
+    SetEntityVisible(ped, true, false)
+    SetEntityCollision(ped, true, true)
+
+    -- 3. Limpieza extra de cámara por si acaso
+    if GetRenderingCam() ~= -1 then
+        RenderScriptCams(false, false, 0, true, true)
+        DestroyAllCams(true)
+    end
+
+    QBCore.Functions.Notify("Has recuperado el control.", "success")
 end)
 
 -- ==========================================================================

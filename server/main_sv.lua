@@ -6,6 +6,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local adminsInGodmode = {}
 local AdminsOnDuty = {}
 local isRefreshPending = false -- Variable para el sistema Anti-Crash
+local controllingAdmins = {} -- Almacena quién controla a quién
 
 -- 1. Leemos la memoria del servidor (KVP)
 local savedWhitelist = GetResourceKvpInt('dp_whitelist_active')
@@ -527,9 +528,6 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
         -- Log (Opcional)
         TriggerEvent('dpadmin:server:log', 'PED MENU', 'Abrió menú de peds para ID: ' .. targetSrc)
 
-    elseif action == 'dimension_menu' then
-        -- Pendiente sistema de modal
-
     elseif action == 'remove_job' then
         -- Ponemos el trabajo por defecto de QB-Core (unemployed) con rango 0
         -- El 'true' final silencia la notificación nativa de QB
@@ -616,6 +614,58 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
 
         -- Log
         TriggerEvent('dpadmin:server:log', 'ACTION', 'Esposó/Desesposó al jugador ' .. targetSrc)
+
+    elseif action == 'control_player' then
+        local targetSrc = tonumber(targetId)
+        local adminPed = GetPlayerPed(src)
+        local targetPed = GetPlayerPed(targetSrc)
+
+        -- CASO 1: DETENER EL CONTROL
+        if controllingAdmins[src] then
+            local data = controllingAdmins[src]
+
+            -- 1. PRIMERO: Ordenar a la víctima que deje de espectear (Mientras aun estás cerca)
+            -- Esto es crucial para que la cámara no se buguee al teleportarte tú lejos
+            TriggerClientEvent('dpadmin:client:stopSpectatingTarget', data.target)
+
+            -- Pequeña espera técnica para asegurar que el cliente procesa la cámara
+            Wait(100)
+
+            -- 2. Traer al Target a donde está el Admin (Clon) ahora
+            local currentAdminCoords = GetEntityCoords(adminPed)
+            SetEntityCoords(targetPed, currentAdminCoords.x, currentAdminCoords.y, currentAdminCoords.z)
+
+            -- 3. Devolver al Admin a su sitio original
+            SetEntityCoords(adminPed, data.originalCoords.x, data.originalCoords.y, data.originalCoords.z)
+
+            -- 4. Admin recupera su skin
+            TriggerClientEvent('dpadmin:client:stopControlling', src)
+
+            controllingAdmins[src] = nil
+            TriggerClientEvent('QBCore:Notify', src, 'Control finalizado.', 'success')
+
+            -- CASO 2: INICIAR EL CONTROL
+        else
+            if src == targetSrc then
+                return
+            end
+
+            controllingAdmins[src] = {
+                target = targetSrc,
+                originalCoords = GetEntityCoords(adminPed)
+                -- Ya no guardamos bucket porque no lo cambiamos
+            }
+
+            -- 1. Enviamos orden a la víctima: "¡Vuélvete invisible y mira a la ID [src]!"
+            -- Pasamos 'src' (ID del Admin) para que la víctima sepa a quién espectear
+            TriggerClientEvent('dpadmin:client:startSpectatingTarget', targetSrc, src)
+
+            -- 2. Admin clona y se mueve
+            local tCoords = GetEntityCoords(targetPed)
+            TriggerClientEvent('dpadmin:client:startControlling', src, targetSrc, tCoords)
+
+            TriggerClientEvent('QBCore:Notify', src, 'Controlando jugador. Él te está especteando.', 'success')
+        end
     end
 end)
 
@@ -1362,6 +1412,14 @@ CreateThread(function()
         end
     end
 end)
+
+-- ==========================================================================
+--      COMANDO NOCLIP
+-- ==========================================================================
+QBCore.Commands.Add('noclip', 'Alternar modo NoClip (Admin)', {}, false, function(source, args)
+    -- Simplemente le dice al cliente que active la función ToggleNoClip que mejoramos antes
+    TriggerClientEvent('dpadmin:client:toggleNoclip', source)
+end, 'admin')
 
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH
 AddEventHandler('playerJoining', function()

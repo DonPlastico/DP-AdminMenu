@@ -46,7 +46,8 @@ const actionStates = {
     noclip: false,
     godmode: false,
     invisible: false,
-    entity_info: false
+    entity_info: false,
+    control_player: false
 };
 
 // Configuración Externa
@@ -530,18 +531,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadStatusPage();
             }
         } else if (data.type === "toggleNoClipUI") {
-            // MOSTRAR / OCULTAR HUD DE NOCLIP
             const ui = document.getElementById('noclip-ui');
             if (ui) {
+                // Mostramos u ocultamos el HUD pequeño
                 ui.style.display = data.show ? "block" : "none";
-                // Si lo activamos, ponemos la velocidad inicial
-                if (data.show && data.value) {
-                    document.getElementById('noclip-number').innerText = data.value.toFixed(1);
+
+                // Si se activa, actualizamos el número de velocidad inicial
+                if (data.show && (data.value !== undefined)) {
+                    const num = document.getElementById('noclip-number');
+                    if (num) num.innerText = data.value.toFixed(1);
                 }
             }
 
         } else if (data.type === "updateNoClipSpeed") {
-            // ACTUALIZAR SOLO EL NÚMERO
+            // Actualizamos solo el número cuando giras la rueda del ratón
             const num = document.getElementById('noclip-number');
             if (num) num.innerText = data.value.toFixed(1);
 
@@ -565,15 +568,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof isDetailsOpen !== 'undefined' && !isDetailsOpen) return;
 
             const s = data.stats;
-            
+
             // --- 1. HEALTH (Gestión especial para muertos) ---
             // Solo pasamos texto si está muerto/herido para que salga ROJO
             // Si está vivo, pasamos 'null' o nada para que salga BLANCO
             let healthStatus = null;
-            if (s.health <= 0) { 
-                 // Dependiendo de tu lógica de muerte, a veces health llega negativo o 0
-                 // Si quieres detectar muerte real necesitas enviar isDead desde server, 
-                 // pero visualmente 0% está bien.
+            if (s.health <= 0) {
+                // Dependiendo de tu lógica de muerte, a veces health llega negativo o 0
+                // Si quieres detectar muerte real necesitas enviar isDead desde server, 
+                // pero visualmente 0% está bien.
             }
             // Para Live Stats, mantenemos simple: solo valor numérico
             updateStatBar('stat-health', s.health);
@@ -5042,7 +5045,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- 6. ENVÍO GENÉRICO (Resto de botones: Revive, Kill, Freeze, etc.) ---
+        // --- 6. INTERCEPTOR PARA CONTROLAR JUGADOR (VISUAL) ---
+        if (action === 'control_player') {
+            // 1. Cambiamos el estado true/false
+            actionStates.control_player = !actionStates.control_player;
+
+            // 2. Actualizamos el botón visualmente (Verde SI/NO)
+            const btn = document.getElementById('btn-control-player');
+            if (btn) {
+                actionStates.control_player ? btn.classList.add('active') : btn.classList.remove('active');
+            }
+
+            // NO hacemos return. Dejamos que el código siga baje al "Fetch Genérico"
+            // así envía automáticamente { action: 'control_player', targetId: ID } al Lua.
+        }
+
+        // --- 7. ENVÍO GENÉRICO (Resto de botones: Revive, Kill, Freeze, etc.) ---
         fetch(`https://${GetParentResourceName()}/playerAction`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
