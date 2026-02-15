@@ -35,3 +35,4 @@ dependencies {
     'qb-core',
     'oxmysql'
 }
+
