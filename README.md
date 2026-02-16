@@ -1,13 +1,44 @@
-PONER DENTRO DE CADA div DE LISTA DE VEHICULOS/PROPIEDADES, a la derecha un botón de GPS, que al darle, te ponga en el gps ese garaje/propiedad.
+Hacer funcionar los botones de BANEAR/KICK/WARN/CK del DETALLES DEL JUGADOR
 
-Hacer que el DETALLES DEL PERSONAJE, que funcione CON JUGADORES DESCONECTADOS TAMBIEN (UNICAMENTE para los de la PAGE BANEADOS y los de REPORTES) que si no existe tal personaje en la base de datos del servidor, pues que ponga en todos los apartados: IMPOSIBLE SACAR DATOS DE JUGADOR INEXISTENTE o algo así pero que deje claro que esos personajes ya no son existentes, o que no están en la base de datos.
 
-Por alguna razón al cambiar de rango a alguien desde el DETALLES DEL JUGADOR, las notificaciones se duplican tanto al administrador como al target.
+# MEJORA TÉCNICA FINAL: EXPEDIENTE DE SANCIONES CON CONTADORES DINÁMICOS (DP-ADMINMENU)
 
-Hacer que el PANEL DE DETALLES DEL JUGADOR, que si el menú esta pegado a la izquierda, y el DETALLES DE JUGADOR no cabe a su izquierda, que ponga a la derecha del menu, que si tampoco cabe, que se mantenga a la izquirda pero que el width se haga mas estrecho del DETALLES DEL JUGADOR.
+**Contexto del Proyecto:**
+Estoy desarrollando un sistema de "Expediente Criminal" dentro de mi script DP-AdminMenu (QB-Core). Quiero que al abrir el modal de "Detalles del Jugador", la sección de "HISTORIAL DE SANCIONES" muestre un resumen visual rápido y una lista cronológica detallada de sus Bans, Kicks y Warns.
 
-que el HEIGHT del DETALLES DEL JUGADOR sea EXACTAMENTE IGUAL al del menú, que al meterle el escala al menú, el DETALLES DEL JUGADOR se haga mas estrecho como el menú.
+**Objetivo:**
+Sincronizar la base de datos de sanciones para mostrar el historial ÚNICAMENTE del jugador consultado, incluyendo contadores individuales por tipo de sanción.
 
-Hacer que el HISTORIAL DE SANCIONES vaya junto al BANS... y así puedo ver cuantos baneos/kicks/warns a tenido un unico jugador.
+**1. Modificación de Interfaz (index.html):**
+En la cabecera de la sección de sanciones, dentro de `.pd-section-title` o justo debajo, añade una fila de contadores rápidos:
+- **Badge BANs:** ID `pd-count-bans` (Estilo: Fondo rojo tenue, texto rojo).
+- **Badge KICKs:** ID `pd-count-kicks` (Estilo: Fondo gris tenue, texto blanco).
+- **Badge WARNs:** ID `pd-count-warns` (Estilo: Fondo naranja tenue, texto naranja).
 
-Hacer funcionar el BANEAR/KICK/WARN/CK del DETALLES DEL JUGADOR
+**2. Lógica del Servidor (main_sv.lua):**
+- Modificar el callback `dpadmin:server:getDetailedData`.
+- Debe realizar consultas SQL (SELECT) a las tablas de baneos (`bans`) y avisos (`warns`) filtrando por la `license` del jugador (es más persistente que el citizenid).
+- Unificar los resultados en una única tabla llamada `history`.
+- Ordenar la tabla `history` por fecha (timestamp) de la más reciente (arriba) a la más antigua (abajo).
+- **IMPORTANTE:** El servidor debe calcular y enviar un objeto `punishCounts` con los totales: `{ bans: X, kicks: Y, warns: Z }`.
+
+**3. Formateo y Envío de Datos (Server -> JS):**
+Cada entrada del historial debe estar estandarizada con:
+- `type`: "BAN", "KICK" o "WARN".
+- `reason`: El motivo de la sanción.
+- `expiry`: Para BANS, indicar "PERMANENTE", "EXPIRADO" o la fecha de fin (DD/MM/AAAA). Para el resto, null.
+- `date`: Fecha de creación de la sanción.
+- `admin`: Nombre del administrador que la aplicó.
+- `active`: (Boolean) Solo para Bans, indica si la sanción sigue vigente hoy.
+
+**4. Renderizado en Frontend (script.js):**
+- Actualizar los 3 contadores de la cabecera (`pd-count-bans`, etc.) con los datos de `punishCounts`.
+- Limpiar el contenedor `#pd-punishments-list` y generar una "Lista Simple" profesional:
+  - **Estructura visual:** `[BADGE TIPO] | [MOTIVO / ESTADO] | [DURACIÓN O FECHA]`.
+  - **Colores dinámicos:** - BAN activo: Rojo brillante.
+    - BAN expirado/revocado: Gris oscuro.
+    - WARN: Naranja.
+    - KICK: Gris claro.
+
+**Tarea a realizar:**
+Proporciona el código unificado para el Callback del servidor (Lua) y la lógica de renderizado en el NUI (JS) para que el historial sea funcional, preciso y visualmente intuitivo para el staff.

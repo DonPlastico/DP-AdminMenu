@@ -232,7 +232,7 @@ local function RunGodmodeLoop()
         SetEntityInvincible(ped, false)
         SetPlayerInvincible(PlayerId(), false)
         SetPedCanRagdoll(ped, true)
-        TriggerServerEvent('dpadmin:server:setGodmodeState', false)
+        TriggerServerEvent('DP-AdminMenu:server:setGodmodeState', false)
 
         isGodmodeRunning = false -- QUITAMOS CANDADO
     end)
@@ -474,7 +474,7 @@ local function RunTagsLoop()
                 end
             end
             if #nearbyPlayers > 0 then
-                TriggerServerEvent('dpadmin:server:getTagsData', nearbyPlayers)
+                TriggerServerEvent('DP-AdminMenu:server:getTagsData', nearbyPlayers)
             end
             Wait(1000)
         end
@@ -830,15 +830,15 @@ local function toggleMenu(state)
 
     if state then
         -- 1. PEDIMOS LA POSICIÓN PRIMERO
-        QBCore.Functions.TriggerCallback('dpadmin:server:getMenuPos', function(pos)
+        QBCore.Functions.TriggerCallback('DP-AdminMenu:server:getMenuPos', function(pos)
 
             -- 2. CARGA DE DATOS ORIGINAL (CASCADA)
-            QBCore.Functions.TriggerCallback('dpadmin:getPlayers', function(players)
-                QBCore.Functions.TriggerCallback('dpadmin:getReports', function(reports)
-                    QBCore.Functions.TriggerCallback('dpadmin:getBans', function(bans)
-                        QBCore.Functions.TriggerCallback('dpadmin:getChatMessages', function(chat)
-                            QBCore.Functions.TriggerCallback('dpadmin:getJobs', function(jobsList)
-                                QBCore.Functions.TriggerCallback('dpadmin:getGangs', function(gangsList)
+            QBCore.Functions.TriggerCallback('DP-AdminMenu:getPlayers', function(players)
+                QBCore.Functions.TriggerCallback('DP-AdminMenu:getReports', function(reports)
+                    QBCore.Functions.TriggerCallback('DP-AdminMenu:getBans', function(bans)
+                        QBCore.Functions.TriggerCallback('DP-AdminMenu:getChatMessages', function(chat)
+                            QBCore.Functions.TriggerCallback('DP-AdminMenu:getJobs', function(jobsList)
+                                QBCore.Functions.TriggerCallback('DP-AdminMenu:getGangs', function(gangsList)
 
                                     local currentState = {
                                         freezeTime = GlobalState.FreezeTime or false,
@@ -928,7 +928,7 @@ local function ForceResetAll()
     SetEntityInvincible(p, false)
     SetPlayerInvincible(PlayerId(), false)
     SetPedCanRagdoll(p, true)
-    TriggerServerEvent('dpadmin:server:setGodmodeState', false)
+    TriggerServerEvent('DP-AdminMenu:server:setGodmodeState', false)
     SetEntityVisible(p, true, false)
     ResetEntityAlpha(p)
     DebugLog("SISTEMA: Poderes reseteados.")
@@ -1022,14 +1022,14 @@ end)
 -- --- B. DATOS (REPORTES, BANS, CHAT) ---
 RegisterNUICallback('submitReport', function(data, cb)
     SetNuiFocus(false, false)
-    TriggerServerEvent('dpadmin:server:submitReport', data)
+    TriggerServerEvent('DP-AdminMenu:server:submitReport', data)
     cb('ok')
 end)
 
 RegisterNUICallback('assignReport', function(data, cb)
-    TriggerServerEvent('dpadmin:server:assignReport', data)
+    TriggerServerEvent('DP-AdminMenu:server:assignReport', data)
     SetTimeout(500, function()
-        QBCore.Functions.TriggerCallback('dpadmin:getReports', function(r)
+        QBCore.Functions.TriggerCallback('DP-AdminMenu:getReports', function(r)
             SendNUIMessage({
                 type = "updateReports",
                 reports = r
@@ -1040,9 +1040,9 @@ RegisterNUICallback('assignReport', function(data, cb)
 end)
 
 RegisterNUICallback('deleteReport', function(data, cb)
-    TriggerServerEvent('dpadmin:server:closeReport', data)
+    TriggerServerEvent('DP-AdminMenu:server:closeReport', data)
     SetTimeout(500, function()
-        QBCore.Functions.TriggerCallback('dpadmin:getReports', function(r)
+        QBCore.Functions.TriggerCallback('DP-AdminMenu:getReports', function(r)
             SendNUIMessage({
                 type = "updateReports",
                 reports = r
@@ -1053,9 +1053,9 @@ RegisterNUICallback('deleteReport', function(data, cb)
 end)
 
 RegisterNUICallback('revokeBan', function(data, cb)
-    TriggerServerEvent('dpadmin:server:revokeBan', data)
+    TriggerServerEvent('DP-AdminMenu:server:revokeBan', data)
     SetTimeout(500, function()
-        QBCore.Functions.TriggerCallback('dpadmin:getBans', function(b)
+        QBCore.Functions.TriggerCallback('DP-AdminMenu:getBans', function(b)
             SendNUIMessage({
                 type = "open",
                 bans = b
@@ -1066,9 +1066,9 @@ RegisterNUICallback('revokeBan', function(data, cb)
 end)
 
 RegisterNUICallback('extendBan', function(data, cb)
-    TriggerServerEvent('dpadmin:server:extendBan', data)
+    TriggerServerEvent('DP-AdminMenu:server:extendBan', data)
     SetTimeout(500, function()
-        QBCore.Functions.TriggerCallback('dpadmin:getBans', function(b)
+        QBCore.Functions.TriggerCallback('DP-AdminMenu:getBans', function(b)
             SendNUIMessage({
                 type = "open",
                 bans = b
@@ -1079,7 +1079,7 @@ RegisterNUICallback('extendBan', function(data, cb)
 end)
 
 RegisterNUICallback('getMoreChatMessages', function(data, cb)
-    QBCore.Functions.TriggerCallback('dpadmin:getChatMessages', function(c)
+    QBCore.Functions.TriggerCallback('DP-AdminMenu:getChatMessages', function(c)
         cb(c)
     end, data.oldestId)
 end)
@@ -1087,11 +1087,11 @@ end)
 -- ENVIAR MENSAJE (Soporte para texto + imágenes)
 RegisterNUICallback('sendAdminMessage', function(data, cb)
     -- data ahora contiene { message = "...", images = ["url1", "url2"] }
-    TriggerServerEvent('dpadmin:server:sendChatMessage', data)
+    TriggerServerEvent('DP-AdminMenu:server:sendChatMessage', data)
     cb('ok')
 end)
 
-RegisterNetEvent('dpadmin:client:receiveChatMessage', function(msg)
+RegisterNetEvent('DP-AdminMenu:client:receiveChatMessage', function(msg)
     if isMenuOpen then
         SendNUIMessage({
             type = "newChatMessage",
@@ -1100,7 +1100,7 @@ RegisterNetEvent('dpadmin:client:receiveChatMessage', function(msg)
     end
 end)
 
-RegisterNetEvent('dpadmin:client:receiveTagsData', function(data)
+RegisterNetEvent('DP-AdminMenu:client:receiveTagsData', function(data)
     for _, info in ipairs(data) do
         tagsDataCache[info.id] = info
     end
@@ -1108,11 +1108,11 @@ end)
 
 RegisterNUICallback('sendAnnouncement', function(data, cb)
     toggleMenu(false);
-    TriggerServerEvent('dpadmin:server:sendAnnouncement', data);
+    TriggerServerEvent('DP-AdminMenu:server:sendAnnouncement', data);
     cb('ok')
 end)
 
-RegisterNetEvent('dpadmin:client:showAnnouncement', function(msg, dur)
+RegisterNetEvent('DP-AdminMenu:client:showAnnouncement', function(msg, dur)
     SendNUIMessage({
         type = "showAnnouncement",
         message = msg,
@@ -1121,14 +1121,14 @@ RegisterNetEvent('dpadmin:client:showAnnouncement', function(msg, dur)
 end)
 
 -- Este evento actualiza HOME y JOBS sin cerrar el menú
-RegisterNetEvent('dpadmin:client:refreshAllData', function()
+RegisterNetEvent('DP-AdminMenu:client:refreshAllData', function()
     if isMenuOpen then
         -- 1. HOME
-        QBCore.Functions.TriggerCallback('dpadmin:getPlayers', function(players)
+        QBCore.Functions.TriggerCallback('DP-AdminMenu:getPlayers', function(players)
             -- 2. JOBS
-            QBCore.Functions.TriggerCallback('dpadmin:getJobs', function(jobsList)
+            QBCore.Functions.TriggerCallback('DP-AdminMenu:getJobs', function(jobsList)
                 -- 3. GANGS
-                QBCore.Functions.TriggerCallback('dpadmin:getGangs', function(gangsList)
+                QBCore.Functions.TriggerCallback('DP-AdminMenu:getGangs', function(gangsList)
                     SendNUIMessage({
                         type = "updateAllLists",
                         players = players,
@@ -1144,11 +1144,11 @@ end)
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     ForceResetAll()
     Citizen.Wait(2000)
-    TriggerServerEvent('dpadmin:server:playerFullyLoaded')
+    TriggerServerEvent('DP-AdminMenu:server:playerFullyLoaded')
 end)
 
 -- EVENTO PARA FORZAR ACTUALIZACIÓN DEL UI (SYNC GLOBAL)
-RegisterNetEvent('dpadmin:client:forceStatusUpdate', function()
+RegisterNetEvent('DP-AdminMenu:client:forceStatusUpdate', function()
     -- Enviamos mensaje al NUI para que recargue la página de Status si está abierta
     SendNUIMessage({
         type = "forceStatusRefresh"
@@ -1156,7 +1156,7 @@ RegisterNetEvent('dpadmin:client:forceStatusUpdate', function()
 end)
 
 RegisterNUICallback('updateWeather', function(data, cb)
-    TriggerServerEvent('dpadmin:server:updateWeather', data.weather, data.hour, data.extras);
+    TriggerServerEvent('DP-AdminMenu:server:updateWeather', data.weather, data.hour, data.extras);
     cb('ok')
 end)
 
@@ -1167,54 +1167,54 @@ RegisterNUICallback('triggerAction', function(data, cb)
 
     if action == 'open_map_menu' then
         toggleMenu(false) -- Cierra el menú de admin actual
-        TriggerEvent('dpadmin:client:openMap') -- Lanza el evento del mapa
+        TriggerEvent('DP-AdminMenu:client:openMap') -- Lanza el evento del mapa
         return cb('ok') -- Termina aquí para no seguir leyendo
     end
 
     if action == 'noclip' then
         -- ExecuteCommand('noclip') -- Comando externo (normalmente qb-admin)
-        TriggerServerEvent('dpadmin:server:log', 'NOCLIP', 'Alternó el estado de NoClip.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'NOCLIP', 'Alternó el estado de NoClip.')
 
     elseif action == 'revive' then
         TriggerEvent('hospital:client:Revive')
         TriggerEvent('QBCore:Client:SetStatus', 'is_dead', false)
         TriggerEvent('QBCore:Client:SetStatus', 'in_laststand', false)
-        TriggerServerEvent('dpadmin:server:log', 'REVIVE', 'El administrador se revivió a sí mismo.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'REVIVE', 'El administrador se revivió a sí mismo.')
 
     elseif action == 'clothing' then
         toggleMenu(false);
         Wait(100);
         TriggerEvent('qb-clothing:client:openMenu')
-        TriggerServerEvent('dpadmin:server:log', 'CLOTHING', 'Abrió el menú de ropa.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'CLOTHING', 'Abrió el menú de ropa.')
 
     elseif action == 'reviveall' then
-        TriggerServerEvent('dpadmin:server:reviveAll')
+        TriggerServerEvent('DP-AdminMenu:server:reviveAll')
         QBCore.Functions.Notify("Enviada orden de REVIVIR A TODOS...", "primary")
-        TriggerServerEvent('dpadmin:server:log', 'REVIVE ALL', 'Revivió a todos los jugadores del servidor.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'REVIVE ALL', 'Revivió a todos los jugadores del servidor.')
 
     elseif action == 'delete_nearby_veh' then
-        TriggerServerEvent('dpadmin:server:deleteVehicles', 'nearby')
-        TriggerServerEvent('dpadmin:server:log', 'DELETE VEHICLES', 'Borró vehículos cercanos.')
+        TriggerServerEvent('DP-AdminMenu:server:deleteVehicles', 'nearby')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'DELETE VEHICLES', 'Borró vehículos cercanos.')
 
     elseif action == 'delete_all_veh' then
-        TriggerServerEvent('dpadmin:server:deleteVehicles', 'all')
-        TriggerServerEvent('dpadmin:server:log', 'DELETE VEHICLES', '¡BORRÓ TODOS LOS VEHÍCULOS DEL MAPA!')
+        TriggerServerEvent('DP-AdminMenu:server:deleteVehicles', 'all')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'DELETE VEHICLES', '¡BORRÓ TODOS LOS VEHÍCULOS DEL MAPA!')
 
     elseif action == 'delete_nearby_peds' then
-        TriggerServerEvent('dpadmin:server:deletePeds', 'nearby')
-        TriggerServerEvent('dpadmin:server:log', 'DELETE PEDS', 'Borró NPCs cercanos.')
+        TriggerServerEvent('DP-AdminMenu:server:deletePeds', 'nearby')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'DELETE PEDS', 'Borró NPCs cercanos.')
 
     elseif action == 'delete_all_peds' then
-        TriggerServerEvent('dpadmin:server:deletePeds', 'all')
-        TriggerServerEvent('dpadmin:server:log', 'DELETE PEDS', '¡BORRÓ TODOS LOS NPCS DEL MAPA!')
+        TriggerServerEvent('DP-AdminMenu:server:deletePeds', 'all')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'DELETE PEDS', '¡BORRÓ TODOS LOS NPCS DEL MAPA!')
 
     elseif action == 'delete_nearby_objects' then
-        TriggerServerEvent('dpadmin:server:deleteObjects', 'nearby')
-        TriggerServerEvent('dpadmin:server:log', 'DELETE OBJECTS', 'Borró objetos cercanos.')
+        TriggerServerEvent('DP-AdminMenu:server:deleteObjects', 'nearby')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'DELETE OBJECTS', 'Borró objetos cercanos.')
 
     elseif action == 'delete_all_objects' then
-        TriggerServerEvent('dpadmin:server:deleteObjects', 'all')
-        TriggerServerEvent('dpadmin:server:log', 'DELETE OBJECTS', '¡BORRÓ TODOS LOS OBJETOS DEL MAPA!')
+        TriggerServerEvent('DP-AdminMenu:server:deleteObjects', 'all')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'DELETE OBJECTS', '¡BORRÓ TODOS LOS OBJETOS DEL MAPA!')
 
     elseif action == 'tpm' then
         toggleMenu(false)
@@ -1253,7 +1253,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
                 QBCore.Functions.Notify("No has marcado nada en el mapa", "error")
             end
         end)
-        TriggerServerEvent('dpadmin:server:log', 'TPM', 'Se teletransportó al marcador del mapa.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'TPM', 'Se teletransportó al marcador del mapa.')
 
     elseif action == 'goto_point' then
         toggleMenu(false)
@@ -1298,7 +1298,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
         DoScreenFadeIn(1000)
 
         QBCore.Functions.Notify("Teletransportado a destino", "success")
-        TriggerServerEvent('dpadmin:server:log', 'GOTO', 'TP Rápido ejecutado.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'GOTO', 'TP Rápido ejecutado.')
 
         -- Acciones Vehículo
     elseif action == 'repair_vehicle' then
@@ -1321,7 +1321,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
         else
             QBCore.Functions.Notify("¡No estás en un vehículo!", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'REPAIR', 'Reparó el vehículo actual.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'REPAIR', 'Reparó el vehículo actual.')
 
     elseif action == 'refuel_vehicle' then
         local veh = GetVehiclePedIsIn(PlayerPedId(), false)
@@ -1333,7 +1333,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
             end
             QBCore.Functions.Notify("⛽ Combustible: " .. amount .. "L", "success")
         end
-        TriggerServerEvent('dpadmin:server:log', 'REFUEL', 'Llenó el tanque del vehículo.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'REFUEL', 'Llenó el tanque del vehículo.')
 
     elseif action == 'wash_vehicle' then
         local veh = GetVehiclePedIsIn(PlayerPedId(), false)
@@ -1344,7 +1344,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
             SetVehicleDirtLevel(veh, 0.0);
             QBCore.Functions.Notify("🧼 Vehículo lavado.", "success")
         end
-        TriggerServerEvent('dpadmin:server:log', 'WASH', 'Lavó un vehículo.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'WASH', 'Lavó un vehículo.')
 
     elseif action == 'force_unlock' then
         local veh = QBCore.Functions.GetClosestVehicle()
@@ -1362,7 +1362,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
             SetVehicleLights(veh, 0)
             QBCore.Functions.Notify("🔓 Vehículo DESBLOQUEADO", "success")
         end
-        TriggerServerEvent('dpadmin:server:log', 'UNLOCK', 'Forzó el desbloqueo de un vehículo.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'UNLOCK', 'Forzó el desbloqueo de un vehículo.')
 
     elseif action == 'force_lock' then
         local veh = QBCore.Functions.GetClosestVehicle()
@@ -1375,7 +1375,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
             SetVehicleLights(veh, 0)
             QBCore.Functions.Notify("🔒 Vehículo BLOQUEADO", "success")
         end
-        TriggerServerEvent('dpadmin:server:log', 'LOCK', 'Forzó el bloqueo de un vehículo.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'LOCK', 'Forzó el bloqueo de un vehículo.')
 
     elseif action == 'random_visuals' then
         local veh = GetVehiclePedIsIn(PlayerPedId(), false)
@@ -1396,7 +1396,7 @@ RegisterNUICallback('triggerAction', function(data, cb)
             end
             QBCore.Functions.Notify("Estética aleatoria aplicada.", "success")
         end
-        TriggerServerEvent('dpadmin:server:log', 'TUNING', 'Aplicó tuning visual aleatorio.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'TUNING', 'Aplicó tuning visual aleatorio.')
     end
     cb('ok')
 end)
@@ -1414,12 +1414,12 @@ RegisterNUICallback('toggleAction', function(data, cb)
         godmodeActive = state
         if state then
             QBCore.Functions.Notify("MODO DIOS: ON", "success");
-            TriggerServerEvent('dpadmin:server:setGodmodeState', true);
+            TriggerServerEvent('DP-AdminMenu:server:setGodmodeState', true);
             RunGodmodeLoop()
         else
             QBCore.Functions.Notify("MODO DIOS: OFF", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'GODMODE', 'Ha cambiado el modo Dios.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'GODMODE', 'Ha cambiado el modo Dios.')
 
     elseif action == 'invisible' then
         invisibleActive = state
@@ -1431,7 +1431,7 @@ RegisterNUICallback('toggleAction', function(data, cb)
         else
             QBCore.Functions.Notify("INVISIBLE: OFF", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'INVISIBLE', 'Ha cambiado la invisibilidad.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'INVISIBLE', 'Ha cambiado la invisibilidad.')
 
     elseif action == 'superspeed' then
         speedActive = state
@@ -1451,7 +1451,7 @@ RegisterNUICallback('toggleAction', function(data, cb)
             })
             QBCore.Functions.Notify("VELOCIDAD: OFF", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'SPEED', 'Ha alterado su velocidad de correr.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'SPEED', 'Ha alterado su velocidad de correr.')
 
     elseif action == 'superjump' then
         jumpActive = state
@@ -1471,7 +1471,7 @@ RegisterNUICallback('toggleAction', function(data, cb)
             })
             QBCore.Functions.Notify("SALTO: OFF", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'JUMP', 'Ha alterado su salto.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'JUMP', 'Ha alterado su salto.')
 
     elseif action == 'stamina' then
         staminaActive = state
@@ -1481,7 +1481,7 @@ RegisterNUICallback('toggleAction', function(data, cb)
         else
             QBCore.Functions.Notify("RESISTENCIA: OFF", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'STAMINA', 'Ha cambiado resistencia infinita.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'STAMINA', 'Ha cambiado resistencia infinita.')
 
     elseif action == 'blips' then
         blipsActive = state
@@ -1491,7 +1491,7 @@ RegisterNUICallback('toggleAction', function(data, cb)
         else
             QBCore.Functions.Notify("BLIPS: OFF", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'BLIPS', 'Ha cambiado la visualización de Blips (Nombres).')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'BLIPS', 'Ha cambiado la visualización de Blips (Nombres).')
 
     elseif action == 'tags' then
         tagsActive = state
@@ -1509,7 +1509,7 @@ RegisterNUICallback('toggleAction', function(data, cb)
             });
             QBCore.Functions.Notify("TAGS: OFF", "error")
         end
-        TriggerServerEvent('dpadmin:server:log', 'TAGS', 'Ha cambiado la visualización de GamerTags.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'TAGS', 'Ha cambiado la visualización de GamerTags.')
 
     elseif action == 'cuffs' then
         cuffsActive = state
@@ -1530,7 +1530,7 @@ RegisterNUICallback('toggleAction', function(data, cb)
                 QBCore.Functions.Notify("No estabas esposado", "error")
             end
         end
-        TriggerServerEvent('dpadmin:server:log', 'CUFFS', 'Se ha puesto/quitado las esposas.')
+        TriggerServerEvent('DP-AdminMenu:server:log', 'CUFFS', 'Se ha puesto/quitado las esposas.')
 
     elseif action == 'entity_info' then
         entityInfoActive = state
@@ -1714,35 +1714,35 @@ RegisterNUICallback('setVehicleLivery', function(data, cb)
 end)
 
 RegisterNUICallback('toggleDuty', function(data, cb)
-    TriggerServerEvent('dpadmin:server:toggleDuty', data.targetId)
+    TriggerServerEvent('DP-AdminMenu:server:toggleDuty', data.targetId)
     cb('ok')
 end)
 
 RegisterNUICallback('setJob', function(data, cb)
-    TriggerServerEvent('dpadmin:server:setJob', data.targetId, data.job, data.grade)
+    TriggerServerEvent('DP-AdminMenu:server:setJob', data.targetId, data.job, data.grade)
     cb('ok')
 end)
 
 RegisterNUICallback('setJobGrade', function(data, cb)
-    TriggerServerEvent('dpadmin:server:setJobGrade', data.targetId, data.grade)
+    TriggerServerEvent('DP-AdminMenu:server:setJobGrade', data.targetId, data.grade)
     cb('ok')
 end)
 
 RegisterNUICallback('setGang', function(data, cb)
     if data.targetId and data.gang then
-        TriggerServerEvent('dpadmin:server:setGang', data.targetId, data.gang, data.grade)
+        TriggerServerEvent('DP-AdminMenu:server:setGang', data.targetId, data.gang, data.grade)
     end
     cb('ok')
 end)
 
 RegisterNUICallback('setGangGrade', function(data, cb)
-    TriggerServerEvent('dpadmin:server:setGangGrade', data.targetId, data.grade)
+    TriggerServerEvent('DP-AdminMenu:server:setGangGrade', data.targetId, data.grade)
     cb('ok')
 end)
 
 -- Puente: JS pide vehículos -> Cliente pide a Server -> Server devuelve a Cliente -> Cliente envía a JS
 RegisterNUICallback('requestVehicles', function(data, cb)
-    QBCore.Functions.TriggerCallback('dpadmin:getVehicleList', function(vehList)
+    QBCore.Functions.TriggerCallback('DP-AdminMenu:getVehicleList', function(vehList)
         SendNUIMessage({
             type = "updateVehicles",
             vehicles = vehList
@@ -1762,13 +1762,13 @@ end)
 
 -- DAR VEHÍCULO A OTRO JUGADOR
 RegisterNUICallback('giveVehicleToPlayer', function(data, cb)
-    TriggerServerEvent('dpadmin:server:giveVehicle', data)
+    TriggerServerEvent('DP-AdminMenu:server:giveVehicle', data)
     cb('ok')
 end)
 
 -- PETICIÓN DE ÍTEMS (PUENTE)
 RegisterNUICallback('requestItems', function(data, cb)
-    QBCore.Functions.TriggerCallback('dpadmin:getItemList', function(itemList)
+    QBCore.Functions.TriggerCallback('DP-AdminMenu:getItemList', function(itemList)
         SendNUIMessage({
             type = "updateItems",
             items = itemList
@@ -1780,19 +1780,19 @@ end)
 -- SPAWNEAR ÍTEM (DARSE A UNO MISMO)
 RegisterNUICallback('spawnItem', function(data, cb)
     -- Llamamos al evento directo del servidor, mucho más fiable
-    TriggerServerEvent('dpadmin:server:spawnItem', data.name)
+    TriggerServerEvent('DP-AdminMenu:server:spawnItem', data.name)
     cb('ok')
 end)
 
 -- DAR ÍTEM A OTRO JUGADOR
 RegisterNUICallback('giveItemToPlayer', function(data, cb)
-    TriggerServerEvent('dpadmin:server:giveItemToPlayer', data)
+    TriggerServerEvent('DP-AdminMenu:server:giveItemToPlayer', data)
     cb('ok')
 end)
 
 -- CALLBACK DE ESTADÍSTICAS
 RegisterNUICallback('getStatusData', function(data, cb)
-    QBCore.Functions.TriggerCallback('dpadmin:server:getStatusData', function(result)
+    QBCore.Functions.TriggerCallback('DP-AdminMenu:server:getStatusData', function(result)
         cb(result)
     end)
 end)
@@ -1803,7 +1803,7 @@ RegisterNUICallback('toggleServerOption', function(data, cb)
     local state = data.state
 
     -- Enviamos al servidor la orden
-    TriggerServerEvent('dpadmin:server:toggleOption', option, state)
+    TriggerServerEvent('DP-AdminMenu:server:toggleOption', option, state)
 
     cb('ok')
 end)
@@ -1830,7 +1830,7 @@ end)
 
 RegisterNUICallback('saveMenuPos', function(data, cb)
     -- data.top y data.left son strings "15.50%"
-    TriggerServerEvent('dpadmin:server:saveMenuPos', data)
+    TriggerServerEvent('DP-AdminMenu:server:saveMenuPos', data)
     cb('ok')
 end)
 
@@ -2092,7 +2092,7 @@ end
 
 -- 1. Comando/Evento para abrir el mapa
 -- (Llama a esto desde donde quieras abrir el menú)
-RegisterNetEvent('dpadmin:client:openMap', function()
+RegisterNetEvent('DP-AdminMenu:client:openMap', function()
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = "openMap",
@@ -2179,7 +2179,7 @@ end)
 RegisterNUICallback('teleportTargetToCoords', function(data, cb)
     if data.targetId and data.coords then
         -- Enviamos la ID del objetivo y las coordenadas al servidor
-        TriggerServerEvent('dpadmin:server:teleportTargetTactical', data.targetId, data.coords)
+        TriggerServerEvent('DP-AdminMenu:server:teleportTargetTactical', data.targetId, data.coords)
     end
     cb('ok')
 end)
@@ -2200,12 +2200,12 @@ local lastSpectateCoords = nil
 -- 1. NUI CALLBACK: Acciones del Panel (Matar, Congelar, Espectear...)
 RegisterNUICallback('playerAction', function(data, cb)
     -- Enviamos: 1. La acción, 2. La ID, 3. TODO el objeto data (donde va el 'amount' si existe)
-    TriggerServerEvent('dpadmin:server:playerAction', data.action, data.targetId, data)
+    TriggerServerEvent('DP-AdminMenu:server:playerAction', data.action, data.targetId, data)
     cb('ok')
 end)
 
 -- 2. EVENTO: Lógica del Espectador (Recibido desde Server)
-RegisterNetEvent('dpadmin:client:spectate', function(targetPed, targetCoords)
+RegisterNetEvent('DP-AdminMenu:client:spectate', function(targetPed, targetCoords)
     local myPed = PlayerPedId()
 
     if not isSpectating then
@@ -2245,7 +2245,7 @@ RegisterNetEvent('dpadmin:client:spectate', function(targetPed, targetCoords)
 end)
 
 RegisterNUICallback('getPlayerFullDetails', function(data, cb)
-    QBCore.Functions.TriggerCallback('dpadmin:server:getDetailedData', function(result)
+    QBCore.Functions.TriggerCallback('DP-AdminMenu:server:getDetailedData', function(result)
         cb(result)
     end, data.targetId)
 end)
@@ -2255,7 +2255,7 @@ end)
 -- ==========================================================================
 
 -- 1. TARGET: ALGUIEN PIDE UNA FOTO TUYA (Se ejecuta en el JUGADOR)
-RegisterNetEvent('dpadmin:client:captureScreen', function(adminSource)
+RegisterNetEvent('DP-AdminMenu:client:captureScreen', function(adminSource)
     -- LOG 1: Confirmamos que llega la orden desde el servidor
     DebugLog("^3[DP-ADMIN DEBUG] 📸 Petición de captura recibida. Admin ID: " .. tostring(adminSource) .. "^7")
 
@@ -2277,7 +2277,7 @@ RegisterNetEvent('dpadmin:client:captureScreen', function(adminSource)
             DebugLog("^3[DP-ADMIN DEBUG] ✅ Foto generada! Tamaño: " .. string.len(tostring(data)) .. " caracteres.^7")
 
             -- Enviamos la imagen (data) de vuelta al servidor
-            TriggerServerEvent('dpadmin:server:relayScreenshot', adminSource, data)
+            TriggerServerEvent('DP-AdminMenu:server:relayScreenshot', adminSource, data)
             DebugLog("^3[DP-ADMIN DEBUG] 📤 Enviando datos de vuelta al servidor...^7")
         else
             DebugLog(
@@ -2287,7 +2287,7 @@ RegisterNetEvent('dpadmin:client:captureScreen', function(adminSource)
 end)
 
 -- 2. ADMIN: RECIBES LA FOTO DEL JUGADOR (Se ejecuta en el ADMIN)
-RegisterNetEvent('dpadmin:client:receiveScreenshot', function(base64Data)
+RegisterNetEvent('DP-AdminMenu:client:receiveScreenshot', function(base64Data)
     DebugLog("^3[DP-ADMIN DEBUG] 📥 El servidor me ha devuelto la foto. Procesando...^7")
 
     if not base64Data then
@@ -2309,7 +2309,7 @@ end)
 -- ==========================================================================
 --      APERTURA DE INVENTARIO (PUENTE DIRECTO)
 -- ==========================================================================
-RegisterNetEvent('dpadmin:client:execOpenInventory', function(targetId)
+RegisterNetEvent('DP-AdminMenu:client:execOpenInventory', function(targetId)
     -- 1. Cerrar menú admin
     SetNuiFocus(false, false)
     SendNUIMessage({
@@ -2330,7 +2330,7 @@ end)
 -- ==========================================================================
 --      EVENTO PARA CERRAR EL MENÚ DESDE EL SERVIDOR (FORCE CLOSE)
 -- ==========================================================================
-RegisterNetEvent('dpadmin:client:forceCloseMenu', function()
+RegisterNetEvent('DP-AdminMenu:client:forceCloseMenu', function()
     -- 1. Quitamos el foco del ratón
     SetNuiFocus(false, false)
 
@@ -2343,7 +2343,7 @@ end)
 -- ==========================================================================
 --      EJECUTAR COMANDO DE PEDS (PARA EL ADMIN)
 -- ==========================================================================
-RegisterNetEvent('dpadmin:client:openPedMenu', function(targetId)
+RegisterNetEvent('DP-AdminMenu:client:openPedMenu', function(targetId)
     -- 1. Cerrar el menú de admin (y el panel de detalles gracias al arreglo de antes)
     SetNuiFocus(false, false)
     SendNUIMessage({
@@ -2363,7 +2363,7 @@ end)
 RegisterNUICallback('setDimension', function(data, cb)
     -- data.targetId = ID del jugador
     -- data.bucket = Número de la dimensión
-    TriggerServerEvent('dpadmin:server:setDimension', data.targetId, data.bucket)
+    TriggerServerEvent('DP-AdminMenu:server:setDimension', data.targetId, data.bucket)
     cb('ok')
 end)
 
@@ -2372,7 +2372,7 @@ end)
 -- ==========================================================================
 
 -- 1. EL ADMIN ME PIDE MIS DATOS (Soy el objetivo)
-RegisterNetEvent('dpadmin:client:reportLiveStats', function()
+RegisterNetEvent('DP-AdminMenu:client:reportLiveStats', function()
     local ped = PlayerPedId()
     local playerId = PlayerId()
 
@@ -2380,7 +2380,7 @@ RegisterNetEvent('dpadmin:client:reportLiveStats', function()
     -- En GTA, GetPlayerSprintStaminaRemaining devuelve cuanto le queda.
     local staminaLevel = 100 - GetPlayerSprintStaminaRemaining(playerId)
 
-    TriggerServerEvent('dpadmin:server:receiveLiveStats', {
+    TriggerServerEvent('DP-AdminMenu:server:receiveLiveStats', {
         health = GetEntityHealth(ped) - 100,
         armor = GetPedArmour(ped),
         stamina = staminaLevel
@@ -2388,7 +2388,7 @@ RegisterNetEvent('dpadmin:client:reportLiveStats', function()
 end)
 
 -- 2. EL SERVIDOR ME ENVÍA LOS DATOS ACTUALIZADOS (Soy el Admin)
-RegisterNetEvent('dpadmin:client:updateLiveStats', function(data)
+RegisterNetEvent('DP-AdminMenu:client:updateLiveStats', function(data)
     SendNUIMessage({
         action = "UPDATE_LIVE_STATS",
         stats = data
@@ -2397,7 +2397,7 @@ end)
 
 -- CALLBACK PARA ACTIVAR/DESACTIVAR EL LIVE STATS DESDE JS
 RegisterNUICallback('toggleWatch', function(data, cb)
-    TriggerServerEvent('dpadmin:server:toggleWatch', data.targetId, data.state)
+    TriggerServerEvent('DP-AdminMenu:server:toggleWatch', data.targetId, data.state)
     cb('ok')
 end)
 
@@ -2406,7 +2406,7 @@ end)
 -- ====================================================================
 
 -- PARA EL ADMIN (EL CONTROLADOR)
-RegisterNetEvent('dpadmin:client:startControlling', function(targetServerId, targetCoords)
+RegisterNetEvent('DP-AdminMenu:client:startControlling', function(targetServerId, targetCoords)
     local ped = PlayerPedId()
 
     -- 1. Teleport a la posición de la víctima
@@ -2434,7 +2434,7 @@ RegisterNetEvent('dpadmin:client:startControlling', function(targetServerId, tar
     end
 end)
 
-RegisterNetEvent('dpadmin:client:stopControlling', function()
+RegisterNetEvent('DP-AdminMenu:client:stopControlling', function()
     -- Restauramos el skin original del Admin
     TriggerServerEvent('qb-clothes:loadPlayerSkin') -- O el evento que use tu server para cargar skin
 
@@ -2447,7 +2447,7 @@ end)
 -- ====================================================================
 local isBeingControlled = false
 
-RegisterNetEvent('dpadmin:client:startSpectatingTarget', function(adminServerId)
+RegisterNetEvent('DP-AdminMenu:client:startSpectatingTarget', function(adminServerId)
     isBeingControlled = true
     local ped = PlayerPedId()
 
@@ -2491,7 +2491,7 @@ RegisterNetEvent('dpadmin:client:startSpectatingTarget', function(adminServerId)
     QBCore.Functions.Notify("Un admin ha tomado el control. Estás especteando sus acciones.", "primary", 10000)
 end)
 
-RegisterNetEvent('dpadmin:client:stopSpectatingTarget', function()
+RegisterNetEvent('DP-AdminMenu:client:stopSpectatingTarget', function()
     isBeingControlled = false
     local ped = PlayerPedId()
 
@@ -2511,6 +2511,26 @@ RegisterNetEvent('dpadmin:client:stopSpectatingTarget', function()
     end
 
     QBCore.Functions.Notify("Has recuperado el control.", "success")
+end)
+
+-- ==========================================================================
+--      NUI CALLBACK: ACTIVAR GPS
+-- ==========================================================================
+RegisterNUICallback('setGPS', function(data, cb)
+    local x = tonumber(data.x)
+    local y = tonumber(data.y)
+
+    if x and y and (x ~= 0 or y ~= 0) then
+        -- Opción 1: Usar el Waypoint nativo (El punto morado del mapa)
+        -- Es lo más limpio y lo que el jugador espera.
+        SetNewWaypoint(x, y)
+        
+        QBCore.Functions.Notify("📍 GPS marcado en tu mapa", "success")
+    else
+        QBCore.Functions.Notify("❌ Error: Ubicación desconocida", "error")
+    end
+
+    cb('ok')
 end)
 
 -- ==========================================================================
@@ -2535,7 +2555,7 @@ end)
 -- 2. REVIVE
 RegisterStaffKey('admin_revive', 'Revivirse a sí mismo', function()
     TriggerEvent('hospital:client:Revive')
-    TriggerServerEvent('dpadmin:server:log', 'HOTKEY', 'Se revivió usando atajo de teclado.')
+    TriggerServerEvent('DP-AdminMenu:server:log', 'HOTKEY', 'Se revivió usando atajo de teclado.')
 end)
 
 -- 3. GODMODE

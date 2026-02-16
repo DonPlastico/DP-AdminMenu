@@ -4115,12 +4115,36 @@ input:checked+.slider:before {
 /* El modal de detalles se queda por debajo (z-index menor) */
 .player-details-container {
     z-index: 50 !important;
-    right: auto !important;
-    left: auto;
-    height: 76.5% !important;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    
+    transform: scale(1);
+    /* Quitamos height de la transición para que no "baile" al redimensionar el menú */
+    transition: width 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+
+    display: none;
+    width: 1000px;
+    min-width: 350px;
+    /* Eliminamos cualquier height fijo aquí para que mande el JS */
+    
+    background: var(--bg-panel);
     border-radius: 5px;
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-    user-select: none;
+    overflow: hidden; /* Importante para que el contenido no se salga */
+    
+    flex-direction: column; /* Asegura que el contenido se apile verticalmente */
+}
+
+/* IMPORTANTE: El contenedor del contenido debe tener scroll */
+/* Ajusta esta clase según cómo se llame el div que envuelve tus datos */
+.player-details-container .modal-content, 
+.player-details-container .pd-main-content {
+    flex: 1; /* Ocupa todo el espacio disponible */
+    overflow-y: auto; /* Activa el scroll vertical */
+    padding: 15px; /* Tu padding interno */
 }
 
 /* Permitimos la selección ÚNICAMENTE en los valores (textos blancos/verdes) */
@@ -5242,27 +5266,25 @@ input:checked+.slider:before {
 @keyframes slideOutFromMenu {
     from {
         opacity: 0;
-        transform: translateX(50px) scale(0.95);
-        /* Empieza "dentro" del menú principal */
+        /* Quitamos el translateX para que no pelee con el JS */
+        transform: scale(0.95);
     }
 
     to {
         opacity: 1;
-        transform: translateX(0) scale(1);
-        /* Termina en su sitio */
+        transform: scale(1);
     }
 }
 
 @keyframes slideBackIntoMenu {
     from {
         opacity: 1;
-        transform: translateX(0) scale(1);
+        transform: scale(1);
     }
 
     to {
         opacity: 0;
-        transform: translateX(50px) scale(0.95);
-        /* Se mete "dentro" del menú principal */
+        transform: scale(0.95);
     }
 }
 

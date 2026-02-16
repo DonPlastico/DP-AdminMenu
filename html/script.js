@@ -40,6 +40,7 @@ let dragOffsetY = 0;
 let isEditMode = false;
 let currentDetailsId = null;
 let wasDetailsOpen = false;
+let isProcessingAction = false; // Bloqueador global
 
 // Estados de Botones (Toggle) - AQUÍ GUARDAMOS SI LA HERRAMIENTA ESTÁ ACTIVA
 const actionStates = {
@@ -834,10 +835,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         list.forEach(rep => {
-            // SEGURIDAD: Limpiamos los nombres y títulos también
+            // SEGURIDAD: Limpiamos los nombres y títulos
             const steamName = escapeHtml(rep.steam_name || "Anonimo");
             const charName = escapeHtml(rep.sender_name || "Anonimo");
             const titleSafe = escapeHtml(rep.title || "Sin Asunto");
+
+            // ============================================================
+            // 1. NUEVA LÓGICA DE IDENTIFICACIÓN DE JUGADOR
+            // ============================================================
+            // Buscamos si el autor del reporte está en la lista de jugadores conectados (allPlayers)
+            // IMPORTANTE: Tu LUA debe enviar 'citizenid' en la lista de reportes para que esto sea 100% preciso.
+            const onlinePlayer = typeof allPlayers !== 'undefined'
+                ? allPlayers.find(p => p.citizenid === rep.citizenid)
+                : null;
+
+            let playerParams = {};
+
+            if (onlinePlayer) {
+                // ESTÁ ONLINE: Usamos su ID de sesión actual (que puede ser distinta al rep.src)
+                playerParams = {
+                    id: onlinePlayer.id,
+                    name: onlinePlayer.name,
+                    charName: onlinePlayer.charName,
+                    citizenid: rep.citizenid
+                };
+            } else {
+                // ESTÁ OFFLINE: Preparamos datos para búsqueda SQL
+                playerParams = {
+                    id: null, // Null fuerza al sistema a buscar en base de datos
+                    citizenid: rep.citizenid,
+                    name: steamName,
+                    charName: charName,
+                    isOffline: true
+                };
+            }
+
+            // Convertimos el objeto a texto seguro para el HTML
+            const paramsString = JSON.stringify(playerParams).replace(/"/g, "&quot;");
+            // ============================================================
 
             let statusBadge = rep.status === 'open'
                 ? '<span class="badge unassigned">LIBRE</span>'
@@ -864,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="rc-footer">
                 ${assignBtn}
-                <button onclick="openPlayerDetails({ id: '${rep.src || 0}', name: '${steamName}', charName: '${charName}' })">
+                <button onclick="openPlayerDetails(${paramsString})">
                     INFORMACIÓN DEL JUGADOR
                 </button>
                 <button class="btn-danger btn-delete" data-id="${rep.id}">CERRAR/BORRAR</button>
@@ -1808,7 +1843,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ==========================================================================
-    // 18. MÓDULO: BANDAS (GANGS)
+    // 18. MÓDULO: BANDAS (GANGS) - VERSIÓN CORREGIDA Y UNIFICADA
     // ==========================================================================
     const gangListContainer = document.getElementById('gang-list-container');
     const totalGangsCounter = document.getElementById('total-gangs');
@@ -1853,15 +1888,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const countClass = playerCount > 0 ? 'online-count-badge active' : 'online-count-badge';
 
             card.innerHTML = `
-                <div class="accordion-header" onclick="toggleJobAccordion(this)">
-                    <span class="id-badge" style="text-transform:none; width:115px; text-align:center; background:#5a1a1a;">${gang.name}</span> 
-                    <span style="font-weight:bold; color:var(--text-main); margin-left:10px;">${gang.label}</span>
-                    <span class="${countClass}">${playerCount} conectados</span>
-                    <span class="iconify accordion-icon" data-icon="mdi:chevron-down"></span>
-                </div>
-                <div class="accordion-content">
-                    ${playerCount === 0 ? '<div style="padding:20px; color:#666; text-align:center; font-style:italic;">Nadie conectado.</div>' : ''}
-                </div>`;
+            <div class="accordion-header" onclick="toggleJobAccordion(this)">
+                <span class="id-badge" style="text-transform:none; width:115px; text-align:center; background:#5a1a1a;">${gang.name}</span> 
+                <span style="font-weight:bold; color:var(--text-main); margin-left:10px;">${gang.label}</span>
+                <span class="${countClass}">${playerCount} conectados</span>
+                <span class="iconify accordion-icon" data-icon="mdi:chevron-down"></span>
+            </div>
+            <div class="accordion-content">
+                ${playerCount === 0 ? '<div style="padding:20px; color:#666; text-align:center; font-style:italic;">Nadie conectado.</div>' : ''}
+            </div>`;
 
             const content = card.querySelector('.accordion-content');
             if (gang.players) {
@@ -1869,24 +1904,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     const row = document.createElement('div');
                     row.className = 'job-player-row';
                     row.innerHTML = `
-                        <div class="jp-info">
-                            <span class="jp-id-badge">${p.source}</span>
-                            <div class="jp-names">
-                                <div class="jp-char-name">${p.charName}</div>
-                                <div class="jp-steam-name">(${p.name})</div>
-                            </div>
-                            <div class="jp-meta">
-                                <div class="jp-grade" style="background:rgba(255, 50, 50, 0.1); border-color:rgba(255,50,50,0.2);">
-                                    <span class="iconify" data-icon="mdi:skull-crossbones-outline"></span>
-                                    ${p.gradeLabel} <span class="jp-grade-num" style="color:#ff6b6b;">${p.gradeLevel}</span>
-                                </div>
+                    <div class="jp-info">
+                        <span class="jp-id-badge">${p.source}</span>
+                        <div class="jp-names">
+                            <div class="jp-char-name">${p.charName}</div>
+                            <div class="jp-steam-name">(${p.name})</div>
+                        </div>
+                        <div class="jp-meta">
+                            <div class="jp-grade" style="background:rgba(255, 50, 50, 0.1); border-color:rgba(255,50,50,0.2);">
+                                <span class="iconify" data-icon="mdi:skull-crossbones-outline"></span>
+                                ${p.gradeLabel} <span class="jp-grade-num" style="color:#ff6b6b;">${p.gradeLevel}</span>
                             </div>
                         </div>
-                        <div class="icon-actions">
-                            <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}' })"><span class="iconify" data-icon="mdi:account-details"></span></div>
-                            <div class="icon-btn warn" onclick="openGangRankModal('${p.source}', '${escapeHtml(p.name)}', '${gang.name}')"><span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span></div>
-                            <div class="icon-btn danger" onclick="openGangManageModal('${p.source}', '${escapeHtml(p.name)}')"><span class="iconify" data-icon="mdi:account-cancel-outline"></span></div>
-                        </div>`;
+                    </div>
+                    <div class="icon-actions">
+                        <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}' })"><span class="iconify" data-icon="mdi:account-details"></span></div>
+                        <div class="icon-btn warn" onclick="openGangRankModal('${p.source}', '${escapeHtml(p.name)}', '${gang.name}')"><span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span></div>
+                        <div class="icon-btn danger" onclick="openGangManageModal('${p.source}', '${escapeHtml(p.name)}')"><span class="iconify" data-icon="mdi:account-cancel-outline"></span></div>
+                    </div>`;
                     content.appendChild(row);
                 });
             }
@@ -1951,40 +1986,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // BOTÓN GUARDAR CAMBIOS (Actualizado con Auto-Refresco)
-    document.getElementById('btn-set-gang')?.addEventListener('click', () => {
-        const newGang = valGmGang.value;
-        const newGrade = valGmGrade.value || 0;
-        if (!newGang || !selectedGangPlayerId) return;
+    // FUNCIÓN DE PROCESADO ÚNICA (Evita duplicados)
+    const processSetGang = (gangName, gradeLevel) => {
+        if (isProcessingAction) return;
+        isProcessingAction = true;
 
         fetch(`https://${GetParentResourceName()}/setGang`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ targetId: selectedGangPlayerId, gang: newGang, grade: newGrade })
-        });
-
-        const targetId = selectedGangPlayerId;
-        closeGangManageModal();
-        if (isDetailsOpen && currentDetailsId == targetId) {
-            setTimeout(() => window.openPlayerDetails({ id: targetId }), 500);
-        }
-    });
-
-    // BOTÓN EXPULSAR
-    document.getElementById('btn-fire-gang')?.addEventListener('click', () => {
-        const targetId = selectedGangPlayerId;
-        showConfirmationModal(`¿Expulsar de su banda?`, () => {
-            fetch(`https://${GetParentResourceName()}/setGang`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetId: targetId, gang: "none", grade: 0 })
-            });
+            body: JSON.stringify({
+                targetId: selectedGangPlayerId,
+                gang: gangName,
+                grade: parseInt(gradeLevel)
+            })
+        }).then(() => {
+            const targetId = selectedGangPlayerId;
+            closeGangManageModal();
+            // Auto-Refresco inteligente si estamos en Detalles
             if (isDetailsOpen && currentDetailsId == targetId) {
-                setTimeout(() => window.openPlayerDetails({ id: targetId }), 500);
+                setTimeout(() => {
+                    window.openPlayerDetails({ id: targetId });
+                    isProcessingAction = false;
+                }, 600);
+            } else {
+                isProcessingAction = false;
             }
+        }).catch(err => {
+            console.error("Error SetGang:", err);
+            isProcessingAction = false;
         });
-        closeGangManageModal();
-    });
+    };
+
+    // ASIGNACIÓN DE CLICS (Usamos onclick para limpiar cualquier listener previo)
+    const btnSaveGang = document.getElementById('btn-set-gang');
+    if (btnSaveGang) {
+        btnSaveGang.onclick = function () {
+            const g = valGmGang.value;
+            const gr = valGmGrade.value || 0;
+            if (!g || !selectedGangPlayerId) return;
+            processSetGang(g, gr);
+        };
+    }
+
+    const btnFireGang = document.getElementById('btn-fire-gang');
+    if (btnFireGang) {
+        btnFireGang.onclick = function () {
+            showConfirmationModal(`¿Expulsar de su banda?`, () => {
+                processSetGang("none", 0);
+            });
+        };
+    }
 
     // Selectores UI
     trigGmGang?.addEventListener('click', (e) => {
@@ -1998,31 +2049,6 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapGmGang.classList.remove('open');
         e.stopPropagation();
     });
-
-    // Botones Acción
-    const btnSetGang = document.getElementById('btn-set-gang');
-    if (btnSetGang) {
-        // Usamos onclick en lugar de addEventListener para asegurar que solo haya UNO
-        btnSetGang.onclick = function () {
-            const targetId = selectedGangPlayerId;
-            const gang = document.getElementById('val-gm-gang').value;
-            const grade = document.getElementById('val-gm-grade').value;
-
-            if (!targetId || !gang) return;
-
-            fetch(`https://${GetParentResourceName()}/setGang`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    targetId: targetId,
-                    gang: gang,
-                    grade: grade
-                })
-            });
-
-            closeGangManageModal();
-        };
-    }
 
     // 3. LÓGICA MODAL RANGO BANDA (SIMPLE)
     const grModal = document.getElementById('gang-rank-modal');
@@ -2073,16 +2099,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnConfirmGangRank = document.getElementById('btn-confirm-gang-rank');
     if (btnConfirmGangRank) {
-        btnConfirmGangRank.addEventListener('click', () => {
+        btnConfirmGangRank.onclick = function () {
+            if (isProcessingAction) return;
             const grade = grInput ? grInput.value : "";
-            if (grade === "") return;
+            if (grade === "" || !selectedGangPlayerId) return;
+
+            isProcessingAction = true;
             fetch(`https://${GetParentResourceName()}/setGangGrade`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ targetId: selectedGangPlayerId, grade: grade })
+            }).then(() => {
+                const tId = selectedGangPlayerId;
+                closeGangRankModal();
+                setTimeout(() => {
+                    if (isDetailsOpen) window.openPlayerDetails({ id: tId });
+                    isProcessingAction = false;
+                }, 600);
             });
-            closeGangRankModal();
-        });
+        };
     }
 
     // 4. BUSCADOR DE BANDAS
@@ -4640,15 +4675,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!detailsModal || !mainMenu) return;
 
-        if (playerData && playerData.id) {
-            currentDetailsId = playerData.id;
+        // [CORRECCIÓN] Determinamos si está realmente online
+        // Si viene de Reportes, puede tener 'isOffline: true'
+        const isOnline = (playerData.id && playerData.id != 0 && !playerData.isOffline);
 
-            // [NUEVO - LIVE STATS] Iniciar suscripción al abrir
-            fetch(`https://${GetParentResourceName()}/toggleWatch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetId: playerData.id, state: true })
-            });
+        if (playerData) {
+            currentDetailsId = playerData.id; // Puede ser null si es offline
+
+            // [CORRECCIÓN] Solo activamos Live Stats si está ONLINE
+            if (isOnline) {
+                fetch(`https://${GetParentResourceName()}/toggleWatch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetId: playerData.id, state: true })
+                });
+            }
         }
 
         if (!isDetailsOpen) {
@@ -4663,8 +4704,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (playerData) {
             document.getElementById('pd-charname').textContent = playerData.name || "Jugador";
             document.getElementById('pd-ic-name').textContent = "Obteniendo datos...";
+
             const badgeEl = document.getElementById('pd-status-badge');
-            const isOnline = (playerData.id && playerData.id != 0);
             if (badgeEl) {
                 badgeEl.textContent = isOnline ? "EN LÍNEA" : "DESCONECTADO";
                 badgeEl.className = isOnline ? "status-badge online" : "status-badge offline";
@@ -4683,87 +4724,111 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.innerHTML = '<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:loading" style="animation: spin 1s linear infinite; display: inline-block;"></span><span>Cargando...</span></div>';
         });
 
-        // --- 2. PETICIÓN AL SERVIDOR ---
-        fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, {
+        // --- 2. PETICIÓN AL SERVIDOR (CORREGIDA) ---
+        // Enviamos citizenid para que el servidor busque en SQL si falla la ID
+        fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, { // OJO: Asegúrate que tu callback en LUA se llame 'getPlayerFullDetails' o 'getDetailedData' según uses.
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ targetId: playerData.id })
+            body: JSON.stringify({
+                targetId: playerData.id,
+                citizenid: playerData.citizenid // <--- ESTO ES LA CLAVE PARA LOS REPORTES
+            })
         })
             .then(resp => resp.json())
-            .then(fullData => {
-                if (!fullData) return;
-
-                if (fullData.hasChar) {
-                    // ============================================================
-                    // CASO A: TIENE PERSONAJE (CARGAR TODO)
-                    // ============================================================
-                    document.getElementById('pd-ic-name').textContent = fullData.charName;
-                    document.getElementById('pd-ic-name').style.color = "";
-
-                    // 1. INFO GENERAL
-                    const fields = [
-                        { id: 'pd-bank', val: `$${(fullData.bank || 0).toLocaleString()}` },
-                        { id: 'pd-citizenid', val: fullData.citizenid || "N/A" },
-                        { id: 'pd-phone', val: fullData.phone || "Sin móvil" },
-                        { id: 'pd-job-label', val: `${fullData.job} | ${fullData.jobGrade}` },
-                        { id: 'pd-gang-label', val: `${fullData.gang} | ${fullData.gangGrade}` }
-                    ];
-
-                    fields.forEach(f => {
-                        const el = document.getElementById(f.id);
-                        if (el) {
-                            el.textContent = f.val;
-                            el.style.color = "";
-                            el.style.fontSize = "";
-                        }
+            .then(fullDataRaw => {
+                // [CORRECCIÓN SEGURIDAD] Si el servidor devuelve null, paramos aquí para no romper el script
+                if (!fullDataRaw) {
+                    console.warn("El servidor no devolvió datos para este jugador.");
+                    ['pd-properties-list', 'pd-vehicles-list'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.innerHTML = '<div class="pd-empty-state"><span>Datos no disponibles</span></div>';
                     });
+                    return;
+                }
 
-                    if (document.getElementById('pd-job-boss')) document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
-                    if (document.getElementById('pd-gang-boss')) document.getElementById('pd-gang-boss').style.display = fullData.isGangBoss ? 'block' : 'none';
+                // Adaptador por si tu callback devuelve { data: ... } o directo
+                const fullData = fullDataRaw.data ? fullDataRaw.data : fullDataRaw;
 
-                    // 2. ACTUALIZAR BARRAS DE ESTADO (Inicial estático)
-                    if (fullData.stats) {
-                        let healthStatus = null;
-                        let displayHealth = fullData.stats.health;
+                if (!fullData) {
+                    // Si falla todo, mostramos error
+                    ['pd-properties-list', 'pd-vehicles-list'].forEach(id => {
+                        document.getElementById(id).innerHTML = '<div class="pd-empty-state"><span>Datos no encontrados</span></div>';
+                    });
+                    return;
+                }
 
-                        if (fullData.stats.isDead) {
-                            healthStatus = "FALLECIDO";
-                            displayHealth = 0;
-                        } else if (fullData.stats.inLastStand) {
-                            healthStatus = "HERIDO EN EL SUELO";
-                            displayHealth = 0;
-                        }
-
-                        updateStatBar('stat-health', displayHealth, healthStatus);
-                        updateStatBar('stat-armor', fullData.stats.armor);
-                        updateStatBar('stat-hunger', fullData.stats.hunger);
-                        updateStatBar('stat-thirst', fullData.stats.thirst);
-                        // Aquí cargamos los valores iniciales de Alcohol y Estamina estáticos
-                        updateStatBar('stat-alcohol', fullData.stats.alcohol || 0);
-                        updateStatBar('stat-stamina', fullData.stats.stamina || 100);
+                // Si el servidor responde que viene de SQL (Offline), forzamos bandera
+                if (fullDataRaw.fromSQL) {
+                    const badgeEl = document.getElementById('pd-status-badge');
+                    if (badgeEl) {
+                        badgeEl.textContent = "DESCONECTADO (HISTÓRICO)";
+                        badgeEl.className = "status-badge offline";
                     }
+                }
 
-                    // ===========================================
-                    // 3. RENDERIZADO DE PROPIEDADES (CARDS)
-                    // ===========================================
-                    const propList = document.getElementById('pd-properties-list');
-                    const props = fullData.properties || [];
-                    const propCount = document.getElementById('pd-prop-count');
-                    if (propCount) propCount.innerText = props.length;
+                // ============================================================
+                // RENDERIZADO DE DATOS
+                // ============================================================
+                document.getElementById('pd-ic-name').textContent = fullData.charName || playerData.charName || "Desconocido";
+                document.getElementById('pd-ic-name').style.color = "";
 
-                    if (propList) {
-                        propList.innerHTML = '';
-                        if (props.length === 0) {
-                            propList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:home-search-outline"></span><span>Sin propiedades</span></div>`;
-                        } else {
-                            props.forEach(p => {
-                                const icon = p.type === 'house' ? 'mdi:home-variant' : 'mdi:office-building';
-                                const typeLabel = p.type === 'house' ? 'Casa' : 'Apto';
-                                const garageBadge = p.hasGarage ? `<span class="pd-badge badge-garage">Garage</span>` : '';
+                // 1. INFO GENERAL
+                const fields = [
+                    { id: 'pd-bank', val: `$${(fullData.bank || 0).toLocaleString()}` },
+                    { id: 'pd-citizenid', val: fullData.citizenid || "N/A" },
+                    { id: 'pd-phone', val: fullData.phone || "Sin móvil" },
+                    { id: 'pd-job-label', val: `${fullData.job || '?'} | ${fullData.jobGrade || '?'}` },
+                    { id: 'pd-gang-label', val: `${fullData.gang || '?'} | ${fullData.gangGrade || '?'}` }
+                ];
 
-                                const item = document.createElement('div');
-                                item.className = 'pd-card type-property';
-                                item.innerHTML = `
+                fields.forEach(f => {
+                    const el = document.getElementById(f.id);
+                    if (el) {
+                        el.textContent = f.val;
+                        el.style.color = "";
+                        el.style.fontSize = "";
+                    }
+                });
+
+                if (document.getElementById('pd-job-boss')) document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
+                if (document.getElementById('pd-gang-boss')) document.getElementById('pd-gang-boss').style.display = fullData.isGangBoss ? 'block' : 'none';
+
+                // 2. STATS
+                if (fullData.stats) {
+                    updateStatBar('stat-health', fullData.stats.health || 0);
+                    updateStatBar('stat-armor', fullData.stats.armor || 0);
+                    updateStatBar('stat-hunger', fullData.stats.hunger || 0);
+                    updateStatBar('stat-thirst', fullData.stats.thirst || 0);
+                    updateStatBar('stat-alcohol', fullData.stats.alcohol || 0);
+                    updateStatBar('stat-stamina', fullData.stats.stamina || 100);
+                }
+
+                // ===========================================
+                // 3. RENDERIZADO DE PROPIEDADES (+GPS)
+                // ===========================================
+                const propList = document.getElementById('pd-properties-list');
+                const props = fullData.properties || [];
+                const propCount = document.getElementById('pd-prop-count');
+                if (propCount) propCount.innerText = props.length;
+
+                if (propList) {
+                    propList.innerHTML = '';
+                    if (props.length === 0) {
+                        propList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:home-search-outline"></span><span>Sin propiedades</span></div>`;
+                    } else {
+                        props.forEach(p => {
+                            const icon = p.type === 'house' ? 'mdi:home-variant' : 'mdi:office-building';
+                            const typeLabel = p.type === 'house' ? 'Casa' : 'Apto';
+                            const garageBadge = p.hasGarage ? `<span class="pd-badge badge-garage">Garage</span>` : '';
+
+                            // Botón GPS (Solo funciona si hay coords, asumimos que server las manda o 0,0)
+                            // Usamos p.coords.x si existe, si no 0
+                            const cx = p.coords ? p.coords.x : 0;
+                            const cy = p.coords ? p.coords.y : 0;
+
+                            const item = document.createElement('div');
+                            item.className = 'pd-card type-property';
+                            item.innerHTML = `
                             <div class="pd-card-icon"><span class="iconify" data-icon="${icon}" style="color: #e040fb;"></span></div>
                             <div class="pd-card-content">
                                 <div class="pd-card-title">${p.label}</div>
@@ -4771,78 +4836,91 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span class="pd-badge badge-house">${typeLabel}: ${p.name}</span>
                                     ${garageBadge}
                                 </div>
+                            </div>
+                            <div class="pd-card-actions">
+                                <button class="mini-btn-gps" onclick="setGPS('${cx}', '${cy}')" title="Marcar GPS">
+                                    <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
+                                </button>
                             </div>`;
-                                propList.appendChild(item);
-                            });
-                        }
+                            propList.appendChild(item);
+                        });
                     }
+                }
 
-                    // ===========================================
-                    // 4. RENDERIZADO DE VEHÍCULOS (CARDS)
-                    // ===========================================
-                    const vehList = document.getElementById('pd-vehicles-list');
-                    const vehs = fullData.vehicles || [];
-                    const vehCount = document.getElementById('pd-veh-count');
-                    if (vehCount) vehCount.innerText = vehs.length;
+                // ===========================================
+                // 4. RENDERIZADO DE VEHÍCULOS (+GPS)
+                // ===========================================
+                const vehList = document.getElementById('pd-vehicles-list');
+                const vehs = fullData.vehicles || [];
+                const vehCount = document.getElementById('pd-veh-count');
+                if (vehCount) vehCount.innerText = vehs.length;
 
-                    if (vehList) {
-                        vehList.innerHTML = '';
-                        if (vehs.length === 0) {
-                            vehList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:car-off"></span><span>Sin vehículos</span></div>`;
-                        } else {
-                            const vehIcons = {
-                                'car': 'mdi:car-sports', 'bike': 'mdi:motorbike', 'heli': 'mdi:helicopter',
-                                'plane': 'mdi:airplane', 'boat': 'mdi:sail-boat', 'truck': 'mdi:truck', 'unknown': 'mdi:car'
-                            };
+                if (vehList) {
+                    vehList.innerHTML = '';
+                    if (vehs.length === 0) {
+                        vehList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:car-off"></span><span>Sin vehículos</span></div>`;
+                    } else {
+                        const vehIcons = {
+                            'car': 'mdi:car-sports', 'bike': 'mdi:motorbike', 'heli': 'mdi:helicopter',
+                            'plane': 'mdi:airplane', 'boat': 'mdi:sail-boat', 'truck': 'mdi:truck', 'unknown': 'mdi:car'
+                        };
 
-                            vehs.forEach(v => {
-                                let iconKey = 'unknown';
-                                if (['compacts', 'sedans', 'suvs', 'coupes', 'muscle', 'sports', 'classics', 'super', 'vans', 'utility'].includes(v.category)) iconKey = 'car';
-                                else if (['motorcycles', 'cycles'].includes(v.category)) iconKey = 'bike';
-                                else if (['helicopters'].includes(v.category)) iconKey = 'heli';
-                                else if (['planes'].includes(v.category)) iconKey = 'plane';
-                                else if (['boats'].includes(v.category)) iconKey = 'boat';
-                                else if (['commercial', 'industrial', 'service', 'military', 'offroad'].includes(v.category)) iconKey = 'truck';
+                        vehs.forEach(v => {
+                            let iconKey = 'unknown';
+                            if (['compacts', 'sedans', 'suvs', 'coupes', 'muscle', 'sports', 'classics', 'super', 'vans', 'utility'].includes(v.category)) iconKey = 'car';
+                            else if (['motorcycles', 'cycles'].includes(v.category)) iconKey = 'bike';
+                            else if (['helicopters'].includes(v.category)) iconKey = 'heli';
+                            else if (['planes'].includes(v.category)) iconKey = 'plane';
+                            else if (['boats'].includes(v.category)) iconKey = 'boat';
+                            else if (['commercial', 'industrial', 'service', 'military', 'offroad'].includes(v.category)) iconKey = 'truck';
 
-                                const finalIcon = vehIcons[iconKey] || vehIcons['car'];
-                                const plateBadge = v.plate ? `<span class="pd-badge badge-plate">${v.plate}</span>` : `<span class="pd-badge badge-out">SIN PLACA</span>`;
-                                const garageBadge = v.garage ? `<span class="pd-badge badge-garage">EN: ${v.garage}</span>` : `<span class="pd-badge badge-out">FUERA</span>`;
+                            const finalIcon = vehIcons[iconKey] || vehIcons['car'];
+                            const plateBadge = v.plate ? `<span class="pd-badge badge-plate">${v.plate}</span>` : `<span class="pd-badge badge-out">SIN PLACA</span>`;
+                            const garageBadge = v.garage ? `<span class="pd-badge badge-garage">EN: ${v.garage}</span>` : `<span class="pd-badge badge-out">FUERA</span>`;
 
-                                const item = document.createElement('div');
-                                item.className = 'pd-card type-vehicle';
-                                item.innerHTML = `
+                            // Coordenas dummy si no vienen
+                            const cx = v.coords ? v.coords.x : 0;
+                            const cy = v.coords ? v.coords.y : 0;
+
+                            const item = document.createElement('div');
+                            item.className = 'pd-card type-vehicle';
+                            item.innerHTML = `
                             <div class="pd-card-icon"><span class="iconify" data-icon="${finalIcon}" style="color: #00bcd4;"></span></div>
                             <div class="pd-card-content">
-                                <div class="pd-card-title">${v.label}</div>
+                                <div class="pd-card-title">${v.label || v.name}</div>
                                 <div class="pd-card-subtitle">${plateBadge} ${garageBadge}</div>
+                            </div>
+                            <div class="pd-card-actions">
+                                <button class="mini-btn-gps" onclick="setGPS('${cx}', '${cy}')" title="Marcar GPS">
+                                    <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
+                                </button>
                             </div>`;
-                                vehList.appendChild(item);
-                            });
-                        }
+                            vehList.appendChild(item);
+                        });
                     }
+                }
 
-                    // ===========================================
-                    // 5. RENDERIZADO DE SANCIONES (CARDS)
-                    // ===========================================
-                    const punishList = document.getElementById('pd-punishments-list');
-                    const history = fullData.history || [];
-                    const punishCount = document.getElementById('pd-punish-count');
-                    if (punishCount) punishCount.innerText = history.length;
+                // ===========================================
+                // 5. RENDERIZADO DE SANCIONES
+                // ===========================================
+                const punishList = document.getElementById('pd-punishments-list');
+                const history = fullData.history || [];
+                const punishCount = document.getElementById('pd-punish-count');
+                if (punishCount) punishCount.innerText = history.length;
 
-                    if (punishList) {
-                        punishList.innerHTML = '';
-                        if (history.length === 0) {
-                            punishList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:clipboard-check-outline"></span><span>Historial limpio</span></div>`;
-                        } else {
-                            history.forEach(h => {
-                                let icon = 'mdi:alert';
-                                let typeClass = 'type-warn';
-                                if (h.type === 'ban') { icon = 'mdi:account-cancel'; typeClass = 'type-ban'; }
-                                if (h.type === 'kick') { icon = 'mdi:door-open'; typeClass = 'type-kick'; }
+                if (punishList) {
+                    punishList.innerHTML = '';
+                    if (history.length === 0) {
+                        punishList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:clipboard-check-outline"></span><span>Historial limpio</span></div>`;
+                    } else {
+                        history.forEach(h => {
+                            let icon = 'mdi:alert';
+                            if (h.type === 'ban') icon = 'mdi:account-cancel';
+                            if (h.type === 'kick') icon = 'mdi:door-open';
 
-                                const item = document.createElement('div');
-                                item.className = 'pd-card type-punish';
-                                item.innerHTML = `
+                            const item = document.createElement('div');
+                            item.className = 'pd-card type-punish';
+                            item.innerHTML = `
                             <div class="pd-card-icon"><span class="iconify" data-icon="${icon}" style="color: #ff9800;"></span></div>
                             <div class="pd-card-content">
                                 <div class="pd-card-title">${h.reason || 'Sin motivo'}</div>
@@ -4851,43 +4929,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span style="font-size:9px; color:#888;">Por: ${h.admin || '?'}</span>
                                 </div>
                             </div>`;
-                                punishList.appendChild(item);
-                            });
-                        }
+                            punishList.appendChild(item);
+                        });
                     }
-
-                } else {
-                    // ============================================================
-                    // CASO B: SIN PERSONAJE (RESET)
-                    // ============================================================
-                    const msg = "⚠️ SELECCIONAR PJ";
-                    document.getElementById('pd-ic-name').textContent = "Esperando selección...";
-                    document.getElementById('pd-ic-name').style.color = "#888";
-
-                    ['pd-bank', 'pd-citizenid', 'pd-phone', 'pd-job-label', 'pd-gang-label'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            el.textContent = msg;
-                            el.style.fontSize = "10px";
-                            el.style.color = "#ffbb33";
-                        }
-                    });
-
-                    updateStatBar('stat-health', 0);
-                    updateStatBar('stat-armor', 0);
-                    updateStatBar('stat-hunger', 0);
-                    updateStatBar('stat-thirst', 0);
-                    // Resetear nuevos stats
-                    updateStatBar('stat-alcohol', 0);
-                    updateStatBar('stat-stamina', 100);
-
-                    ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.innerHTML = `<div class="pd-empty-state"><span>Esperando selección...</span></div>`;
-                    });
                 }
 
-                // --- 5. IDENTIFICADORES (COMÚN) ---
+                // 6. IDENTIFICADORES
                 const idList = document.getElementById('pd-identifiers');
                 if (idList) {
                     idList.classList.remove('revealed');
@@ -4900,7 +4947,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(err => console.error("Error en Fetch Details:", err));
 
-        syncDetailsPosition();
+        if (typeof syncDetailsPosition === 'function') syncDetailsPosition();
     };
 
     window.closePlayerDetails = function () {
@@ -4937,28 +4984,75 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDetailsOpen) return;
 
         const mainMenu = document.getElementById('admin-menu');
-        const detailsModal = document.getElementById('player-details-modal');
+        const detailsModal = document.querySelector('.player-details-container');
+        if (!mainMenu || !detailsModal) return;
 
-        // 1. Heredar Escala
-        detailsModal.style.transformOrigin = 'top right';
-        detailsModal.style.transform = `scale(${currentScale / 100})`;
+        // --- CONFIGURACIÓN DINÁMICA ---
+        const ESCALA_BASE = 90;
+        const scale = currentScale / ESCALA_BASE;
+        const gap = 15;
+        const minWidth = 350;
+        const viewportWidth = window.innerWidth;
 
-        // 2. Calcular posición
         const menuRect = mainMenu.getBoundingClientRect();
+        let currentWidth = detailsModal.offsetWidth;
+        let realVisibleWidth = currentWidth * scale;
 
-        // Calculamos la posición relativa a la ventana
-        // El modal debe estar a la izquierda del menú. 
-        // Left del menú - Ancho del modal (que es igual al ancho del menú)
-        // Obtenemos el ancho real del modal (incluyendo bordes)
-        const modalWidth = detailsModal.offsetWidth;
+        let targetLeft = 0;
+        let shouldHide = false;
 
-        // Restamos el ancho del MODAL a la posición izquierda del menú principal
-        let detailsLeft = menuRect.left - modalWidth - 10; // El - 10 es un pequeño margen de separación
-        let detailsTop = menuRect.top;
+        detailsModal.style.transformOrigin = 'top left';
 
-        // Si usas porcentajes en el CSS del menú, es mejor convertir a px temporalmente o calcular %
-        detailsModal.style.left = detailsLeft + 'px';
-        detailsModal.style.top = detailsTop + 'px';
+        // ==========================================
+        // CÁLCULO DE ALTURA IGUALADA
+        // ==========================================
+        // menuRect.height es la altura REAL que se ve en pantalla (ya escalada).
+        // Dividimos por la escala del panel para que al aplicarse el transform, 
+        // la altura final coincida píxel por píxel con el menú.
+        let targetHeight = menuRect.height / scale;
+
+        // A. LADO IZQUIERDO
+        if (menuRect.left > (realVisibleWidth + gap)) {
+            targetLeft = menuRect.left - realVisibleWidth - gap;
+        }
+        // B. LADO DERECHO
+        else if ((viewportWidth - menuRect.right) > (realVisibleWidth + gap)) {
+            targetLeft = menuRect.right + gap;
+        }
+        // C. MODO SQUEEZE
+        else {
+            const spaceLeft = menuRect.left - gap;
+            const spaceRight = viewportWidth - menuRect.right - gap;
+
+            if (spaceLeft > spaceRight) {
+                let dynamicWidth = spaceLeft / scale;
+                let finalW = Math.max(minWidth, dynamicWidth);
+                detailsModal.style.width = finalW + "px";
+                targetLeft = menuRect.left - (finalW * scale) - gap;
+            } else {
+                let dynamicWidth = spaceRight / scale;
+                detailsModal.style.width = Math.max(minWidth, dynamicWidth) + "px";
+                targetLeft = menuRect.right + gap;
+            }
+
+            if (spaceLeft < 100 && spaceRight < 100) shouldHide = true;
+        }
+
+        if (shouldHide) {
+            detailsModal.style.opacity = "0";
+            detailsModal.style.pointerEvents = "none";
+        } else {
+            detailsModal.style.opacity = "1";
+            detailsModal.style.pointerEvents = "all";
+            detailsModal.style.display = "flex";
+
+            detailsModal.style.transform = `scale(${scale})`;
+            detailsModal.style.top = menuRect.top + "px";
+            detailsModal.style.left = targetLeft + "px";
+
+            // Aplicamos la altura calculada
+            detailsModal.style.height = targetHeight + "px";
+        }
     }
 
     // LISTENER PARA MOVER EL MODAL JUNTO AL MENÚ
@@ -5222,5 +5316,27 @@ document.addEventListener('DOMContentLoaded', () => {
             closeDimensionModal();
         };
     }
+
+    // ==========================================================================
+    //      SISTEMA GPS (NECESARIO PARA EL BOTÓN)
+    // ==========================================================================
+    window.setGPS = (x, y) => {
+        // Validamos que no sean 0 o nulos
+        if (!x || !y || (parseFloat(x) === 0 && parseFloat(y) === 0)) {
+            console.warn("GPS: Coordenadas inválidas (0,0)");
+            // Opcional: Mostrar un aviso visual si quieres
+            return;
+        }
+
+        // Enviamos la orden al cliente (Lua)
+        fetch(`https://${GetParentResourceName()}/setGPS`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                x: x,
+                y: y
+            })
+        });
+    };
 
 }); // FIN DEL DOMContentLoaded

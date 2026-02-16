@@ -14,7 +14,7 @@ local savedWhitelist = GetResourceKvpInt('dp_whitelist_active')
 -- 2. APLICAMOS LA LÓGICA DEL FORCE UNLOCK
 if Config.Whitelist and Config.Whitelist.ForceUnlock then
     savedWhitelist = 0
-    DebugLog("^1[DP-ADMIN] 🔓 FORCE UNLOCK DETECTADO EN CONFIG. La Whitelist ha sido desactivada forzosamente.^7")
+    DebugLog("^1[DP-AdminMenu] 🔓 FORCE UNLOCK DETECTADO EN CONFIG. La Whitelist ha sido desactivada forzosamente.^7")
 end
 
 -- 3. Cargamos el estado final
@@ -26,7 +26,7 @@ local ServerStates = {
 
 local function DebugLog(msg)
     if Config.Debug then
-        print("^3[DP-ADMIN SERVER]^7 " .. msg)
+        print("^3[DP-AdminMenu SERVER]^7 " .. msg)
     end
 end
 
@@ -39,13 +39,13 @@ local function GlobalRefresh()
     isRefreshPending = true
 
     SetTimeout(1000, function() -- Esperamos 1 segundo a que se calme la "tormenta"
-        TriggerClientEvent('dpadmin:client:refreshAllData', -1)
+        TriggerClientEvent('DP-AdminMenu:client:refreshAllData', -1)
         isRefreshPending = false
-        DebugLog("^2[DP-ADMIN] Refresco Global enviado (Optimizado)^7")
+        DebugLog("^2[DP-AdminMenu] Refresco Global enviado (Optimizado)^7")
     end)
 end
 
-DebugLog("^2[DP-Admin] Server arrancao y listo. Debug Mode: " .. tostring(Config.Debug) .. "^7")
+DebugLog("^2[DP-AdminMenu] Server arrancao y listo. Debug Mode: " .. tostring(Config.Debug) .. "^7")
 
 -- ==========================================================================
 --      2. TAREAS EN SEGUNDO PLANO (THREADS)
@@ -95,30 +95,21 @@ end)
 --      3. CALLBACKS (LECTURA DE DATOS PARA NUI)
 -- ==========================================================================
 
-QBCore.Functions.CreateCallback('dpadmin:getPlayers', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getPlayers', function(source, cb)
     local playersList = {}
-    for _, playerSrc in pairs(GetPlayers()) do
+    for _, playerSrc in pairs(QBCore.Functions.GetPlayers()) do
         local targetSrc = tonumber(playerSrc)
         local Player = QBCore.Functions.GetPlayer(targetSrc)
         if Player then
             table.insert(playersList, {
                 id = targetSrc,
                 name = GetPlayerName(targetSrc),
+                citizenid = Player.PlayerData.citizenid,
                 charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
                 job = Player.PlayerData.job.label .. ' - ' .. Player.PlayerData.job.grade.name,
                 ping = GetPlayerPing(targetSrc),
                 discord = QBCore.Functions.GetIdentifier(targetSrc, 'discord') or "N/A",
                 status = "playing"
-            })
-        else
-            table.insert(playersList, {
-                id = targetSrc,
-                name = GetPlayerName(targetSrc),
-                charName = "⏳ Seleccionando PJ...",
-                job = "Conectando...",
-                ping = GetPlayerPing(targetSrc),
-                discord = QBCore.Functions.GetIdentifier(targetSrc, 'discord') or "N/A",
-                status = "loading"
             })
         end
     end
@@ -128,13 +119,13 @@ QBCore.Functions.CreateCallback('dpadmin:getPlayers', function(source, cb)
     cb(playersList)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:getReports', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getReports', function(source, cb)
     MySQL.query("SELECT * FROM dp_reports WHERE status != 'closed' ORDER BY created_at ASC", {}, function(result)
         cb(result or {})
     end)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:getBans', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getBans', function(source, cb)
     MySQL.query("SELECT * FROM bans WHERE status = 'active' ORDER BY id ASC", {}, function(result)
         local adaptedResult = {}
         for _, ban in ipairs(result or {}) do
@@ -153,7 +144,7 @@ QBCore.Functions.CreateCallback('dpadmin:getBans', function(source, cb)
     end)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:getChatMessages', function(source, cb, lastId)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getChatMessages', function(source, cb, lastId)
     local query = "SELECT * FROM dp_admin_chat ORDER BY id DESC LIMIT 50"
     local params = {}
     if lastId and lastId > 0 then
@@ -171,7 +162,7 @@ QBCore.Functions.CreateCallback('dpadmin:getChatMessages', function(source, cb, 
     end)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:getJobs', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getJobs', function(source, cb)
     local jobsMap = {}
     if QBCore.Shared and QBCore.Shared.Jobs then
         for jobName, jobData in pairs(QBCore.Shared.Jobs) do
@@ -208,7 +199,7 @@ QBCore.Functions.CreateCallback('dpadmin:getJobs', function(source, cb)
     cb(jobsList)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:getGangs', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getGangs', function(source, cb)
     local gangsMap = {}
     if QBCore.Shared and QBCore.Shared.Gangs then
         for gangName, gangData in pairs(QBCore.Shared.Gangs) do
@@ -247,7 +238,7 @@ QBCore.Functions.CreateCallback('dpadmin:getGangs', function(source, cb)
     cb(gangsList)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:getVehicleList', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getVehicleList', function(source, cb)
     local vehList = {}
     if QBCore.Shared and QBCore.Shared.Vehicles then
         for model, data in pairs(QBCore.Shared.Vehicles) do
@@ -267,7 +258,7 @@ QBCore.Functions.CreateCallback('dpadmin:getVehicleList', function(source, cb)
     cb(vehList)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:getItemList', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:getItemList', function(source, cb)
     local itemList = {}
     if QBCore.Shared and QBCore.Shared.Items then
         for name, data in pairs(QBCore.Shared.Items) do
@@ -296,70 +287,153 @@ QBCore.Functions.CreateCallback('dpadmin:getItemList', function(source, cb)
 end)
 
 -- ==========================================================================
---      CALLBACK: DATOS DETALLADOS (PROPIEDADES + VEHÍCULOS + INFO)
+--      CALLBACK: DATOS DETALLADOS (ONLINE + OFFLINE + GPS)
 -- ==========================================================================
-QBCore.Functions.CreateCallback('dpadmin:server:getDetailedData', function(source, cb, targetId)
-    local target = tonumber(targetId)
-    local Player = QBCore.Functions.GetPlayer(target)
+QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(source, cb, data)
+    -- 1. GESTIÓN DE ENTRADA
+    local targetId = type(data) == 'table' and tonumber(data.targetId) or tonumber(data)
+    local reqCitizenId = type(data) == 'table' and data.citizenid or nil
 
-    -- Si el jugador no está online o no ha cargado, devolvemos nil
-    if not Player then
-        return cb(nil)
+    -- DEBUG (Opcional, puedes comentarlo cuando funcione)
+    DebugLog("^3[DEBUG] Petición Detalles recibida:")
+    DebugLog("TargetID:", targetId)
+    DebugLog("ReqCitizenID:", reqCitizenId)
+
+    -- 2. BUSCAR JUGADOR ONLINE
+    local Player = nil
+    if targetId then
+        Player = QBCore.Functions.GetPlayer(targetId)
     end
 
-    local citizenid = Player.PlayerData.citizenid
-    local ped = GetPlayerPed(target)
+    -- Si no está por ID, intentamos buscar por CitizenID en los conectados
+    if not Player and reqCitizenId then
+        Player = QBCore.Functions.GetPlayerByCitizenId(reqCitizenId)
+    end
 
-    -- 1. ESTRUCTURA BASE
-    local data = {
-        hasChar = true,
-        charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-        citizenid = citizenid,
-        phone = Player.PlayerData.charinfo.phone or "Sin móvil",
+    local response = {}
+    local citizenid = nil
 
-        -- Economía
-        bank = Player.PlayerData.money['bank'],
-        cash = Player.PlayerData.money['cash'],
+    -- ============================================================
+    -- CASO A: JUGADOR ONLINE (Datos frescos)
+    -- ============================================================
+    if Player then
+        citizenid = Player.PlayerData.citizenid
+        local ped = GetPlayerPed(Player.PlayerData.source)
 
-        -- Trabajo / Banda
-        job = Player.PlayerData.job.label,
-        jobGrade = Player.PlayerData.job.grade.name,
-        isJobBoss = Player.PlayerData.job.isboss,
-        gang = Player.PlayerData.gang.label,
-        gangGrade = Player.PlayerData.gang.grade.name,
-        isGangBoss = Player.PlayerData.gang.isboss,
+        response = {
+            hasChar = true,
+            fromSQL = false, -- Bandera Online
+            charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
+            citizenid = citizenid,
+            phone = Player.PlayerData.charinfo.phone or "Sin móvil",
 
-        -- Identificadores
-        identifiers = GetPlayerIdentifiers(target),
+            -- Economía
+            bank = Player.PlayerData.money['bank'],
+            cash = Player.PlayerData.money['cash'],
 
-        -- Stats (Salud, Hambre, etc.)
-        stats = {
-            health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or
-                (GetEntityHealth(ped) - 100),
-            armor = GetPedArmour(ped),
-            hunger = Player.PlayerData.metadata['hunger'],
-            thirst = Player.PlayerData.metadata['thirst'],
-            isDead = Player.PlayerData.metadata['isdead'],
-            inLastStand = Player.PlayerData.metadata['inlaststand'],
-            alcohol = Player.PlayerData.metadata['alcohol'] or Player.PlayerData.metadata['isdrank'] or 0,
-            stamina = 100 -- Valor inicial visual, el real llega con el Live Stats
-        },
+            -- Trabajo / Banda
+            job = Player.PlayerData.job.label,
+            jobGrade = Player.PlayerData.job.grade.name,
+            isJobBoss = Player.PlayerData.job.isboss,
+            gang = Player.PlayerData.gang.label,
+            gangGrade = Player.PlayerData.gang.grade.name,
+            isGangBoss = Player.PlayerData.gang.isboss,
 
-        -- Listas Vacías (Se llenan abajo)
-        vehicles = {},
-        properties = {}
-    }
+            -- Identificadores
+            identifiers = GetPlayerIdentifiers(Player.PlayerData.source),
 
-    -- 2. CONSULTA SQL: VEHÍCULOS
-    -- Obtenemos todos los coches de este citizenid
+            -- Stats
+            stats = {
+                health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or
+                    (GetEntityHealth(ped) - 100),
+                armor = GetPedArmour(ped),
+                hunger = Player.PlayerData.metadata['hunger'],
+                thirst = Player.PlayerData.metadata['thirst'],
+                alcohol = Player.PlayerData.metadata['alcohol'] or 0,
+                stamina = 100 -- Valor base
+            }
+        }
+
+    -- ============================================================
+    -- CASO B: JUGADOR OFFLINE (Datos históricos SQL)
+    -- ============================================================
+    elseif reqCitizenId then
+        local result = MySQL.single.await('SELECT * FROM players WHERE citizenid = ?', {reqCitizenId})
+
+        if result then
+            citizenid = result.citizenid
+            local charinfo = json.decode(result.charinfo)
+            local money = json.decode(result.money)
+            local job = json.decode(result.job)
+            local gang = json.decode(result.gang)
+            local metadata = json.decode(result.metadata)
+
+            response = {
+                hasChar = true,
+                fromSQL = true, -- Bandera Offline
+                charName = charinfo.firstname .. ' ' .. charinfo.lastname,
+                citizenid = citizenid,
+                phone = charinfo.phone or "Sin móvil",
+
+                bank = money['bank'],
+                cash = money['cash'],
+
+                job = job.label,
+                jobGrade = job.grade.name,
+                isJobBoss = job.isboss,
+                gang = gang.label,
+                gangGrade = gang.grade.name,
+                isGangBoss = gang.isboss,
+
+                identifiers = result.license and {"license:" .. result.license} or {"Offline"},
+
+                stats = {
+                    health = 0,
+                    armor = 0,
+                    hunger = metadata['hunger'] or 100,
+                    thirst = metadata['thirst'] or 100,
+                    alcohol = metadata['alcohol'] or 0,
+                    stamina = 100
+                }
+            }
+        else
+            return cb(nil) -- No existe en BD
+        end
+    else
+        return cb(nil) -- Datos insuficientes
+    end
+
+    -- ============================================================
+    -- CARGA DE BIENES (VEHÍCULOS Y PROPIEDADES)
+    -- ============================================================
+    response.vehicles = {}
+    response.properties = {}
+
+    -- ============================================================
+    -- 1. VEHÍCULOS (CORRECCIÓN DE NOMBRE DE CARPETA)
+    -- ============================================================
     local pVehicles = MySQL.query.await('SELECT * FROM player_vehicles WHERE citizenid = ?', {citizenid})
+    
+    -- >>> ¡¡AQUÍ ES DONDE TIENES QUE PONER EL NOMBRE EXACTO!! <<<
+    -- Si tu carpeta se llama "DP-Garages", ponlo tal cual aquí abajo:
+    local NombreCarpetaGarajes = 'DP-Garages' 
+    -- >>>>>>>>><<<<<<<<<<
+
+    local externalGarages = nil
+    if GetResourceState(NombreCarpetaGarajes) == 'started' then
+        -- Llamamos al export usando el nombre correcto
+        externalGarages = exports[NombreCarpetaGarajes]:GetGarageConfig()
+        if not externalGarages then
+            DebugLog("^1[DP-ADMIN ERROR] El export falló. Asegurate de haber puesto el código al final del server.lua de " .. NombreCarpetaGarajes .. "^7")
+        end
+    else
+        DebugLog("^1[DP-ADMIN ERROR] No encuentro la carpeta: '" .. NombreCarpetaGarajes .. "'. Verifica el nombre en resources.^7")
+    end
+
     if pVehicles then
         for _, v in pairs(pVehicles) do
             local vehModel = v.vehicle
             local sharedVeh = QBCore.Shared.Vehicles[vehModel]
-
-            -- Lógica "Inteligente" para el Icono
-            -- Si el coche existe en el Shared, cogemos su categoría real. Si no, 'unknown'.
             local label = vehModel
             local category = 'unknown'
 
@@ -367,49 +441,151 @@ QBCore.Functions.CreateCallback('dpadmin:server:getDetailedData', function(sourc
                 label = sharedVeh.name .. ' (' .. sharedVeh.brand .. ')'
                 category = sharedVeh.category and sharedVeh.category:lower() or 'unknown'
             else
-                label = "Mod: " .. vehModel -- Si es un coche importado mal configurado
+                label = "Mod: " .. vehModel
             end
 
-            table.insert(data.vehicles, {
+            -- === LÓGICA DE COORDENADAS ===
+            local coords = {x = 0, y = 0}
+            
+            if v.garage and externalGarages then
+                
+                -- 1. Garajes Públicos
+                if externalGarages.Garages and externalGarages.Garages[v.garage] then
+                    local gData = externalGarages.Garages[v.garage]
+                    if gData.coords then coords = {x = gData.coords.x, y = gData.coords.y}
+                    elseif gData.spawnPoint then coords = {x = gData.spawnPoint.x, y = gData.spawnPoint.y} end
+                
+                -- 2. Garajes de Trabajo
+                elseif externalGarages.JobGarages and externalGarages.JobGarages[v.garage] then
+                    local jData = externalGarages.JobGarages[v.garage]
+                    if jData.coords then coords = {x = jData.coords.x, y = jData.coords.y}
+                    elseif jData.spawnPoint then coords = {x = jData.spawnPoint.x, y = jData.spawnPoint.y} end
+
+                -- 3. Garajes de Bandas
+                elseif externalGarages.GangGarages and externalGarages.GangGarages[v.garage] then
+                    local gData = externalGarages.GangGarages[v.garage]
+                    if gData.coords then coords = {x = gData.coords.x, y = gData.coords.y}
+                    elseif gData.spawnPoint then coords = {x = gData.spawnPoint.x, y = gData.spawnPoint.y} end
+
+                -- 4. Depósitos (Búsqueda Exacta: ej 'mission_row')
+                elseif externalGarages.Impounds and externalGarages.Impounds[v.garage] then
+                    local iData = externalGarages.Impounds[v.garage]
+                    if iData.coords then coords = {x = iData.coords.x, y = iData.coords.y} end
+                
+                -- 5. >>> FALLBACK IMPOUND (SOLUCIÓN A TU ERROR) <<<
+                -- Si se llama 'impound' o el estado es 2 (Embargado), y no encontró coincidencia arriba
+                elseif (v.garage == 'impound' or v.state == 2) and externalGarages.Impounds then
+                    -- Intentamos coger el depósito principal 'mission_row'
+                    local defaultImpound = externalGarages.Impounds['mission_row']
+                    
+                    -- Si no existe mission_row, cogemos el primero que haya en la lista
+                    if not defaultImpound then
+                        for _, data in pairs(externalGarages.Impounds) do
+                            defaultImpound = data
+                            break
+                        end
+                    end
+
+                    if defaultImpound and defaultImpound.coords then
+                        coords = {x = defaultImpound.coords.x, y = defaultImpound.coords.y}
+                    end
+                end
+            end
+
+            table.insert(response.vehicles, {
                 model = vehModel,
                 label = label,
                 plate = v.plate,
-                garage = v.garage, -- Compatible con qb-garages / dp-garages
-                category = category -- Esto le dice al JS qué icono usar (avión, barco, coche...)
+                garage = v.garage,
+                category = category,
+                state = v.state, -- Agregamos el estado por si acaso
+                coords = coords
             })
         end
     end
 
-    -- 3. CONSULTA SQL: PROPIEDADES (Casas + Apartamentos)
-
-    -- A. Casas (qb-houses)
+    -- 2. CASAS (Con búsqueda de coordenadas GPS)
     local pHouses = MySQL.query.await('SELECT * FROM player_houses WHERE citizenid = ?', {citizenid})
     if pHouses then
         for _, h in pairs(pHouses) do
-            table.insert(data.properties, {
+            local coords = { x = 0, y = 0 }
+            
+            -- Buscamos la ubicación física en la tabla houselocations
+            local loc = MySQL.single.await('SELECT coords FROM houselocations WHERE name = ?', {h.house})
+            
+            if loc and loc.coords then
+                -- Decodificamos el JSON
+                local decoded = json.decode(loc.coords)
+                if decoded then
+                    -- qb-houses vanilla guarda: {"enter": {"x":..., "y":..., "z":...}, "cam":...}
+                    if decoded.enter then
+                        coords = { x = decoded.enter.x, y = decoded.enter.y }
+                    -- Algunos forks guardan directo: {"x":..., "y":...}
+                    elseif decoded.x and decoded.y then
+                        coords = { x = decoded.x, y = decoded.y }
+                    end
+                end
+            end
+
+            table.insert(response.properties, {
                 type = 'house',
                 name = h.house,
                 label = h.label or h.house,
-                hasGarage = (h.garage ~= nil) -- Si tiene coordenadas de garaje, es true
+                hasGarage = (h.garage ~= nil),
+                coords = coords -- Coordenadas reales o 0,0 si falló
             })
         end
     end
 
-    -- B. Apartamentos (apartments)
-    -- NOTA: Algunos servidores usan 'apartments', otros guardan en metadata. Ajustar si es necesario.
+    -- 3. APARTAMENTOS
     local pApts = MySQL.query.await('SELECT * FROM apartments WHERE citizenid = ?', {citizenid})
+    
+    local aptLocations = nil
+    if GetResourceState('qb-apartments') == 'started' then
+        aptLocations = exports['qb-apartments']:GetApartmentsConfig()
+    end
+
     if pApts then
         for _, a in pairs(pApts) do
-            table.insert(data.properties, {
+            local coords = { x = 0, y = 0 }
+            local aptLabel = a.name -- Ej: "apartment1"
+
+            if aptLocations then
+                -- Tu base de datos guarda "apartment1" en la columna 'name' o 'type'
+                -- Usamos eso para buscar en el Config que acabamos de exportar
+                local key = a.name 
+                local aptData = aptLocations[key]
+
+                if aptData and aptData.coords and aptData.coords.enter then
+                    -- Tu config usa vector4, sacamos x, y
+                    coords = { x = aptData.coords.enter.x, y = aptData.coords.enter.y }
+                    
+                    -- Si el config tiene un label bonito ("South Rockford Drive"), lo usamos
+                    if aptData.label then aptLabel = aptData.label end
+                else
+                    -- Fallback: Si no lo encuentra por 'name', probamos por 'type' (algunas DBs varían)
+                    if a.type and aptLocations[a.type] then
+                        local fallbackData = aptLocations[a.type]
+                        if fallbackData.coords and fallbackData.coords.enter then
+                            coords = { x = fallbackData.coords.enter.x, y = fallbackData.coords.enter.y }
+                            if fallbackData.label then aptLabel = fallbackData.label end
+                        end
+                    end
+                end
+            end
+
+            table.insert(response.properties, {
                 type = 'apartment',
-                name = a.name, -- Ej: South Rockford Dr
-                label = "Apartamento #" .. (a.id or "?"),
-                hasGarage = false -- Los apartamentos suelen tener garaje público
+                name = a.name,
+                label = aptLabel, 
+                hasGarage = false,
+                coords = coords
             })
         end
     end
 
-    cb(data)
+    -- Enviamos todo al JS
+    cb(response)
 end)
 
 -- ==========================================================================
@@ -417,7 +593,7 @@ end)
 -- ==========================================================================
 local savedLocations = {} -- Tabla para guardar coordenadas antes de hacer BRING
 
-RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
+RegisterNetEvent('DP-AdminMenu:server:playerAction', function(action, targetId, data)
     local src = source
     local targetSrc = tonumber(targetId)
 
@@ -434,7 +610,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
     local adminPed = GetPlayerPed(src)
     local tName = GetPlayerName(targetSrc)
 
-    DebugLog("^3[DP-ADMIN ACTION]^7 Executing: " .. action .. " on " .. tName)
+    DebugLog("^3[DP-AdminMenu ACTION]^7 Executing: " .. action .. " on " .. tName)
 
     -- =======================================================
     --      ACCIONES FUNCIONALES
@@ -442,7 +618,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
 
     if action == 'spectate' then
         local coords = GetEntityCoords(tPed)
-        TriggerClientEvent('dpadmin:client:spectate', src, tPed, coords)
+        TriggerClientEvent('DP-AdminMenu:client:spectate', src, tPed, coords)
 
     elseif action == 'kill' then
         TriggerClientEvent('hospital:client:KillPlayer', targetSrc)
@@ -494,7 +670,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
     elseif action == 'open_inventory' then
         -- Le pasamos la pelota a tu cliente.
         -- "targetSrc" es a quien quieres investigar.
-        TriggerClientEvent('dpadmin:client:execOpenInventory', src, targetSrc)
+        TriggerClientEvent('DP-AdminMenu:client:execOpenInventory', src, targetSrc)
 
     elseif action == 'clear_inventory' then
         Target.Functions.ClearInventory()
@@ -502,7 +678,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
 
     elseif action == 'clothing_menu' then
         -- 1. PRIMERO: Cerramos el menú de admin al jugador (por si lo tiene abierto)
-        TriggerClientEvent('dpadmin:client:forceCloseMenu', targetSrc)
+        TriggerClientEvent('DP-AdminMenu:client:forceCloseMenu', targetSrc)
 
         -- 2. Esperamos un micro-instante para que el NUI se oculte bien
         Wait(200)
@@ -514,19 +690,19 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
         TriggerClientEvent('QBCore:Notify', src, 'Menú de ropa abierto a ' .. tName, 'success')
 
     elseif action == 'screenshot' then
-        DebugLog("^3[DP-ADMIN SERVER] 📸 Ordenando captura al ID: " .. targetSrc .. " devuelta a Admin: " .. src ..
+        DebugLog("^3[DP-AdminMenu SERVER] 📸 Ordenando captura al ID: " .. targetSrc .. " devuelta a Admin: " .. src ..
                      "^7")
-        TriggerClientEvent('dpadmin:client:captureScreen', targetSrc, src)
+        TriggerClientEvent('DP-AdminMenu:client:captureScreen', targetSrc, src)
 
     elseif action == 'remove_stress' then
         -- Desactivado por no uso
 
     elseif action == 'ped_menu' then
         -- Le decimos a TU cliente (Admin) que ejecute la orden
-        TriggerClientEvent('dpadmin:client:openPedMenu', src, targetSrc)
+        TriggerClientEvent('DP-AdminMenu:client:openPedMenu', src, targetSrc)
 
         -- Log (Opcional)
-        TriggerEvent('dpadmin:server:log', 'PED MENU', 'Abrió menú de peds para ID: ' .. targetSrc)
+        TriggerEvent('DP-AdminMenu:server:log', 'PED MENU', 'Abrió menú de peds para ID: ' .. targetSrc)
 
     elseif action == 'remove_job' then
         -- Ponemos el trabajo por defecto de QB-Core (unemployed) con rango 0
@@ -543,7 +719,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
 
         -- Refrescar la UI y Log
         GlobalRefresh()
-        TriggerEvent('dpadmin:server:log', 'ACTION', 'Retiró trabajo a ' .. tName)
+        TriggerEvent('DP-AdminMenu:server:log', 'ACTION', 'Retiró trabajo a ' .. tName)
 
     elseif action == 'remove_gang' then
         -- Ponemos la banda por defecto (none) con rango 0
@@ -559,7 +735,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
 
         -- Refrescar la UI y Log
         GlobalRefresh()
-        TriggerEvent('dpadmin:server:log', 'ACTION', 'Retiró banda a ' .. tName)
+        TriggerEvent('DP-AdminMenu:server:log', 'ACTION', 'Retiró banda a ' .. tName)
 
     elseif action == 'add_cash' or action == 'remove_cash' or action == 'add_bank' or action == 'remove_bank' or action ==
         'add_crypto' or action == 'remove_crypto' then
@@ -613,7 +789,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
             "Has alternado las esposas a: " .. Target.PlayerData.charinfo.firstname, "primary")
 
         -- Log
-        TriggerEvent('dpadmin:server:log', 'ACTION', 'Esposó/Desesposó al jugador ' .. targetSrc)
+        TriggerEvent('DP-AdminMenu:server:log', 'ACTION', 'Esposó/Desesposó al jugador ' .. targetSrc)
 
     elseif action == 'control_player' then
         local targetSrc = tonumber(targetId)
@@ -626,7 +802,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
 
             -- 1. PRIMERO: Ordenar a la víctima que deje de espectear (Mientras aun estás cerca)
             -- Esto es crucial para que la cámara no se buguee al teleportarte tú lejos
-            TriggerClientEvent('dpadmin:client:stopSpectatingTarget', data.target)
+            TriggerClientEvent('DP-AdminMenu:client:stopSpectatingTarget', data.target)
 
             -- Pequeña espera técnica para asegurar que el cliente procesa la cámara
             Wait(100)
@@ -639,7 +815,7 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
             SetEntityCoords(adminPed, data.originalCoords.x, data.originalCoords.y, data.originalCoords.z)
 
             -- 4. Admin recupera su skin
-            TriggerClientEvent('dpadmin:client:stopControlling', src)
+            TriggerClientEvent('DP-AdminMenu:client:stopControlling', src)
 
             controllingAdmins[src] = nil
             TriggerClientEvent('QBCore:Notify', src, 'Control finalizado.', 'success')
@@ -658,11 +834,11 @@ RegisterNetEvent('dpadmin:server:playerAction', function(action, targetId, data)
 
             -- 1. Enviamos orden a la víctima: "¡Vuélvete invisible y mira a la ID [src]!"
             -- Pasamos 'src' (ID del Admin) para que la víctima sepa a quién espectear
-            TriggerClientEvent('dpadmin:client:startSpectatingTarget', targetSrc, src)
+            TriggerClientEvent('DP-AdminMenu:client:startSpectatingTarget', targetSrc, src)
 
             -- 2. Admin clona y se mueve
             local tCoords = GetEntityCoords(targetPed)
-            TriggerClientEvent('dpadmin:client:startControlling', src, targetSrc, tCoords)
+            TriggerClientEvent('DP-AdminMenu:client:startControlling', src, targetSrc, tCoords)
 
             TriggerClientEvent('QBCore:Notify', src, 'Controlando jugador. Él te está especteando.', 'success')
         end
@@ -673,7 +849,7 @@ end)
 --      4. MÓDULOS DE GESTIÓN (BASE DE DATOS)
 -- ==========================================================================
 
-RegisterNetEvent('dpadmin:server:submitReport', function(data)
+RegisterNetEvent('DP-AdminMenu:server:submitReport', function(data)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then
@@ -693,7 +869,7 @@ RegisterNetEvent('dpadmin:server:submitReport', function(data)
         end)
 end)
 
-RegisterNetEvent('dpadmin:server:assignReport', function(data)
+RegisterNetEvent('DP-AdminMenu:server:assignReport', function(data)
     local src = source
     MySQL.update('UPDATE dp_reports SET assigned_to = ?, status = ? WHERE id = ?',
         {GetPlayerName(src), 'assigned', data.reportId}, function(a)
@@ -703,7 +879,7 @@ RegisterNetEvent('dpadmin:server:assignReport', function(data)
         end)
 end)
 
-RegisterNetEvent('dpadmin:server:closeReport', function(data)
+RegisterNetEvent('DP-AdminMenu:server:closeReport', function(data)
     local src = source
     MySQL.update('UPDATE dp_reports SET status = ? WHERE id = ?', {'closed', data.reportId}, function(a)
         if a > 0 then
@@ -712,7 +888,7 @@ RegisterNetEvent('dpadmin:server:closeReport', function(data)
     end)
 end)
 
-RegisterNetEvent('dpadmin:server:revokeBan', function(data)
+RegisterNetEvent('DP-AdminMenu:server:revokeBan', function(data)
     local src = source
     MySQL.update('UPDATE bans SET status = ? WHERE id = ?', {'revoked', data.banId}, function(a)
         if a > 0 then
@@ -721,7 +897,7 @@ RegisterNetEvent('dpadmin:server:revokeBan', function(data)
     end)
 end)
 
-RegisterNetEvent('dpadmin:server:extendBan', function(data)
+RegisterNetEvent('DP-AdminMenu:server:extendBan', function(data)
     local src = source
     MySQL.update('UPDATE bans SET expire = ? WHERE id = ?', {data.newExpire, data.banId}, function(a)
         if a > 0 then
@@ -748,7 +924,7 @@ local function ExtractIdentifiers(src)
     return identifiers
 end
 
-RegisterNetEvent('dpadmin:server:banPlayer', function(targetSource, reason, expire)
+RegisterNetEvent('DP-AdminMenu:server:banPlayer', function(targetSource, reason, expire)
     local src = source
     if type(src) ~= 'number' then
         src = 0
@@ -765,7 +941,7 @@ RegisterNetEvent('dpadmin:server:banPlayer', function(targetSource, reason, expi
     if Player then
         local ids = ExtractIdentifiers(targetSource)
         local finalLicense = Player.PlayerData.license or ids.license
-        DebugLog("^3[DP-ADMIN]^7 Baneando a ID: " .. targetSource .. " por: " .. BannerName)
+        DebugLog("^3[DP-AdminMenu]^7 Baneando a ID: " .. targetSource .. " por: " .. BannerName)
         MySQL.insert(
             'INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             {Player.PlayerData.name, finalLicense, ids.discord, ids.ip, reason, expire, BannerName, 'active'},
@@ -779,10 +955,10 @@ RegisterNetEvent('dpadmin:server:banPlayer', function(targetSource, reason, expi
 end)
 
 QBCore.Commands.Add('autoban', 'Test de baneo a ti mismo (10 min)', {}, false, function(source, args)
-    TriggerEvent('dpadmin:server:banPlayer', source, "Test Auto-Ban (10 Minutos)", os.time() + 600)
+    TriggerEvent('DP-AdminMenu:server:banPlayer', source, "Test Auto-Ban (10 Minutos)", os.time() + 600)
 end, 'admin')
 
-RegisterNetEvent('dpadmin:server:sendChatMessage', function(data)
+RegisterNetEvent('DP-AdminMenu:server:sendChatMessage', function(data)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then
@@ -804,7 +980,7 @@ RegisterNetEvent('dpadmin:server:sendChatMessage', function(data)
             }
             for _, v in pairs(QBCore.Functions.GetPlayers()) do
                 if QBCore.Functions.HasPermission(v, 'admin') or QBCore.Functions.HasPermission(v, 'god') then
-                    TriggerClientEvent('dpadmin:client:receiveChatMessage', v, newMessage)
+                    TriggerClientEvent('DP-AdminMenu:client:receiveChatMessage', v, newMessage)
                 end
             end
         end)
@@ -814,7 +990,7 @@ end)
 --      5. ACCIONES DE ADMINISTRADOR
 -- ==========================================================================
 
-RegisterNetEvent('dpadmin:server:reviveSelf', function()
+RegisterNetEvent('DP-AdminMenu:server:reviveSelf', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if Player then
@@ -827,7 +1003,7 @@ RegisterNetEvent('dpadmin:server:reviveSelf', function()
     end
 end)
 
-RegisterNetEvent('dpadmin:server:setGodmodeState', function(state)
+RegisterNetEvent('DP-AdminMenu:server:setGodmodeState', function(state)
     local src = source
     if state then
         adminsInGodmode[src] = true
@@ -836,7 +1012,7 @@ RegisterNetEvent('dpadmin:server:setGodmodeState', function(state)
     end
 end)
 
-RegisterNetEvent('dpadmin:server:reviveAll', function()
+RegisterNetEvent('DP-AdminMenu:server:reviveAll', function()
     local src = source
     local count = 0
     for _, playerId in ipairs(GetPlayers()) do
@@ -857,11 +1033,11 @@ RegisterNetEvent('dpadmin:server:reviveAll', function()
     end
 end)
 
-RegisterNetEvent('dpadmin:server:sendAnnouncement', function(data)
-    TriggerClientEvent('dpadmin:client:showAnnouncement', -1, data.message, data.duration)
+RegisterNetEvent('DP-AdminMenu:server:sendAnnouncement', function(data)
+    TriggerClientEvent('DP-AdminMenu:client:showAnnouncement', -1, data.message, data.duration)
 end)
 
-RegisterNetEvent('dpadmin:server:updateWeather', function(weather, hour, extras)
+RegisterNetEvent('DP-AdminMenu:server:updateWeather', function(weather, hour, extras)
     local src = source
     if not (QBCore.Functions.HasPermission(src, 'admin') or QBCore.Functions.HasPermission(src, 'god')) then
         return TriggerClientEvent('QBCore:Notify', src, 'Sin permisos.', 'error')
@@ -879,7 +1055,7 @@ RegisterNetEvent('dpadmin:server:updateWeather', function(weather, hour, extras)
     TriggerClientEvent('QBCore:Notify', src, 'Tiempo y Clima sincronizados.', 'success')
 end)
 
-RegisterNetEvent('dpadmin:server:deleteVehicles', function(type)
+RegisterNetEvent('DP-AdminMenu:server:deleteVehicles', function(type)
     local src = source
     local count = 0
     local allVehs = GetAllVehicles()
@@ -895,7 +1071,7 @@ RegisterNetEvent('dpadmin:server:deleteVehicles', function(type)
     TriggerClientEvent('QBCore:Notify', src, 'Eliminados ' .. count .. ' vehículos.', 'success')
 end)
 
-RegisterNetEvent('dpadmin:server:deletePeds', function(type)
+RegisterNetEvent('DP-AdminMenu:server:deletePeds', function(type)
     local src = source
     local count = 0
     local allPeds = GetAllPeds()
@@ -911,7 +1087,7 @@ RegisterNetEvent('dpadmin:server:deletePeds', function(type)
     TriggerClientEvent('QBCore:Notify', src, 'Eliminados ' .. count .. ' peds.', 'success')
 end)
 
-RegisterNetEvent('dpadmin:server:deleteObjects', function(type)
+RegisterNetEvent('DP-AdminMenu:server:deleteObjects', function(type)
     local src = source
     local count = 0
     local allObjs = GetAllObjects()
@@ -927,7 +1103,7 @@ RegisterNetEvent('dpadmin:server:deleteObjects', function(type)
     TriggerClientEvent('QBCore:Notify', src, 'Eliminados ' .. count .. ' objetos.', 'success')
 end)
 
-RegisterNetEvent('dpadmin:server:getTagsData', function(playersList)
+RegisterNetEvent('DP-AdminMenu:server:getTagsData', function(playersList)
     local src = source
     local dataToSend = {}
     for _, targetId in ipairs(playersList) do
@@ -942,10 +1118,10 @@ RegisterNetEvent('dpadmin:server:getTagsData', function(playersList)
             })
         end
     end
-    TriggerClientEvent('dpadmin:client:receiveTagsData', src, dataToSend)
+    TriggerClientEvent('DP-AdminMenu:client:receiveTagsData', src, dataToSend)
 end)
 
-RegisterNetEvent('dpadmin:server:toggleDuty', function(targetId)
+RegisterNetEvent('DP-AdminMenu:server:toggleDuty', function(targetId)
     local Player = QBCore.Functions.GetPlayer(tonumber(targetId))
     if Player then
         Player.Functions.SetJobDuty(not Player.PlayerData.job.onduty)
@@ -954,7 +1130,7 @@ RegisterNetEvent('dpadmin:server:toggleDuty', function(targetId)
     end
 end)
 
-RegisterNetEvent('dpadmin:server:setJob', function(targetId, job, grade)
+RegisterNetEvent('DP-AdminMenu:server:setJob', function(targetId, job, grade)
     local src = source
     local targetSrc = tonumber(targetId)
     local targetPlayer = QBCore.Functions.GetPlayer(targetSrc)
@@ -975,7 +1151,7 @@ RegisterNetEvent('dpadmin:server:setJob', function(targetId, job, grade)
                 "primary")
 
             -- 4. LOGS (Del código nuevo)
-            TriggerEvent('dpadmin:server:log', 'JOB',
+            TriggerEvent('DP-AdminMenu:server:log', 'JOB',
                 'Cambió trabajo de ' .. GetPlayerName(targetSrc) .. ' a ' .. job .. ' (' .. gradeLevel .. ')')
 
             -- 5. REFRESCAR UI ADMIN (Del código antiguo)
@@ -990,18 +1166,18 @@ RegisterNetEvent('dpadmin:server:setJob', function(targetId, job, grade)
     end
 end)
 
-RegisterNetEvent('dpadmin:server:setJobGrade', function(targetId, jobGrade)
+RegisterNetEvent('DP-AdminMenu:server:setJobGrade', function(targetId, jobGrade)
     local src = source
     local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
     if Target then
         Target.Functions.SetJob(Target.PlayerData.job.name, tonumber(jobGrade) or 0)
         TriggerClientEvent('QBCore:Notify', src, 'Rango actualizado.', 'success')
-        TriggerClientEvent('dpadmin:client:refreshJobs', src)
+        TriggerClientEvent('DP-AdminMenu:client:refreshJobs', src)
         GlobalRefresh()
     end
 end)
 
-RegisterNetEvent('dpadmin:server:setGang', function(targetId, gangName, gangGrade)
+RegisterNetEvent('DP-AdminMenu:server:setGang', function(targetId, gangName, gangGrade)
     local src = source
     local targetSrc = tonumber(targetId)
     local Target = QBCore.Functions.GetPlayer(targetSrc)
@@ -1027,11 +1203,11 @@ RegisterNetEvent('dpadmin:server:setGang', function(targetId, gangName, gangGrad
         TriggerClientEvent('QBCore:Notify', targetSrc, "Tu banda ha sido actualizada a: " .. gangLabel, "primary")
     end
 
-    TriggerEvent('dpadmin:server:log', 'GANG', 'Cambió banda de ' .. GetPlayerName(targetSrc) .. ' a ' .. gangName)
+    TriggerEvent('DP-AdminMenu:server:log', 'GANG', 'Cambió banda de ' .. GetPlayerName(targetSrc) .. ' a ' .. gangName)
     GlobalRefresh()
 end)
 
-RegisterNetEvent('dpadmin:server:setGangGrade', function(targetId, gangGrade)
+RegisterNetEvent('DP-AdminMenu:server:setGangGrade', function(targetId, gangGrade)
     local src = source
     local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
     if Target and Target.PlayerData.gang.name ~= "none" then
@@ -1041,11 +1217,11 @@ RegisterNetEvent('dpadmin:server:setGangGrade', function(targetId, gangGrade)
     end
 end)
 
-RegisterNetEvent('dpadmin:server:playerFullyLoaded', function()
+RegisterNetEvent('DP-AdminMenu:server:playerFullyLoaded', function()
     GlobalRefresh()
 end)
 
-RegisterNetEvent('dpadmin:server:giveVehicle', function(data)
+RegisterNetEvent('DP-AdminMenu:server:giveVehicle', function(data)
     local src = source
     local targetId = tonumber(data.targetId)
     local Target = QBCore.Functions.GetPlayer(targetId)
@@ -1071,7 +1247,7 @@ RegisterNetEvent('dpadmin:server:giveVehicle', function(data)
         end)
 end)
 
-RegisterNetEvent('dpadmin:server:spawnItem', function(itemName)
+RegisterNetEvent('DP-AdminMenu:server:spawnItem', function(itemName)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if Player and Player.Functions.AddItem(itemName, 1) then
@@ -1080,7 +1256,7 @@ RegisterNetEvent('dpadmin:server:spawnItem', function(itemName)
     end
 end)
 
-RegisterNetEvent('dpadmin:server:giveItemToPlayer', function(data)
+RegisterNetEvent('DP-AdminMenu:server:giveItemToPlayer', function(data)
     local src = source
     local Target = QBCore.Functions.GetPlayer(tonumber(data.targetId))
     if Target then
@@ -1106,7 +1282,7 @@ RegisterNetEvent('dpadmin:server:giveItemToPlayer', function(data)
     end
 end)
 
-RegisterNetEvent('dpadmin:server:log', function(action, details)
+RegisterNetEvent('DP-AdminMenu:server:log', function(action, details)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if Player then
@@ -1139,7 +1315,7 @@ local function IsPlayerWhitelisted(src)
     return false
 end
 
-RegisterNetEvent('dpadmin:server:toggleOption', function(option, state)
+RegisterNetEvent('DP-AdminMenu:server:toggleOption', function(option, state)
     local src = source
     if option == 'staff_mode' then
         AdminsOnDuty[src] = state
@@ -1150,7 +1326,7 @@ RegisterNetEvent('dpadmin:server:toggleOption', function(option, state)
         SetResourceKvpInt('dp_whitelist_active', state and 1 or 0)
         if state then
             Citizen.CreateThread(function()
-                TriggerClientEvent('dpadmin:client:showAnnouncement', -1, "⚠️ WHITELIST ACTIVADA EN 10s", 10000)
+                TriggerClientEvent('DP-AdminMenu:client:showAnnouncement', -1, "⚠️ WHITELIST ACTIVADA EN 10s", 10000)
                 Citizen.Wait(10000)
                 local players = QBCore.Functions.GetPlayers()
                 for _, pId in pairs(players) do
@@ -1164,10 +1340,10 @@ RegisterNetEvent('dpadmin:server:toggleOption', function(option, state)
     elseif ServerStates[option] ~= nil then
         ServerStates[option] = state
     end
-    TriggerClientEvent('dpadmin:client:forceStatusUpdate', -1)
+    TriggerClientEvent('DP-AdminMenu:client:forceStatusUpdate', -1)
 end)
 
-QBCore.Functions.CreateCallback('dpadmin:server:getStatusData', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:server:getStatusData', function(source, cb)
     local players = GetNumPlayerIndices()
     local maxPlayers = GetConvarInt('sv_maxclients', 48)
     local adminsCount = 0
@@ -1221,10 +1397,10 @@ RegisterCommand(Config.Commands.EmergencyWhitelist or "togglewhitelist_emergency
     end
     ServerStates.whitelist = not ServerStates.whitelist
     SetResourceKvpInt('dp_whitelist_active', ServerStates.whitelist and 1 or 0)
-    DebugLog("^1[DP-ADMIN] Whitelist Emergencia: " .. tostring(ServerStates.whitelist) .. "^7")
+    DebugLog("^1[DP-AdminMenu] Whitelist Emergencia: " .. tostring(ServerStates.whitelist) .. "^7")
 end, true)
 
-QBCore.Functions.CreateCallback('dpadmin:server:getMenuPos', function(source, cb)
+QBCore.Functions.CreateCallback('DP-AdminMenu:server:getMenuPos', function(source, cb)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then
         return cb(nil)
@@ -1243,7 +1419,7 @@ QBCore.Functions.CreateCallback('dpadmin:server:getMenuPos', function(source, cb
         end)
 end)
 
-RegisterNetEvent('dpadmin:server:saveMenuPos', function(posData)
+RegisterNetEvent('DP-AdminMenu:server:saveMenuPos', function(posData)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then
@@ -1254,7 +1430,7 @@ RegisterNetEvent('dpadmin:server:saveMenuPos', function(posData)
         {Player.PlayerData.citizenid, posData.top, posData.left, posData.scale})
 end)
 
-RegisterNetEvent('dpadmin:server:uploadImage', function(base64Data)
+RegisterNetEvent('DP-AdminMenu:server:uploadImage', function(base64Data)
     local src = source
     local webhook = Config.ImageWebhook
     if not webhook or webhook == "" then
@@ -1265,20 +1441,20 @@ end)
 -- ==========================================================================
 --      SISTEMA DE SCREENSHOT (RELAY / PUENTE)
 -- ==========================================================================
-RegisterNetEvent('dpadmin:server:relayScreenshot', function(adminSource, base64Data)
+RegisterNetEvent('DP-AdminMenu:server:relayScreenshot', function(adminSource, base64Data)
     -- El servidor recibe la imagen del jugador y la reenvía al Administrador
     if adminSource and base64Data then
         -- Opcional: Log para consola de servidor
         DebugLog("Transfiriendo captura de pantalla al Admin ID: " .. adminSource)
 
-        TriggerClientEvent('dpadmin:client:receiveScreenshot', adminSource, base64Data)
+        TriggerClientEvent('DP-AdminMenu:client:receiveScreenshot', adminSource, base64Data)
     end
 end)
 
 -- ==========================================================================
 --              SISTEMA DE DIMENSIONES (ROUTING BUCKETS)
 -- ==========================================================================
-RegisterNetEvent('dpadmin:server:setDimension', function(targetId, bucket)
+RegisterNetEvent('DP-AdminMenu:server:setDimension', function(targetId, bucket)
     local src = source
     local targetSrc = tonumber(targetId)
     local bucketId = tonumber(bucket)
@@ -1309,7 +1485,7 @@ RegisterNetEvent('dpadmin:server:setDimension', function(targetId, bucket)
     end
 
     -- Log
-    TriggerEvent('dpadmin:server:log', 'DIMENSION',
+    TriggerEvent('DP-AdminMenu:server:log', 'DIMENSION',
         'Cambió dimensión de ' .. GetPlayerName(targetSrc) .. ' a Bucket: ' .. bucketId)
 end)
 
@@ -1317,7 +1493,7 @@ end)
 --                           TP A UN PUNTO, A JUGADOR
 -- ==========================================================================
 
-RegisterNetEvent('dpadmin:server:teleportTargetTactical', function(targetId, coords)
+RegisterNetEvent('DP-AdminMenu:server:teleportTargetTactical', function(targetId, coords)
     local src = source
     local targetSrc = tonumber(targetId)
     local Target = QBCore.Functions.GetPlayer(targetSrc)
@@ -1341,7 +1517,7 @@ RegisterNetEvent('dpadmin:server:teleportTargetTactical', function(targetId, coo
         TriggerClientEvent('QBCore:Notify', targetSrc, 'Un administrador te ha desplegado tácticamente.', 'primary')
 
         -- 4. LOG
-        TriggerEvent('dpadmin:server:log', 'ACTION',
+        TriggerEvent('DP-AdminMenu:server:log', 'ACTION',
             'Mapa Táctico: Envió a ' .. tName .. ' a coords: ' .. coords.x .. ', ' .. coords.y)
     else
         TriggerClientEvent('QBCore:Notify', src, 'Error: El jugador ya no está conectado.', 'error')
@@ -1354,7 +1530,7 @@ end)
 local AdminsWatching = {} -- Tabla para guardar qué admin mira a qué jugador
 
 -- 1. ACTIVAR/DESACTIVAR EL BUCLE
-RegisterNetEvent('dpadmin:server:toggleWatch', function(targetId, state)
+RegisterNetEvent('DP-AdminMenu:server:toggleWatch', function(targetId, state)
     local src = source
     if state then
         AdminsWatching[src] = targetId
@@ -1364,7 +1540,7 @@ RegisterNetEvent('dpadmin:server:toggleWatch', function(targetId, state)
 end)
 
 -- 2. RECIBIR DATOS DEL JUGADOR Y ENVIAR AL ADMIN
-RegisterNetEvent('dpadmin:server:receiveLiveStats', function(clientData)
+RegisterNetEvent('DP-AdminMenu:server:receiveLiveStats', function(clientData)
     local targetSrc = source
     local tPlayer = QBCore.Functions.GetPlayer(targetSrc)
     if not tPlayer then
@@ -1386,7 +1562,7 @@ RegisterNetEvent('dpadmin:server:receiveLiveStats', function(clientData)
     -- Buscamos qué admin está mirando a este jugador y se lo enviamos
     for adminSrc, watchedTarget in pairs(AdminsWatching) do
         if watchedTarget == targetSrc then
-            TriggerClientEvent('dpadmin:client:updateLiveStats', adminSrc, payload)
+            TriggerClientEvent('DP-AdminMenu:client:updateLiveStats', adminSrc, payload)
         end
     end
 end)
@@ -1408,7 +1584,7 @@ CreateThread(function()
 
         -- Pedimos el reporte a los clientes
         for targetSrc, _ in pairs(requestQueue) do
-            TriggerClientEvent('dpadmin:client:reportLiveStats', targetSrc)
+            TriggerClientEvent('DP-AdminMenu:client:reportLiveStats', targetSrc)
         end
     end
 end)
@@ -1418,7 +1594,7 @@ end)
 -- ==========================================================================
 QBCore.Commands.Add('noclip', 'Alternar modo NoClip (Admin)', {}, false, function(source, args)
     -- Simplemente le dice al cliente que active la función ToggleNoClip que mejoramos antes
-    TriggerClientEvent('dpadmin:client:toggleNoclip', source)
+    TriggerClientEvent('DP-AdminMenu:client:toggleNoclip', source)
 end, 'admin')
 
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH
