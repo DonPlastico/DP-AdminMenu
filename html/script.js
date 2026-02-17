@@ -4771,11 +4771,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!detailsModal || !mainMenu) return;
 
+        // --- LIMPIEZA INICIAL DE CONTENEDORES (Anti-Bucle) ---
+        ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list', 'pd-multichar-list'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:loading" style="animation: spin 1s linear infinite; display: inline-block;"></span><span>Cargando...</span></div>';
+        });
+
         // Determinamos si está realmente online
         const isOnline = (playerData.id && playerData.id != 0 && !playerData.isOffline);
 
         if (playerData) {
             currentDetailsId = playerData.id;
+
+            // 1. ANTES DE GUARDAR, RESCATAMOS LA LISTA DEL PERFIL ANTERIOR
+            // Si ya teníamos datos en memoria (del perfil online) y el nuevo (offline) no trae lista...
+            if (currentPlayerDataGlobal && currentPlayerDataGlobal.relatedCharacters && !playerData.relatedCharacters) {
+                // ...COPIAMOS la lista al nuevo objeto para no perderla.
+                playerData.relatedCharacters = currentPlayerDataGlobal.relatedCharacters;
+            }
+
+            // 2. AHORA SÍ, GUARDAMOS LOS DATOS EN GLOBAL
+            // Como ya le hemos inyectado la lista en el paso anterior, ahora se guarda con ella.
             currentPlayerDataGlobal = playerData;
 
             if (isOnline) {
@@ -4813,12 +4829,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pd-phone').textContent = "...";
         document.getElementById('pd-identifiers').innerHTML = '<span>Cargando...</span>';
 
-        // Limpiezas previas con animación de carga
-        ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = '<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:loading" style="animation: spin 1s linear infinite; display: inline-block;"></span><span>Cargando...</span></div>';
-        });
-
         // --- 2. PETICIÓN AL SERVIDOR ---
         fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, {
             method: 'POST',
@@ -4830,36 +4840,90 @@ document.addEventListener('DOMContentLoaded', () => {
         })
             .then(resp => resp.json())
             .then(fullDataRaw => {
-                if (!fullDataRaw) {
-                    console.warn("El servidor no devolvió datos para este jugador.");
+                // Manejo de respuesta vacía
+                // Si el servidor falla (devuelve null/vacío)
+                if (!fullDataRaw || (Object.keys(fullDataRaw).length === 0 && !fullDataRaw.data)) {
+                    console.warn("Datos no disponibles para este personaje (Offline/Error SQL).");
+
+                    // 1. Limpiamos la interfaz para que no ponga "Cargando..."
+                    document.getElementById('pd-ic-name').textContent = playerData.charName || "Desconocido"; // Usamos el nombre que ya teníamos
+                    document.getElementById('pd-bank').textContent = "Sin datos";
+                    document.getElementById('pd-citizenid').textContent = playerData.citizenid || "?";
+                    document.getElementById('pd-phone').textContent = "Sin datos";
+                    document.getElementById('pd-job-label').textContent = "Sin datos";
+                    document.getElementById('pd-gang-label').textContent = "Sin datos";
+
+                    // 2. Ponemos mensajes de error en las listas de abajo
                     ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
                         const el = document.getElementById(id);
-                        if (el) el.innerHTML = '<div class="pd-empty-state"><span>Datos no disponibles</span></div>';
+                        if (el) el.innerHTML = '<div class="pd-empty-state"><span style="color:#aaa">Datos no disponibles</span></div>';
                     });
-                    return;
+
+                    // --- 3. ¡LA CLAVE! RECUPERAR LA LISTA MULTI-CHAR DE LA MEMORIA ---
+                    // Si ya teníamos datos de este jugador (porque venimos de su perfil online), los usamos.
+                    if (currentPlayerDataGlobal && currentPlayerDataGlobal.relatedCharacters) {
+                        const charList = document.getElementById('pd-multichar-list');
+                        if (charList) {
+                            charList.innerHTML = '';
+                            currentPlayerDataGlobal.relatedCharacters.forEach(char => {
+                                // Marcamos como activo el que acabamos de clicar (aunque haya fallado la carga)
+                                const isActive = (char.citizenid === playerData.citizenid);
+                                const isOnlineChar = char.isOnlineChar;
+
+                                const card = document.createElement('div');
+                                card.className = `mini-char-card ${isActive ? 'active-profile' : ''} ${isOnlineChar ? 'is-online-char' : ''}`;
+
+                                let html = `
+                                <div class="mc-name" title="${char.name}">${char.name}</div>
+                                <div class="mc-cid">${char.citizenid}</div>
+                            `;
+                                if (isOnlineChar) html += `<div class="mc-online-tag">ONLINE</div>`;
+
+                                card.innerHTML = html;
+
+                                // CLICK: Para poder volver al personaje online u otros
+                                card.onclick = () => {
+                                    if (isActive) return;
+
+                                    // Importante: Usamos el nombre de Steam GLOBAL para no perderlo
+                                    const steamName = currentPlayerDataGlobal.name;
+
+                                    openPlayerDetails({
+                                        id: isOnlineChar ? currentPlayerDataGlobal.id : null, // Si es el online, recuperamos su ID real
+                                        citizenid: char.citizenid,
+                                        name: steamName,
+                                        charName: char.name,
+                                        isOffline: !isOnlineChar
+                                    });
+                                };
+                                charList.appendChild(card);
+                            });
+                        }
+                    }
+
+                    return; // Paramos aquí para que no explote el resto del script
                 }
 
                 const fullData = fullDataRaw.data ? fullDataRaw.data : fullDataRaw;
 
                 // ============================================================
-                // 🚨 AQUÍ ESTÁ EL CAMBIO IMPORTANTE (FIX CK) 🚨
-                // Actualizamos la variable global para que el botón CK tenga datos
+                // 🚨 ACTUALIZACIÓN DE MEMORIA GLOBAL (FIX CK)
                 // ============================================================
                 if (fullData) {
+                    // Si ya teníamos datos globales, los mezclamos con los nuevos
+                    if (!currentPlayerDataGlobal) currentPlayerDataGlobal = {};
+
                     currentPlayerDataGlobal = { ...currentPlayerDataGlobal, ...fullData };
 
-                    // Aseguramos el citizenid
-                    if (fullData.citizenid) {
-                        currentPlayerDataGlobal.citizenid = fullData.citizenid;
-                    }
+                    // Aseguramos que el citizenid no se pierda
+                    if (fullData.citizenid) currentPlayerDataGlobal.citizenid = fullData.citizenid;
 
-                    // Guardamos la licencia para el log del backup
+                    // Actualizamos licencias si vienen
                     if (fullData.identifiers) {
                         const licenseEntry = fullData.identifiers.find(id => id.includes('license:'));
                         if (licenseEntry) currentPlayerDataGlobal.license = licenseEntry;
                     }
                 }
-                // ============================================================
 
                 if (!fullData) {
                     ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
@@ -4868,24 +4932,133 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                if (fullDataRaw.fromSQL) {
+                // Badge de desconectado (si viene de SQL)
+                if (fullDataRaw.fromSQL || !fullData.id) {
                     const badgeEl = document.getElementById('pd-status-badge');
                     if (badgeEl) {
-                        badgeEl.textContent = "DESCONECTADO (HISTÓRICO)";
+                        badgeEl.textContent = "DESCONECTADO";
                         badgeEl.className = "status-badge offline";
                     }
                 }
 
                 // ============================================================
-                // RENDERIZADO DE DATOS (TU CÓDIGO ORIGINAL)
+                // 🚀 NUEVO: RENDERIZADO DE PERFILES MULTI-PERSONAJE (ESTILO MODERNO)
                 // ============================================================
-                document.getElementById('pd-ic-name').textContent = fullData.charName || playerData.charName || "Desconocido";
+                const charList = document.getElementById('pd-multichar-list');
+                if (charList) {
+                    charList.innerHTML = '';
+                    if (fullData.relatedCharacters && fullData.relatedCharacters.length > 0) {
+                        fullData.relatedCharacters.forEach(char => {
+                            const isActive = (char.citizenid === fullData.citizenid);
+                            const isOnlineChar = char.isOnlineChar;
 
-                // 1. INFO GENERAL
+                            const card = document.createElement('div');
+                            // Clases dinámicas para el CSS
+                            card.className = `mini-char-card ${isActive ? 'active-profile' : ''} ${isOnlineChar ? 'is-online-char' : ''}`;
+
+                            // Icono: Relleno si es el activo, contorno si no
+                            const icon = isActive ? 'mdi:account' : 'mdi:account-outline';  
+                            
+                            // Estado: Verde si online, Gris si offline
+                            const statusTitle = isOnlineChar ? 'Online' : 'Offline';
+
+                            // --- NUEVA ESTRUCTURA HTML (Icono + Info) ---
+                            card.innerHTML = `
+                                <div class="status-indicator" title="${statusTitle}"></div>
+                                
+                                <div class="mc-icon-box">
+                                    <span class="iconify" data-icon="${icon}"></span>
+                                </div>
+                                
+                                <div class="mc-info">
+                                    <div class="mc-name" title="${char.name}">${char.name}</div>
+                                    <div class="mc-cid">${char.citizenid}</div>
+                                </div>
+                            `;
+
+                            // CLICK: Cambiar de perfil (Lógica intacta)
+                            card.onclick = () => {
+                                if (isActive) return;
+
+                                // 1. Detectar ID
+                                const targetId = isOnlineChar ? fullData.id : null;
+
+                                // 2. Recuperar nombre Steam global
+                                const steamName = currentPlayerDataGlobal ? currentPlayerDataGlobal.name : fullData.name;
+
+                                // 3. Llamar a detalles
+                                openPlayerDetails({
+                                    id: targetId,               
+                                    citizenid: char.citizenid,  
+                                    name: steamName,            
+                                    charName: char.name,        
+                                    isOffline: !isOnlineChar    
+                                });
+                            };
+                            charList.appendChild(card);
+                        });
+                    } else {
+                        charList.innerHTML = '<div class="pd-empty-state" style="font-size:10px; opacity:0.5;">Un solo perfil</div>';
+                    }
+                }
+
+                // ============================================================
+                // 🔒 NUEVO: GESTIÓN DE BOTONES DE ACCIÓN (BLOQUEO OFFLINE)
+                // ============================================================
+                const isViewingOfflineProfile = (fullDataRaw.fromSQL === true || !fullData.id);
+                const actionButtons = document.querySelectorAll('.btn-action');
+                const onlineOnlyIds = ['btn-kill', 'btn-revive', 'btn-freeze', 'btn-bring', 'btn-goto', 'btn-clothing'];
+
+                actionButtons.forEach(btn => {
+                    if (onlineOnlyIds.some(id => btn.id.includes(id))) {
+                        if (isViewingOfflineProfile) {
+                            btn.classList.add('action-disabled');
+                            btn.title = "No disponible (Offline)";
+                        } else {
+                            btn.classList.remove('action-disabled');
+                            btn.title = "";
+                        }
+                    }
+                });
+
+                // ============================================================
+                // RENDERIZADO DE DATOS (MEJORADO CON SOPORTE JSON)
+                // ============================================================
+
+                // --- A) LÓGICA DE EXTRACCIÓN INTELIGENTE ---
+                // 1. DINERO: Busca en 'money.bank', 'accounts.bank' o 'bank' directo
+                let bankAmount = 0;
+                if (typeof fullData.bank === 'number') {
+                    bankAmount = fullData.bank;
+                } else if (fullData.money && typeof fullData.money.bank !== 'undefined') {
+                    bankAmount = fullData.money.bank; // QBCore
+                } else if (fullData.accounts && typeof fullData.accounts.bank !== 'undefined') {
+                    bankAmount = fullData.accounts.bank; // ESX
+                }
+
+                // 2. TELÉFONO: Busca en 'charinfo.phone' o 'phone' directo
+                let phoneNumber = "Sin datos";
+                if (fullData.phone) {
+                    phoneNumber = fullData.phone;
+                } else if (fullData.charinfo && fullData.charinfo.phone) {
+                    phoneNumber = fullData.charinfo.phone; // QBCore
+                }
+
+                // 3. NOMBRE REAL: Si viene en charinfo, lo usamos preferentemente
+                let realName = fullData.charName || playerData.charName || "Desconocido";
+                if (fullData.charinfo && fullData.charinfo.firstname && fullData.charinfo.lastname) {
+                    realName = `${fullData.charinfo.firstname} ${fullData.charinfo.lastname}`;
+                }
+
+                // --- B) ACTUALIZACIÓN DEL DOM ---
+                // Nombre del personaje en la cabecera
+                document.getElementById('pd-ic-name').textContent = realName;
+
+                // Lista de campos (Info General)
                 const fields = [
-                    { id: 'pd-bank', val: `$${(fullData.bank || 0).toLocaleString()}` },
+                    { id: 'pd-bank', val: `$${Math.floor(bankAmount).toLocaleString()}` },
                     { id: 'pd-citizenid', val: fullData.citizenid || "N/A" },
-                    { id: 'pd-phone', val: fullData.phone || "Sin móvil" },
+                    { id: 'pd-phone', val: phoneNumber },
                     { id: 'pd-job-label', val: `${fullData.job || '?'} | ${fullData.jobGrade || '?'}` },
                     { id: 'pd-gang-label', val: `${fullData.gang || '?'} | ${fullData.gangGrade || '?'}` }
                 ];
@@ -4895,10 +5068,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (el) el.textContent = f.val;
                 });
 
-                if (document.getElementById('pd-job-boss')) document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
-                if (document.getElementById('pd-gang-boss')) document.getElementById('pd-gang-boss').style.display = fullData.isGangBoss ? 'block' : 'none';
+                // Mostrar/Ocultar iconos de Boss (Jefe)
+                if (document.getElementById('pd-job-boss')) {
+                    document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
+                }
+                if (document.getElementById('pd-gang-boss')) {
+                    document.getElementById('pd-gang-boss').style.display = fullData.isGangBoss ? 'block' : 'none';
+                }
 
-                // 2. STATS
+                // --- C) ESTADÍSTICAS (STATS) ---
+                // Mantenemos tu código original de las barras
                 if (fullData.stats) {
                     updateStatBar('stat-health', fullData.stats.health || 0);
                     updateStatBar('stat-armor', fullData.stats.armor || 0);
@@ -4909,11 +5088,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ===========================================
-                // 3. RENDERIZADO DE PROPIEDADES (CON FIX GPS)
+                // 3. RENDERIZADO DE PROPIEDADES (TU CÓDIGO)
                 // ===========================================
                 const propList = document.getElementById('pd-properties-list');
                 const props = fullData.properties || [];
-
                 const propCount = document.getElementById('pd-prop-count');
                 const propLabel = document.getElementById('pd-prop-label');
 
@@ -4924,18 +5102,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     propList.innerHTML = '';
                     if (props.length === 0) {
                         propList.innerHTML = `
-                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
-                                <span class="iconify" data-icon="mdi:home-off-outline" style="font-size:30px; opacity:0.2;"></span>
-                                <span style="font-size:9px; font-weight:700; margin-top:5px; opacity:0.5;">SIN PROPIEDADES</span>
-                            </div>`;
+                        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
+                            <span class="iconify" data-icon="mdi:home-off-outline" style="font-size:30px; opacity:0.2;"></span>
+                            <span style="font-size:9px; font-weight:700; margin-top:5px; opacity:0.5;">SIN PROPIEDADES</span>
+                        </div>`;
                     } else {
                         props.forEach(p => {
-                            // --- VALIDACIÓN DE COORDENADAS ---
                             const hasCoords = (p.coords && typeof p.coords.x === 'number' && typeof p.coords.y === 'number');
                             const cx = hasCoords ? p.coords.x : 0;
                             const cy = hasCoords ? p.coords.y : 0;
                             const gpsBtnStyle = hasCoords ? '' : 'opacity: 0.3; cursor: not-allowed;';
-                            // IMPORTANTE: Sin comillas en los números
                             const gpsAction = hasCoords ? `onclick="setGPS(${cx}, ${cy})"` : '';
 
                             const icon = p.type === 'house' ? 'mdi:home-variant-outline' : 'mdi:office-building-outline';
@@ -4946,31 +5122,30 @@ document.addEventListener('DOMContentLoaded', () => {
                             const item = document.createElement('div');
                             item.className = `asset-item-row ${rowClass}`;
                             item.innerHTML = `
-                                <div class="asset-icon-box">
-                                    <span class="iconify" data-icon="${icon}"></span>
+                            <div class="asset-icon-box">
+                                <span class="iconify" data-icon="${icon}"></span>
+                            </div>
+                            <div class="asset-info">
+                                <div class="asset-title">${p.label}</div>
+                                <div class="asset-badges-row">
+                                    <span class="pd-mini-badge badge-loc">${p.name}</span>
+                                    <span class="pd-mini-badge ${garageClass}">${garageText}</span>
                                 </div>
-                                <div class="asset-info">
-                                    <div class="asset-title">${p.label}</div>
-                                    <div class="asset-badges-row">
-                                        <span class="pd-mini-badge badge-loc">${p.name}</span>
-                                        <span class="pd-mini-badge ${garageClass}">${garageText}</span>
-                                    </div>
-                                </div>
-                                <button class="btn-gps-modern" style="${gpsBtnStyle}" ${gpsAction} title="${hasCoords ? 'Marcar GPS' : 'Sin ubicación'}">
-                                    <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
-                                </button>
-                            `;
+                            </div>
+                            <button class="btn-gps-modern" style="${gpsBtnStyle}" ${gpsAction} title="${hasCoords ? 'Marcar GPS' : 'Sin ubicación'}">
+                                <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
+                            </button>
+                        `;
                             propList.appendChild(item);
                         });
                     }
                 }
 
                 // ===========================================
-                // 4. RENDERIZADO DE VEHÍCULOS (CON FIX GPS)
+                // 4. RENDERIZADO DE VEHÍCULOS (TU CÓDIGO)
                 // ===========================================
                 const vehList = document.getElementById('pd-vehicles-list');
                 const vehs = fullData.vehicles || [];
-
                 const vehCount = document.getElementById('pd-veh-count');
                 const vehLabel = document.getElementById('pd-veh-label');
 
@@ -4981,10 +5156,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     vehList.innerHTML = '';
                     if (vehs.length === 0) {
                         vehList.innerHTML = `
-                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
-                                <span class="iconify" data-icon="mdi:car-off" style="font-size:30px; opacity:0.2;"></span>
-                                <span style="font-size:9px; font-weight:700; margin-top:5px; opacity:0.5;">A PIE</span>
-                            </div>`;
+                        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
+                            <span class="iconify" data-icon="mdi:car-off" style="font-size:30px; opacity:0.2;"></span>
+                            <span style="font-size:9px; font-weight:700; margin-top:5px; opacity:0.5;">A PIE</span>
+                        </div>`;
                     } else {
                         const vehIcons = {
                             'car': 'mdi:car-sports', 'bike': 'mdi:motorbike', 'heli': 'mdi:helicopter',
@@ -4992,14 +5167,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
 
                         vehs.forEach(v => {
-                            // --- VALIDACIÓN DE COORDENADAS ---
                             const hasCoords = (v.coords && typeof v.coords.x === 'number' && typeof v.coords.y === 'number');
                             const cx = hasCoords ? v.coords.x : 0;
                             const cy = hasCoords ? v.coords.y : 0;
                             const gpsBtnStyle = hasCoords ? '' : 'opacity: 0.3; cursor: not-allowed;';
                             const gpsAction = hasCoords ? `onclick="setGPS(${cx}, ${cy})"` : '';
 
-                            // Lógica de iconos
                             let iconKey = 'unknown';
                             if (['compacts', 'sedans', 'suvs', 'coupes', 'muscle', 'sports', 'classics', 'super', 'vans', 'utility'].includes(v.category)) iconKey = 'car';
                             else if (['motorcycles', 'cycles'].includes(v.category)) iconKey = 'bike';
@@ -5017,27 +5190,27 @@ document.addEventListener('DOMContentLoaded', () => {
                             const item = document.createElement('div');
                             item.className = `asset-item-row ${rowClass}`;
                             item.innerHTML = `
-                                <div class="asset-icon-box">
-                                    <span class="iconify" data-icon="${finalIcon}"></span>
+                            <div class="asset-icon-box">
+                                <span class="iconify" data-icon="${finalIcon}"></span>
+                            </div>
+                            <div class="asset-info">
+                                <div class="asset-title">${v.label || v.name}</div>
+                                <div class="asset-badges-row">
+                                    <span class="pd-mini-badge badge-plate">${plateText}</span>
+                                    <span class="pd-mini-badge badge-loc">${locationText}</span>
                                 </div>
-                                <div class="asset-info">
-                                    <div class="asset-title">${v.label || v.name}</div>
-                                    <div class="asset-badges-row">
-                                        <span class="pd-mini-badge badge-plate">${plateText}</span>
-                                        <span class="pd-mini-badge badge-loc">${locationText}</span>
-                                    </div>
-                                </div>
-                                <button class="btn-gps-modern" style="${gpsBtnStyle}" ${gpsAction} title="${hasCoords ? 'Marcar GPS' : 'Ubicación desconocida'}">
-                                    <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
-                                </button>
-                            `;
+                            </div>
+                            <button class="btn-gps-modern" style="${gpsBtnStyle}" ${gpsAction} title="${hasCoords ? 'Marcar GPS' : 'Ubicación desconocida'}">
+                                <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
+                            </button>
+                        `;
                             vehList.appendChild(item);
                         });
                     }
                 }
 
                 // ===========================================
-                // 5. RENDERIZADO DE SANCIONES
+                // 5. RENDERIZADO DE SANCIONES (TU CÓDIGO)
                 // ===========================================
                 const punishList = document.getElementById('pd-punishments-list');
                 if (punishList) {
@@ -5046,10 +5219,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (history.length === 0) {
                         punishList.innerHTML = `
-                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
-                                <span class="iconify" data-icon="mdi:shield-check-outline" style="font-size:40px; opacity:0.2;"></span>
-                                <span style="font-size:10px; font-weight:700; margin-top:5px; opacity:0.5;">LIMPIO</span>
-                            </div>`;
+                        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
+                            <span class="iconify" data-icon="mdi:shield-check-outline" style="font-size:40px; opacity:0.2;"></span>
+                            <span style="font-size:10px; font-weight:700; margin-top:5px; opacity:0.5;">LIMPIO</span>
+                        </div>`;
                     } else {
                         history.forEach(h => {
                             let rowClass = "row-warn";
@@ -5075,20 +5248,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             const item = document.createElement('div');
                             item.className = `punish-item-row ${rowClass}`;
                             item.innerHTML = `
-                                <div class="punish-icon-box">
-                                    <span class="iconify" data-icon="${icon}" style="color: ${iconColor};"></span>
+                            <div class="punish-icon-box">
+                                <span class="iconify" data-icon="${icon}" style="color: ${iconColor};"></span>
+                            </div>
+                            <div class="punish-main-info">
+                                <div class="punish-reason">${h.reason || 'Sin motivo'}</div>
+                                <div class="punish-meta">
+                                    <span>POR: <strong>${h.admin || '?'}</strong></span>
                                 </div>
-                                <div class="punish-main-info">
-                                    <div class="punish-reason">${h.reason || 'Sin motivo'}</div>
-                                    <div class="punish-meta">
-                                        <span>POR: <strong>${h.admin || '?'}</strong></span>
-                                    </div>
-                                </div>
-                                <div class="punish-date-box">
-                                    <div class="punish-status-text" style="color: ${statusColor}">${statusLabel}</div>
-                                    <div class="punish-date">${h.date}</div>
-                                </div>
-                            `;
+                            </div>
+                            <div class="punish-date-box">
+                                <div class="punish-status-text" style="color: ${statusColor}">${statusLabel}</div>
+                                <div class="punish-date">${h.date}</div>
+                            </div>
+                        `;
                             punishList.appendChild(item);
                         });
                     }

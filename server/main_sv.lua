@@ -288,13 +288,16 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:getItemList', function(source, cb)
 end)
 
 -- ==========================================================================
---      CALLBACK: DATOS DETALLADOS (FULL DINÁMICO: GARAGES + APTS + IMPOUND)
+--      CALLBACK: DATOS DETALLADOS (MULTI-CHAR + GPS + IMPOUND + APTS)
 -- ==========================================================================
 QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(source, cb, data)
+    -- CHIVATO: Si no sale esto en la consola, el script no está cargando
+    print("^3[DP-AdminMenu] Petición recibida. Datos: " .. json.encode(data) .. "^7")
+
     local targetId = type(data) == 'table' and tonumber(data.targetId) or tonumber(data)
     local reqCitizenId = type(data) == 'table' and data.citizenid or nil
 
-    -- 1. BUSCAR JUGADOR
+    -- 1. BUSCAR JUGADOR ONLINE
     local Player = nil
     if targetId then
         Player = QBCore.Functions.GetPlayer(targetId)
@@ -307,14 +310,16 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
     local citizenid = nil
     local license = nil
 
-    -- 2. DATOS BÁSICOS
+    -- 2. DATOS BÁSICOS (JUGADOR ONLINE)
     if Player then
         citizenid = Player.PlayerData.citizenid
         license = QBCore.Functions.GetIdentifier(Player.PlayerData.source, 'license')
         local ped = GetPlayerPed(Player.PlayerData.source)
+
         response = {
             hasChar = true,
             fromSQL = false,
+            id = Player.PlayerData.source,
             charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
             citizenid = citizenid,
             phone = Player.PlayerData.charinfo.phone or "Sin móvil",
@@ -328,8 +333,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
             isGangBoss = Player.PlayerData.gang.isboss,
             identifiers = GetPlayerIdentifiers(Player.PlayerData.source),
             stats = {
-                health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or
-                    (GetEntityHealth(ped) - 100),
+                health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or (GetEntityHealth(ped) - 100),
                 armor = GetPedArmour(ped),
                 hunger = Player.PlayerData.metadata['hunger'],
                 thirst = Player.PlayerData.metadata['thirst'],
@@ -337,59 +341,117 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
                 stamina = 100
             }
         }
+        
+    -- 3. JUGADOR OFFLINE (LÓGICA BLINDADA)
     elseif reqCitizenId then
+        print("^3[DP-AdminMenu] Buscando OFFLINE en SQL: " .. reqCitizenId .. "^7")
         local result = MySQL.single.await('SELECT * FROM players WHERE citizenid = ?', {reqCitizenId})
+        
         if result then
             citizenid = result.citizenid
             license = result.license
-            local charinfo = json.decode(result.charinfo)
-            local money = json.decode(result.money)
-            local job = json.decode(result.job)
-            local gang = json.decode(result.gang)
-            local metadata = json.decode(result.metadata)
+
+            -- A. EXTRACCIÓN DE DINERO POR FUERZA BRUTA (Anti-Crash)
+            local moneyStr = tostring(result.money or "")
+            local accountsStr = tostring(result.accounts or "") -- Por si acaso
+            
+            -- Buscamos "bank": seguido de números
+            local bankDinero = moneyStr:match('"bank":%s*(%d+)')
+            if not bankDinero then
+                bankDinero = accountsStr:match('"bank":%s*(%d+)')
+            end
+            
+            -- Si no encuentra nada, pone 0
+            local finalBank = tonumber(bankDinero) or 0
+            print("^2[DP-AdminMenu] Dinero Offline Encontrado: " .. finalBank .. "^7")
+
+            -- B. DECODIFICACIÓN SEGURA DEL RESTO
+            local function safeDecode(str)
+                local ok, res = pcall(json.decode, str or "{}")
+                return ok and res or {}
+            end
+
+            local charinfo = safeDecode(result.charinfo)
+            local job = safeDecode(result.job)
+            local gang = safeDecode(result.gang)
+            local metadata = safeDecode(result.metadata)
+
             response = {
                 hasChar = true,
                 fromSQL = true,
-                charName = charinfo.firstname .. ' ' .. charinfo.lastname,
+                id = nil,
+                charName = (charinfo.firstname and charinfo.lastname) and (charinfo.firstname .. ' ' .. charinfo.lastname) or "Desconocido",
                 citizenid = citizenid,
                 phone = charinfo.phone or "Sin móvil",
-                bank = money['bank'],
-                cash = money['cash'],
-                job = job.label,
-                jobGrade = job.grade.name,
-                isJobBoss = job.isboss,
-                gang = gang.label,
-                gangGrade = gang.grade.name,
-                isGangBoss = gang.isboss,
+                
+                -- AQUÍ VA EL DINERO QUE HEMOS CALCULADO
+                bank = finalBank,
+                cash = 0,
+                
+                job = job.label or "Desempleado",
+                jobGrade = (job.grade and job.grade.name) or "Sin Rango",
+                isJobBoss = job.isboss or false,
+                gang = gang.label or "Ninguna",
+                gangGrade = (gang.grade and gang.grade.name) or "Sin Rango",
+                isGangBoss = gang.isboss or false,
                 identifiers = result.license and {"license:" .. result.license} or {"Offline"},
                 stats = {
                     health = 0,
                     armor = 0,
-                    hunger = metadata['hunger'] or 100,
-                    thirst = metadata['thirst'] or 100,
+                    hunger = metadata.hunger or 100,
+                    thirst = metadata.thirst or 100,
                     alcohol = 0,
                     stamina = 100
                 }
             }
         else
-            return cb(nil)
+            print("^1[DP-AdminMenu] SQL devolvió NULO para: " .. reqCitizenId .. "^7")
+            cb(nil)
+            return
         end
     else
-        return cb(nil)
+        cb(nil)
+        return
+    end
+
+    -- ============================================================
+    -- 4. PERFILES MULTI-PERSONAJE (Igual que antes)
+    -- ============================================================
+    response.relatedCharacters = {}
+
+    if license then
+        local allChars = MySQL.query.await('SELECT citizenid, charinfo, money FROM players WHERE license = ?', {license})
+        if allChars then
+            for _, char in pairs(allChars) do
+                local ok, cInfo = pcall(json.decode, char.charinfo or "{}")
+                if not ok then cInfo = {} end
+                
+                -- Detectamos si ESTE personaje específico está online ahora mismo
+                local isOnlineNow = false
+                local pObj = QBCore.Functions.GetPlayerByCitizenId(char.citizenid)
+                if pObj then isOnlineNow = true end
+
+                table.insert(response.relatedCharacters, {
+                    citizenid = char.citizenid,
+                    name = (cInfo.firstname and cInfo.lastname) and (cInfo.firstname .. ' ' .. cInfo.lastname) or "Desconocido",
+                    isOnlineChar = isOnlineNow
+                })
+            end
+        end
     end
 
     response.vehicles = {}
     response.properties = {}
 
     -- ============================================================
-    -- 3. VEHÍCULOS (IMPOUND INTELIGENTE DINÁMICO)
+    -- 5. VEHÍCULOS (IMPOUND INTELIGENTE + EXPORTS)
     -- ============================================================
     local pVehicles = MySQL.query.await('SELECT * FROM player_vehicles WHERE citizenid = ?', {citizenid})
 
     local NombreCarpetaGarajes = 'DP-Garages'
     local externalGarages = nil
 
-    -- LEEMOS LA CONFIG DEL GARAJE (Incluye Impounds, Gangs, etc.)
+    -- LEEMOS LA CONFIG DEL GARAJE
     if GetResourceState(NombreCarpetaGarajes) == 'started' then
         if exports[NombreCarpetaGarajes]['GetGarageConfig'] then
             externalGarages = exports[NombreCarpetaGarajes]:GetGarageConfig()
@@ -410,13 +472,12 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
             local coords = nil
             local locationLabel = v.garage
 
-            -- A. LÓGICA IMPOUND (Estado 2 o 'impound') -> BUSCAR MÁS CERCANO
+            -- A. LÓGICA IMPOUND
             if (v.state == 2 or v.garage == 'impound') and externalGarages and externalGarages.Impounds then
                 local closestDist = -1
                 local closestImpoundData = nil
                 local closestImpoundName = "Desconocido"
 
-                -- Recorremos TODOS los depósitos de la config
                 for impName, impData in pairs(externalGarages.Impounds) do
                     local impPos = vector3(impData.coords.x, impData.coords.y, impData.coords.z)
                     local dist = #(adminCoords - impPos)
@@ -471,7 +532,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
     end
 
     -- ============================================================
-    -- 4. CASAS (qb-houses)
+    -- 6. CASAS (qb-houses)
     -- ============================================================
     local pHouses = MySQL.query.await('SELECT * FROM player_houses WHERE citizenid = ?', {citizenid})
     if pHouses then
@@ -505,14 +566,12 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
     end
 
     -- ============================================================
-    -- 5. APARTAMENTOS (DINÁMICO DESDE QB-APARTMENTS)
+    -- 7. APARTAMENTOS (qb-apartments)
     -- ============================================================
     local pApts = MySQL.query.await('SELECT * FROM apartments WHERE citizenid = ?', {citizenid})
-
     local aptConfig = nil
-    -- 1. Intentamos leer la config REAL de qb-apartments usando el export
+
     if GetResourceState('qb-apartments') == 'started' then
-        -- Usamos pcall por seguridad
         local ok, result = pcall(function()
             return exports['qb-apartments']:GetApartmentsConfig()
         end)
@@ -521,7 +580,6 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
         end
     end
 
-    -- 2. Fallback de emergencia (solo si el export falla, que no debería)
     local DEFAULT_APTS = {
         ["apartment1"] = {
             x = -667.02,
@@ -555,16 +613,14 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
             local coords = nil
             local aptLabel = a.name
 
-            -- A. INTENTO POR EXPORT (DINÁMICO)
             if aptConfig and aptConfig[a.name] then
                 local d = aptConfig[a.name]
-                -- qb-apartments usa 'coords.enter' (vector4)
                 if d.coords and d.coords.enter then
                     coords = {
                         x = d.coords.enter.x,
                         y = d.coords.enter.y
                     }
-                elseif d.poly then -- Soporte para configs viejas
+                elseif d.poly then
                     coords = {
                         x = d.poly.x,
                         y = d.poly.y
@@ -573,12 +629,9 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
                 if d.label then
                     aptLabel = d.label
                 end
-
-                -- B. INTENTO POR TABLA MANUAL (SI FALLA A)
             elseif DEFAULT_APTS[a.name] then
                 coords = DEFAULT_APTS[a.name]
                 aptLabel = DEFAULT_APTS[a.name].label
-                -- C. INTENTO POR TIPO (A veces guardan el tipo en vez del nombre)
             elseif DEFAULT_APTS[a.type] then
                 coords = DEFAULT_APTS[a.type]
                 aptLabel = DEFAULT_APTS[a.type].label
@@ -595,7 +648,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
     end
 
     -- ============================================================
-    -- 6. HISTORIAL
+    -- 8. HISTORIAL
     -- ============================================================
     response.history = {}
     response.punishCounts = {
@@ -603,6 +656,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
         kicks = 0,
         warns = 0
     }
+
     if license then
         local cleanLicense = license:gsub("license:", "")
         local bans = MySQL.query.await('SELECT * FROM bans WHERE license = ?', {cleanLicense})

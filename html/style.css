@@ -136,13 +136,13 @@ input[type=number]::-webkit-outer-spin-button {
    4. HEADER Y NAVEGACIÓN
    ========================================================================== */
 .header {
-    height: 75px;
-    background-color: var(--bg-element);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 75px;
+    background: rgba(0, 0, 0, 0.4);
     padding: 0 20px;
-    border-bottom: 2px solid var(--bg-button);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .header-title {
@@ -499,30 +499,23 @@ input:checked+.slider:before {
 
 /* 1. CLASE BASE (Asegúrate de tener esto) */
 .player-card {
-    background-color: var(--bg-element);
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 5px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
     display: flex;
     align-items: center;
-    border-left: 3px solid var(--primary);
-    animation: slideInUp 0.5s ease-out forwards;
+    padding: 10px 12px;
+    gap: 12px;
+    margin-bottom: 3px;
+    border-left: 2px solid #444444;
 
-    /* Propiedades de interacción */
+    animation: slideInUp 0.5s ease-out forwards;
     cursor: pointer;
-    /* Manita al pasar el ratón */
     transition: all 0.2s ease;
-    /* Suavidad al cambiar de color */
 }
 
 /* 2. CLASE HOVER (SIN MOVIMIENTO) */
 .player-card:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    /* Solo cambia el color de fondo */
-    filter: brightness(1.2);
-    /* Aumenta el brillo */
-
-    /* HE BORRADO EL 'transform' PARA QUE NO SE MUEVA NADA */
+    background: rgba(255, 255, 255, 0.06);
+    padding-left: 15px;
 }
 
 .id-badge {
@@ -3276,61 +3269,6 @@ input:checked+.slider:before {
 }
 
 /* =========================================
-   ESTILOS PARA EL MODAL DE VEHÍCULOS
-   ========================================= */
-/* Que cada selector ocupe exactamente el 50% */
-.split-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    /* Evita que el texto largo rompa el diseño */
-}
-
-/* Tarjeta de previsualización del coche (Parte superior) */
-.vehicle-preview-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-left: 4px solid var(--primary);
-    /* Usa tu color principal */
-    padding: 15px;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 10px;
-}
-
-.vehicle-preview-card .veh-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-    text-transform: uppercase;
-}
-
-.vehicle-preview-card .veh-model {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    font-family: monospace;
-    margin-top: 2px;
-}
-
-/* Ajustes para los selectores custom en este modal */
-.split-col label {
-    font-size: 11px;
-    color: #aaa;
-    margin-bottom: 5px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-
-/* Asegurar que el menú desplegable se vea encima de todo */
-.custom-options {
-    z-index: 100 !important;
-    max-height: 150px;
-    /* Limitar altura para que no se salga */
-}
-
-/* =========================================
    PÁGINA DE ESTADO (STATUS / GRÁFICA / DASHBOARD)
    ========================================= */
 .status-middle-section {
@@ -3452,48 +3390,25 @@ input:checked+.slider:before {
     color: #777;
 }
 
-/* Botones de acción abajo */
-.control-actions {
-    margin-top: auto;
-    /* Empuja hacia abajo */
-    display: flex;
-    gap: 10px;
-}
-
 .btn-action {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+    padding: 8px 0;
     flex: 1;
-    border: none;
-    padding: 8px;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 11px;
-    font-weight: bold;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 900;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    transition: 0.5s;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.btn-kick-all {
-    background: rgba(231, 76, 60, 0.2);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-}
-
-.btn-kick-all:hover {
-    background: rgba(231, 76, 60, 0.4);
-}
-
-.btn-save-all {
-    background: rgba(52, 152, 219, 0.2);
-    color: #3498db;
-    border: 1px solid rgba(52, 152, 219, 0.3);
-}
-
-.btn-save-all:hover {
-    background: rgba(52, 152, 219, 0.4);
+.btn-action:hover {
+    color: rgb(102, 102, 102);
+    background: rgba(255, 255, 255, 0.06);
+    border: rgba(255, 255, 255, 0.1);
 }
 
 /* Switch Pequeño */
@@ -4229,8 +4144,7 @@ input:checked+.slider:before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 130px;
-    /* Límite para que no empuje al botón cerrar */
+    max-width: 500px;
 }
 
 /* Badges de Estado */
@@ -4298,33 +4212,8 @@ input:checked+.slider:before {
     gap: 8px;
 }
 
-/* Cajas de datos */
-.pd-box {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 4px;
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.pd-box.full-width {
-    grid-column: span 2;
-    /* Ocupa las 2 columnas */
-}
-
 .mt-10 {
     margin-top: 10px;
-}
-
-/* Etiquetas y Valores */
-.pd-label {
-    font-size: 9px;
-    color: #666;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-bottom: 2px;
 }
 
 .pd-value {
@@ -4334,102 +4223,6 @@ input:checked+.slider:before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.pd-value.money {
-    color: #2ecc71;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-}
-
-.pd-value.code {
-    font-family: 'Courier New', monospace;
-    letter-spacing: 0.5px;
-    color: #ccc;
-}
-
-/* Badges de Jefe */
-.pd-job-info {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 5px;
-}
-
-.boss-badge {
-    font-size: 8px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.boss-badge.job {
-    background: rgba(46, 204, 113, 0.2);
-    color: #2ecc71;
-    border: 1px solid rgba(46, 204, 113, 0.4);
-}
-
-.boss-badge.gang {
-    background: rgba(231, 76, 60, 0.2);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.4);
-}
-
-/* Contenedor de Identificadores (Estilo Spoiler) */
-.pd-identifiers-list {
-    /* Formato de Texto */
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    /* Un pelín más pequeño para que quepan mejor */
-    color: #ccc;
-
-    /* --- CAMBIOS CLAVE PARA AUTO-AJUSTE --- */
-    white-space: normal;
-    /* Permite que el texto salte de línea */
-    word-break: break-all;
-    /* Corta la palabra si es más larga que la caja (importante para licencias largas) */
-    height: auto;
-    /* La altura se ajusta al contenido */
-    overflow: visible;
-    /* Sin barras de scroll */
-    /* -------------------------------------- */
-
-    /* Caja */
-    background: rgba(0, 0, 0, 0.4);
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    margin-top: 5px;
-
-    /* EFECTO BORROSO (SPOILER) */
-    filter: blur(5px);
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.3s ease;
-    opacity: 0.7;
-}
-
-/* Scrollbar fina para este elemento */
-.pd-identifiers-list::-webkit-scrollbar {
-    height: 4px;
-}
-
-.pd-identifiers-list::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 2px;
-}
-
-/* CLASE CUANDO ESTÁ REVELADO */
-.pd-identifiers-list.revealed {
-    filter: blur(0);
-    /* Sin desenfoque */
-    cursor: text;
-    /* Cursor de texto para seleccionar */
-    user-select: text;
-    /* Permite copiar */
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.8);
 }
 
 .id-tag {
@@ -4450,32 +4243,6 @@ input:checked+.slider:before {
 
 .mt-20 {
     margin-top: 20px;
-}
-
-.pd-stat-card {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 4px;
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.stat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 11px;
-    font-weight: bold;
-    color: #ccc;
-    text-transform: uppercase;
-}
-
-.stat-label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
 }
 
 .progress-track {
@@ -4524,21 +4291,42 @@ input:checked+.slider:before {
 
 /* Ajuste de tamaño de los botones */
 .pd-actions-list button {
-    padding: 8px 4px !important;
-    /* Un poco más de aire (ancho/alto) */
-    font-size: 10px !important;
-    /* Texto legible */
-    line-height: 1.2;
-    height: auto;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+    padding: 8px 0;
+    flex: 1;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     min-height: 32px;
-    /* Altura mínima consistente para todos */
-    margin: 0 !important;
+}
+
+.pd-actions-list button:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
 }
 
 /* Asegurar que los botones de ancho completo respeten la altura */
-.pd-actions-list .full-width {
+.pd-actions-list .full-width,
+.pd-actions-list .btn-danger {
     width: 100%;
     display: block;
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+}
+
+.pd-actions-list .full-width:hover,
+.pd-actions-list .btn-danger:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
 }
 
 .pd-dual-column {
@@ -5360,13 +5148,6 @@ input:checked+.slider:before {
     text-overflow: ellipsis;
 }
 
-.asset-meta {
-    font-size: 9px;
-    color: #555;
-    font-family: 'Roboto', monospace;
-    text-transform: uppercase;
-}
-
 /* Botón GPS Minimalista (Versión Grande) */
 .btn-gps-modern {
     background: transparent;
@@ -5479,8 +5260,6 @@ input:checked+.slider:before {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
     /* Sombra interna sutil */
 }
-
-/* === PALETA MONOCROMÁTICA === */
 
 /* Salud: Blanco Brillante */
 .fill-white {
@@ -5703,20 +5482,6 @@ input:checked+.slider:before {
     animation: pulseWarn 2s infinite;
 }
 
-@keyframes pulseWarn {
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.01);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-}
-
 .warn-icon {
     font-size: 80px;
     color: #ffcc00;
@@ -5917,6 +5682,141 @@ input:checked+.slider:before {
     color: #fff;
 }
 
+/* =========================================
+   LISTA MULTI-PERSONAJE (ESTILO MODERNO)
+   ========================================= */
+.pd-horizontal-scroll-list {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 10px 5px;
+    /* Un poco de padding arriba/abajo para la sombra */
+    white-space: nowrap;
+    margin-bottom: 20px;
+
+    /* Scrollbar invisible pero funcional */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
+}
+
+/* --- TARJETA DEL PERSONAJE --- */
+.mini-char-card {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+    border: 0.1px solid rgba(255, 255, 255, 0.08);
+    min-width: 225px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    border-left: 2px solid #333;
+}
+
+/* Hover: Se levanta y se ilumina un poco */
+.mini-char-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Estado ACTIVO (El perfil que estás viendo) */
+.mini-char-card.active-profile {
+    background: rgba(255, 255, 255, 0.06);
+    padding-left: 15px;
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.15);
+}
+
+.mini-char-card.active-profile .mc-icon-box {
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.1);
+}
+
+/* --- ICONO / AVATAR --- */
+.mc-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #666;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+/* --- TEXTOS --- */
+.mc-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    /* Para que el texto largo no rompa */
+}
+
+.mc-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.mc-cid {
+    font-size: 10px;
+    color: #888;
+    font-family: 'Courier New', monospace;
+    /* Fuente tipo código para la ID */
+    letter-spacing: 0.5px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1px 4px;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+/* --- ESTADO ONLINE (Punto de luz) --- */
+.status-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #333;
+    /* Color por defecto (Offline) */
+    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Cuando está ONLINE */
+.mini-char-card.is-online-char .status-indicator {
+    background-color: white;
+    box-shadow: 0 0 8px white, inset 0 0 2px rgba(255, 255, 255, 0.5);
+    animation: pulse-green 2s infinite;
+}
+
+.mini-char-card.is-online-char .mc-icon-box {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: #dfdfdf;
+}
+
+/* CLASE DESHABILITADA (Offline actions) */
+.action-disabled {
+    opacity: 0.4 !important;
+    pointer-events: none !important;
+    filter: grayscale(100%) !important;
+    cursor: not-allowed !important;
+}
+
 
 
 
@@ -6029,15 +5929,18 @@ input:checked+.slider:before {
 
 @keyframes pulse-green {
     0% {
-        box-shadow: 0 0 0 0 rgba(14, 160, 33, 0.7);
+        /* Blanco puro con 70% de opacidad (equivalente a tu 0.7 verde) */
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
     }
 
     70% {
-        box-shadow: 0 0 0 4px rgba(14, 160, 33, 0);
+        /* Expansión a 4px y desvanecimiento total (transparencia 0) */
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0);
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(14, 160, 33, 0);
+        /* Reset de la animación */
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
     }
 }
 
@@ -6050,30 +5953,6 @@ input:checked+.slider:before {
     to {
         opacity: 1;
         transform: translateX(0);
-    }
-}
-
-@keyframes slideDown {
-    from {
-        top: -150px;
-        opacity: 0;
-    }
-
-    to {
-        top: 50px;
-        opacity: 1;
-    }
-}
-
-@keyframes marquee-scroll {
-    0% {
-        transform: translateX(0);
-        /* Empieza justo en el borde derecho de la barra */
-    }
-
-    100% {
-        /* Se desplaza hacia la izquierda la distancia exacta calculada por JS */
-        transform: translateX(var(--distancia-recorrido, -100%));
     }
 }
 
@@ -6229,5 +6108,19 @@ input:checked+.slider:before {
 
     to {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes pulseWarn {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.01);
+    }
+
+    100% {
+        transform: scale(1);
     }
 }

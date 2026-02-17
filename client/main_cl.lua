@@ -2247,7 +2247,7 @@ end)
 RegisterNUICallback('getPlayerFullDetails', function(data, cb)
     QBCore.Functions.TriggerCallback('DP-AdminMenu:server:getDetailedData', function(result)
         cb(result)
-    end, data.targetId)
+    end, data)
 end)
 
 -- ==========================================================================
