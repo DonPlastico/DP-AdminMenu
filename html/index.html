@@ -1719,7 +1719,6 @@
     <div id="player-details-modal" class="container player-details-container" style="display: none;">
 
         <div class="header pd-custom-header">
-
             <div class="pd-left-group">
                 <div class="pd-avatar-square">
                     <span class="iconify" data-icon="mdi:account"></span>
@@ -1731,126 +1730,158 @@
                 </div>
             </div>
 
-            <button class="btn-close-text" onclick="closePlayerDetails()">CERRAR</button>
+            <button class="btn-close-modern" onclick="closePlayerDetails()">CERRAR PANEL</button>
         </div>
 
         <div class="content">
             <div id="pd-content-body">
-                <div class="pd-section-title">PANEL DE JUGADORES</div>
-
-                <div class="pd-grid">
-
-                    <div class="pd-box">
-                        <span class="pd-label">NOMBRE IC</span>
-                        <span class="pd-value" id="pd-ic-name">Cargando...</span>
-                    </div>
-                    <div class="pd-box">
-                        <span class="pd-label">BANCO</span>
-                        <span class="pd-value money" id="pd-bank">$0</span>
-                    </div>
-
-                    <div class="pd-box">
-                        <span class="pd-label">ID DE CITIZEN</span>
-                        <span class="pd-value code" id="pd-citizenid">...</span>
-                    </div>
-                    <div class="pd-box">
-                        <span class="pd-label">NÚMERO DE TELÉFONO</span>
-                        <span class="pd-value" id="pd-phone">...</span>
-                    </div>
-
-                    <div class="pd-box">
-                        <span class="pd-label">TRABAJO</span>
-                        <div class="pd-job-info">
-                            <span id="pd-job-label">...</span>
-                            <span id="pd-job-boss" class="boss-badge job" style="display:none;">JEFE</span>
-                        </div>
-                    </div>
-                    <div class="pd-box">
-                        <span class="pd-label">BANDA</span>
-                        <div class="pd-job-info">
-                            <span id="pd-gang-label">...</span>
-                            <span id="pd-gang-boss" class="boss-badge gang" style="display:none;">JEFE</span>
+                <div class="mt-20">
+                    <div class="pd-section-header">
+                        <div class="pd-section-title">
+                            <span class="iconify" data-icon="mdi:card-account-details-outline"></span>
+                            <span>DATOS DEL CIUDADANO</span>
                         </div>
                     </div>
 
-                </div>
+                    <div class="pd-info-grid">
 
-                <div class="pd-box full-width mt-10">
-                    <span class="pd-label">IDENTIFICADORES</span>
-                    <div class="pd-identifiers-list" id="pd-identifiers">
-                        <span class="id-tag">Cargando identificadores...</span>
+                        <div class="info-card">
+                            <div class="info-label">
+                                <span class="iconify" data-icon="mdi:account"></span> NOMBRE CIVIL
+                            </div>
+                            <div class="info-value highlight" id="pd-ic-name">Cargando...</div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-label">
+                                <span class="iconify" data-icon="mdi:bank"></span> CUENTA BANCARIA
+                            </div>
+                            <div class="info-value money-font" id="pd-bank">$0</div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-label">
+                                <span class="iconify" data-icon="mdi:fingerprint"></span> DNI / CITIZEN ID
+                            </div>
+                            <div class="info-value code-font" id="pd-citizenid">...</div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-label">
+                                <span class="iconify" data-icon="mdi:phone"></span> TELÉFONO
+                            </div>
+                            <div class="info-value code-font" id="pd-phone">...</div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-label">
+                                <span class="iconify" data-icon="mdi:briefcase"></span> EMPLEO
+                            </div>
+                            <div class="info-value-row">
+                                <span id="pd-job-label">...</span>
+                                <span id="pd-job-boss" class="boss-pill" style="display:none;">JEFE</span>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-label">
+                                <span class="iconify" data-icon="mdi:account-group"></span> ORGANIZACIÓN
+                            </div>
+                            <div class="info-value-row">
+                                <span id="pd-gang-label">...</span>
+                                <span id="pd-gang-boss" class="boss-pill" style="display:none;">LÍDER</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="identifiers-section mt-10">
+                        <div class="info-label mb-2">
+                            <span class="iconify" data-icon="mdi:console-network"></span> IDENTIFICADORES DE SISTEMA
+                            (SPOILER)
+                        </div>
+                        <div class="pd-identifiers-modern" id="pd-identifiers">
+                            <span class="id-tag">Cargando...</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="mt-20">
-                    <div class="pd-section-title">PANEL DE STATS</div>
+                    <div class="pd-section-header">
+                        <div class="pd-section-title">
+                            <span class="iconify" data-icon="mdi:chart-bar"></span>
+                            <span>CONSTANTES VITALES</span>
+                        </div>
+                    </div>
 
-                    <div id="pd-stats-container" class="pd-grid">
+                    <div id="pd-stats-container" class="pd-grid-stats">
 
-                        <div class="pd-stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label"><span class="iconify" data-icon="mdi:heart"></span>
-                                    SALUD</span>
-                                <span class="stat-value" id="stat-health-val">0%</span>
+                        <div class="stat-card-modern">
+                            <div class="stat-info">
+                                <span class="stat-icon"><span class="iconify" data-icon="mdi:heart"></span></span>
+                                <span class="stat-name">SALUD</span>
+                                <span class="stat-number" id="stat-health-val">0%</span>
                             </div>
-                            <div class="progress-track">
-                                <div class="progress-fill health" id="stat-health-bar" style="width: 0%;"></div>
+                            <div class="stat-track-modern">
+                                <div class="stat-fill-modern fill-white" id="stat-health-bar" style="width: 50%;"></div>
                             </div>
                         </div>
 
-                        <div class="pd-stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label"><span class="iconify" data-icon="mdi:shield"></span>
-                                    BLINDAJE</span>
-                                <span class="stat-value" id="stat-armor-val">0%</span>
+                        <div class="stat-card-modern">
+                            <div class="stat-info">
+                                <span class="stat-icon"><span class="iconify" data-icon="mdi:shield"></span></span>
+                                <span class="stat-name">BLINDAJE</span>
+                                <span class="stat-number" id="stat-armor-val">0%</span>
                             </div>
-                            <div class="progress-track">
-                                <div class="progress-fill armor" id="stat-armor-bar" style="width: 0%;"></div>
-                            </div>
-                        </div>
-
-                        <div class="pd-stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label"><span class="iconify" data-icon="mdi:hamburger"></span>
-                                    HAMBRE</span>
-                                <span class="stat-value" id="stat-hunger-val">0%</span>
-                            </div>
-                            <div class="progress-track">
-                                <div class="progress-fill hunger" id="stat-hunger-bar" style="width: 0%;"></div>
+                            <div class="stat-track-modern">
+                                <div class="stat-fill-modern fill-silver" id="stat-armor-bar" style="width: 0%;"></div>
                             </div>
                         </div>
 
-                        <div class="pd-stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label"><span class="iconify" data-icon="mdi:water"></span> SED</span>
-                                <span class="stat-value" id="stat-thirst-val">0%</span>
+                        <div class="stat-card-modern">
+                            <div class="stat-info">
+                                <span class="stat-icon"><span class="iconify" data-icon="mdi:food"></span></span>
+                                <span class="stat-name">NUTRICIÓN</span>
+                                <span class="stat-number" id="stat-hunger-val">0%</span>
                             </div>
-                            <div class="progress-track">
-                                <div class="progress-fill thirst" id="stat-thirst-bar" style="width: 0%;"></div>
-                            </div>
-                        </div>
-
-                        <div class="pd-stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label"><span class="iconify" data-icon="mdi:glass-wine"></span>
-                                    ALCOHOL</span>
-                                <span class="stat-value" id="stat-alcohol-val">0%</span>
-                            </div>
-                            <div class="progress-track">
-                                <div class="progress-fill alcohol" id="stat-alcohol-bar"></div>
+                            <div class="stat-track-modern">
+                                <div class="stat-fill-modern fill-grey" id="stat-hunger-bar" style="width: 0%;"></div>
                             </div>
                         </div>
 
-                        <div class="pd-stat-card">
-                            <div class="stat-header">
-                                <span class="stat-label"><span class="iconify" data-icon="mdi:run"></span>
-                                    AGUANTE</span>
-                                <span class="stat-value" id="stat-stamina-val">0%</span>
+                        <div class="stat-card-modern">
+                            <div class="stat-info">
+                                <span class="stat-icon"><span class="iconify" data-icon="mdi:water"></span></span>
+                                <span class="stat-name">HIDRATACIÓN</span>
+                                <span class="stat-number" id="stat-thirst-val">0%</span>
                             </div>
-                            <div class="progress-track">
-                                <div class="progress-fill stamina" id="stat-stamina-bar"></div>
+                            <div class="stat-track-modern">
+                                <div class="stat-fill-modern fill-grey" id="stat-thirst-bar" style="width: 0%;"></div>
                             </div>
                         </div>
+
+                        <div class="stat-card-modern">
+                            <div class="stat-info">
+                                <span class="stat-icon"><span class="iconify"
+                                        data-icon="mdi:glass-cocktail"></span></span>
+                                <span class="stat-name">ALCOHOL</span>
+                                <span class="stat-number" id="stat-alcohol-val">0%</span>
+                            </div>
+                            <div class="stat-track-modern">
+                                <div class="stat-fill-modern fill-dark" id="stat-alcohol-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card-modern">
+                            <div class="stat-info">
+                                <span class="stat-icon"><span class="iconify" data-icon="mdi:run"></span></span>
+                                <span class="stat-name">RESISTENCIA</span>
+                                <span class="stat-number" id="stat-stamina-val">0%</span>
+                            </div>
+                            <div class="stat-track-modern">
+                                <div class="stat-fill-modern fill-dark" id="stat-stamina-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -1921,35 +1952,33 @@
                 </div>
 
                 <div class="pd-dual-column mt-20">
-                    <div class="pd-column">
+                    <div class="pd-column-modern">
                         <div class="pd-section-header">
                             <div class="pd-section-title">
-                                <span class="iconify" data-icon="mdi:home-city"></span>
+                                <span class="iconify" data-icon="mdi:home-city-outline"></span>
                                 <span>PROPIEDADES</span>
-                                <span class="pd-count-pill" id="pd-prop-count">0</span>
+                            </div>
+                            <div class="punish-chip">
+                                <span id="pd-prop-count">0</span>
+                                <span id="pd-prop-label" style="margin-left: 3px;">PROPIEDADES</span>
                             </div>
                         </div>
-                        <div class="pd-card-list" id="pd-properties-list">
-                            <div class="pd-empty-state">
-                                <span class="iconify pd-empty-icon" data-icon="mdi:home-search-outline"></span>
-                                <span>Cargando...</span>
-                            </div>
+                        <div id="pd-properties-list" class="pd-list-modern-scroll">
                         </div>
                     </div>
 
-                    <div class="pd-column">
+                    <div class="pd-column-modern">
                         <div class="pd-section-header">
                             <div class="pd-section-title">
                                 <span class="iconify" data-icon="mdi:car-key"></span>
                                 <span>VEHÍCULOS</span>
-                                <span class="pd-count-pill" id="pd-veh-count">0</span>
+                            </div>
+                            <div class="punish-chip">
+                                <span id="pd-veh-count">0</span>
+                                <span id="pd-veh-label" style="margin-left: 3px;">VEHÍCULOS</span>
                             </div>
                         </div>
-                        <div class="pd-card-list" id="pd-vehicles-list">
-                            <div class="pd-empty-state">
-                                <span class="iconify pd-empty-icon" data-icon="mdi:car-off"></span>
-                                <span>Cargando...</span>
-                            </div>
+                        <div id="pd-vehicles-list" class="pd-list-modern-scroll">
                         </div>
                     </div>
                 </div>
@@ -1957,33 +1986,27 @@
                 <div class="mt-20">
                     <div class="pd-section-header">
                         <div class="pd-section-title">
-                            <span class="iconify" data-icon="mdi:gavel" style="color: #ff9800;"></span>
-                            <span style="color: #ffb74d;">HISTORIAL DE SANCIONES</span>
-                            <span class="pd-count-pill" id="pd-punish-count"
-                                style="background: rgba(255, 152, 0, 0.2); color: #ff9800;">0</span>
+                            <span class="iconify" data-icon="mdi:gavel"></span>
+                            <span>HISTORIAL DE SANCIONES</span>
+                        </div>
+                        <div class="pd-punish-summary">
+                            <div class="punish-chip chip-ban"><span id="pd-count-bans">0</span> BANS</div>
+                            <div class="punish-chip chip-kick"><span id="pd-count-kicks">0</span> KICKS</div>
+                            <div class="punish-chip chip-warn"><span id="pd-count-warns">0</span> WARNS</div>
                         </div>
                     </div>
 
-                    <div class="pd-card-list" id="pd-punishments-list" style="max-height: 150px;">
-                        <div class="pd-empty-state">
-                            <span class="iconify pd-empty-icon" data-icon="mdi:clipboard-check-outline"></span>
-                            <span>Historial limpio</span>
-                        </div>
+                    <div id="pd-punishments-list" class="pd-punish-list-modern">
                     </div>
 
-                    <div class="pd-punish-toolbar mt-10">
-                        <button class="btn-punish type-ban" onclick="playerAction('ban')">
-                            <span class="iconify" data-icon="mdi:account-cancel"></span> BANEAR
-                        </button>
-                        <button class="btn-punish type-kick" onclick="playerAction('kick')">
-                            <span class="iconify" data-icon="mdi:door-open"></span> KICK
-                        </button>
-                        <div style="flex-grow: 1;"></div> <button class="btn-punish type-warn"
-                            onclick="playerAction('warn')">
-                            <span class="iconify" data-icon="mdi:alert-circle"></span> WARN
-                        </button>
-                        <button class="btn-punish type-ck" onclick="playerAction('ck')">
-                            <span class="iconify" data-icon="mdi:skull"></span> CK
+                    <div class="pd-punish-toolbar-modern">
+                        <button class="btn-punish-mod ban" onclick="playerAction('ban')">BAN</button>
+                        <button class="btn-punish-mod kick" onclick="playerAction('kick')">KICK</button>
+                        <button class="btn-punish-mod warn" onclick="playerAction('warn')">WARN</button>
+                        <div style="flex-grow: 1;"></div>
+                        <button id="btn-ck-player" class="btn-action btn-danger-dark"
+                            title="Character Kill (Borrado Total)">
+                            <span class="iconify" data-icon="mdi:skull-crossbones"></span> CK
                         </button>
                     </div>
                 </div>
@@ -2051,6 +2074,91 @@
                 <button class="btn-cancel" onclick="closeDimensionModal()">CANCELAR</button>
             </div>
         </div>
+    </div>
+
+    <div id="sanction-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content-small"
+            style="width: 450px; background: var(--bg-panel); padding: 20px; border: 1px solid var(--danger);">
+            <h3 id="sanction-title" style="margin-bottom: 15px; text-align: center; color: var(--danger-text);">APLICAR
+                SANCIÓN</h3>
+
+            <div class="input-group">
+                <label>MOTIVO DE LA SANCIÓN</label>
+                <textarea id="sanction-reason" rows="3" placeholder="Escribe el motivo..."
+                    style="width: 100%; background: rgba(0,0,0,0.3); color: white; border: 1px solid #555; padding: 10px; resize: none;"></textarea>
+            </div>
+
+            <div id="ban-duration-group" class="input-group" style="display: none; margin-top: 10px;">
+                <label>DURACIÓN</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="ban-time-val" placeholder="0"
+                        style="flex: 1; background: rgba(0,0,0,0.3); color: white; border: 1px solid #555; padding: 5px; text-align: center;">
+                    <select id="ban-time-unit"
+                        style="flex: 1; background: rgba(0,0,0,0.3); color: white; border: 1px solid #555; padding: 5px;">
+                        <option value="3600">Horas</option>
+                        <option value="86400">Días</option>
+                        <option value="604800">Semanas</option>
+                        <option value="31536000">Años</option>
+                        <option value="perm">PERMANENTE</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn-confirm" id="btn-sanction-next"
+                    style="background: var(--danger); flex: 1;">CONTINUAR</button>
+                <button class="btn-cancel" onclick="closeSanctionModal()" style="flex: 1;">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-sanction-modal" class="modal-overlay" style="display: none; z-index: 2000;">
+        <div class="modal-content-small"
+            style="width: 400px; background: #220a0a; border: 2px solid red; text-align: center;">
+            <div style="font-size: 50px; color: red; margin-bottom: 10px;">⚠️</div>
+            <h3>¿ESTÁS SEGURO?</h3>
+            <p id="confirm-sanction-msg" style="color: #ccc; margin: 15px 0; font-size: 14px;">Esta acción afectará al
+                jugador.</p>
+
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn-confirm" id="btn-sanction-execute"
+                    style="background: red; font-weight: bold;">CONFIRMAR Y APLICAR</button>
+                <button class="btn-cancel" onclick="closeConfirmSanctionModal()">ATRAS</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="warn-screen" style="display: none;">
+        <div class="warn-border-top"></div>
+
+        <div class="warn-content">
+            <div class="warn-icon">
+                <span class="iconify" data-icon="mdi:alert-octagon"></span>
+            </div>
+
+            <div class="warn-header">
+                ADVERTENCIA ADMINISTRATIVA
+            </div>
+
+            <div class="warn-body">
+                <div class="warn-label">MOTIVO DE LA SANCIÓN:</div>
+                <div id="warn-reason-text" class="warn-reason">...</div>
+
+                <div class="warn-admin-info">
+                    Sancionado por: <span id="warn-admin-name">Sistema</span>
+                </div>
+            </div>
+
+            <div class="warn-footer">
+                <div class="warn-instructions">MANTÉN PRESIONADO <span class="key-badge">ESPACIO</span> DURANTE 5
+                    SEGUNDOS PARA RECONOCER</div>
+                <div class="warn-progress-track">
+                    <div id="warn-progress-fill" class="warn-progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="warn-border-bottom"></div>
     </div>
 
     <audio id="audio-announce-in" src="sounds/alert.mp3" preload="auto"></audio>

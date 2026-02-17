@@ -7,6 +7,7 @@ local adminsInGodmode = {}
 local AdminsOnDuty = {}
 local isRefreshPending = false -- Variable para el sistema Anti-Crash
 local controllingAdmins = {} -- Almacena quién controla a quién
+local activeWarns = {} -- Tabla de memoria: [source] = true
 
 -- 1. Leemos la memoria del servidor (KVP)
 local savedWhitelist = GetResourceKvpInt('dp_whitelist_active')
@@ -287,62 +288,45 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:getItemList', function(source, cb)
 end)
 
 -- ==========================================================================
---      CALLBACK: DATOS DETALLADOS (ONLINE + OFFLINE + GPS)
+--      CALLBACK: DATOS DETALLADOS (FULL DINÁMICO: GARAGES + APTS + IMPOUND)
 -- ==========================================================================
 QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(source, cb, data)
-    -- 1. GESTIÓN DE ENTRADA
     local targetId = type(data) == 'table' and tonumber(data.targetId) or tonumber(data)
     local reqCitizenId = type(data) == 'table' and data.citizenid or nil
 
-    -- DEBUG (Opcional, puedes comentarlo cuando funcione)
-    DebugLog("^3[DEBUG] Petición Detalles recibida:")
-    DebugLog("TargetID:", targetId)
-    DebugLog("ReqCitizenID:", reqCitizenId)
-
-    -- 2. BUSCAR JUGADOR ONLINE
+    -- 1. BUSCAR JUGADOR
     local Player = nil
     if targetId then
         Player = QBCore.Functions.GetPlayer(targetId)
     end
-
-    -- Si no está por ID, intentamos buscar por CitizenID en los conectados
     if not Player and reqCitizenId then
         Player = QBCore.Functions.GetPlayerByCitizenId(reqCitizenId)
     end
 
     local response = {}
     local citizenid = nil
+    local license = nil
 
-    -- ============================================================
-    -- CASO A: JUGADOR ONLINE (Datos frescos)
-    -- ============================================================
+    -- 2. DATOS BÁSICOS
     if Player then
         citizenid = Player.PlayerData.citizenid
+        license = QBCore.Functions.GetIdentifier(Player.PlayerData.source, 'license')
         local ped = GetPlayerPed(Player.PlayerData.source)
-
         response = {
             hasChar = true,
-            fromSQL = false, -- Bandera Online
+            fromSQL = false,
             charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
             citizenid = citizenid,
             phone = Player.PlayerData.charinfo.phone or "Sin móvil",
-
-            -- Economía
             bank = Player.PlayerData.money['bank'],
             cash = Player.PlayerData.money['cash'],
-
-            -- Trabajo / Banda
             job = Player.PlayerData.job.label,
             jobGrade = Player.PlayerData.job.grade.name,
             isJobBoss = Player.PlayerData.job.isboss,
             gang = Player.PlayerData.gang.label,
             gangGrade = Player.PlayerData.gang.grade.name,
             isGangBoss = Player.PlayerData.gang.isboss,
-
-            -- Identificadores
             identifiers = GetPlayerIdentifiers(Player.PlayerData.source),
-
-            -- Stats
             stats = {
                 health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or
                     (GetEntityHealth(ped) - 100),
@@ -350,144 +334,126 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
                 hunger = Player.PlayerData.metadata['hunger'],
                 thirst = Player.PlayerData.metadata['thirst'],
                 alcohol = Player.PlayerData.metadata['alcohol'] or 0,
-                stamina = 100 -- Valor base
+                stamina = 100
             }
         }
-
-    -- ============================================================
-    -- CASO B: JUGADOR OFFLINE (Datos históricos SQL)
-    -- ============================================================
     elseif reqCitizenId then
         local result = MySQL.single.await('SELECT * FROM players WHERE citizenid = ?', {reqCitizenId})
-
         if result then
             citizenid = result.citizenid
+            license = result.license
             local charinfo = json.decode(result.charinfo)
             local money = json.decode(result.money)
             local job = json.decode(result.job)
             local gang = json.decode(result.gang)
             local metadata = json.decode(result.metadata)
-
             response = {
                 hasChar = true,
-                fromSQL = true, -- Bandera Offline
+                fromSQL = true,
                 charName = charinfo.firstname .. ' ' .. charinfo.lastname,
                 citizenid = citizenid,
                 phone = charinfo.phone or "Sin móvil",
-
                 bank = money['bank'],
                 cash = money['cash'],
-
                 job = job.label,
                 jobGrade = job.grade.name,
                 isJobBoss = job.isboss,
                 gang = gang.label,
                 gangGrade = gang.grade.name,
                 isGangBoss = gang.isboss,
-
                 identifiers = result.license and {"license:" .. result.license} or {"Offline"},
-
                 stats = {
                     health = 0,
                     armor = 0,
                     hunger = metadata['hunger'] or 100,
                     thirst = metadata['thirst'] or 100,
-                    alcohol = metadata['alcohol'] or 0,
+                    alcohol = 0,
                     stamina = 100
                 }
             }
         else
-            return cb(nil) -- No existe en BD
+            return cb(nil)
         end
     else
-        return cb(nil) -- Datos insuficientes
+        return cb(nil)
     end
 
-    -- ============================================================
-    -- CARGA DE BIENES (VEHÍCULOS Y PROPIEDADES)
-    -- ============================================================
     response.vehicles = {}
     response.properties = {}
 
     -- ============================================================
-    -- 1. VEHÍCULOS (CORRECCIÓN DE NOMBRE DE CARPETA)
+    -- 3. VEHÍCULOS (IMPOUND INTELIGENTE DINÁMICO)
     -- ============================================================
     local pVehicles = MySQL.query.await('SELECT * FROM player_vehicles WHERE citizenid = ?', {citizenid})
-    
-    -- >>> ¡¡AQUÍ ES DONDE TIENES QUE PONER EL NOMBRE EXACTO!! <<<
-    -- Si tu carpeta se llama "DP-Garages", ponlo tal cual aquí abajo:
-    local NombreCarpetaGarajes = 'DP-Garages' 
-    -- >>>>>>>>><<<<<<<<<<
 
+    local NombreCarpetaGarajes = 'DP-Garages'
     local externalGarages = nil
+
+    -- LEEMOS LA CONFIG DEL GARAJE (Incluye Impounds, Gangs, etc.)
     if GetResourceState(NombreCarpetaGarajes) == 'started' then
-        -- Llamamos al export usando el nombre correcto
-        externalGarages = exports[NombreCarpetaGarajes]:GetGarageConfig()
-        if not externalGarages then
-            DebugLog("^1[DP-ADMIN ERROR] El export falló. Asegurate de haber puesto el código al final del server.lua de " .. NombreCarpetaGarajes .. "^7")
+        if exports[NombreCarpetaGarajes]['GetGarageConfig'] then
+            externalGarages = exports[NombreCarpetaGarajes]:GetGarageConfig()
         end
-    else
-        DebugLog("^1[DP-ADMIN ERROR] No encuentro la carpeta: '" .. NombreCarpetaGarajes .. "'. Verifica el nombre en resources.^7")
     end
+
+    -- Obtenemos TU posición (Admin) para calcular distancia
+    local adminPed = GetPlayerPed(source)
+    local adminCoords = GetEntityCoords(adminPed)
 
     if pVehicles then
         for _, v in pairs(pVehicles) do
             local vehModel = v.vehicle
             local sharedVeh = QBCore.Shared.Vehicles[vehModel]
-            local label = vehModel
-            local category = 'unknown'
+            local label = sharedVeh and (sharedVeh.name .. ' (' .. sharedVeh.brand .. ')') or ("Mod: " .. vehModel)
+            local category = sharedVeh and sharedVeh.category and sharedVeh.category:lower() or 'unknown'
 
-            if sharedVeh then
-                label = sharedVeh.name .. ' (' .. sharedVeh.brand .. ')'
-                category = sharedVeh.category and sharedVeh.category:lower() or 'unknown'
-            else
-                label = "Mod: " .. vehModel
-            end
+            local coords = nil
+            local locationLabel = v.garage
 
-            -- === LÓGICA DE COORDENADAS ===
-            local coords = {x = 0, y = 0}
-            
-            if v.garage and externalGarages then
-                
-                -- 1. Garajes Públicos
-                if externalGarages.Garages and externalGarages.Garages[v.garage] then
-                    local gData = externalGarages.Garages[v.garage]
-                    if gData.coords then coords = {x = gData.coords.x, y = gData.coords.y}
-                    elseif gData.spawnPoint then coords = {x = gData.spawnPoint.x, y = gData.spawnPoint.y} end
-                
-                -- 2. Garajes de Trabajo
-                elseif externalGarages.JobGarages and externalGarages.JobGarages[v.garage] then
-                    local jData = externalGarages.JobGarages[v.garage]
-                    if jData.coords then coords = {x = jData.coords.x, y = jData.coords.y}
-                    elseif jData.spawnPoint then coords = {x = jData.spawnPoint.x, y = jData.spawnPoint.y} end
+            -- A. LÓGICA IMPOUND (Estado 2 o 'impound') -> BUSCAR MÁS CERCANO
+            if (v.state == 2 or v.garage == 'impound') and externalGarages and externalGarages.Impounds then
+                local closestDist = -1
+                local closestImpoundData = nil
+                local closestImpoundName = "Desconocido"
 
-                -- 3. Garajes de Bandas
-                elseif externalGarages.GangGarages and externalGarages.GangGarages[v.garage] then
-                    local gData = externalGarages.GangGarages[v.garage]
-                    if gData.coords then coords = {x = gData.coords.x, y = gData.coords.y}
-                    elseif gData.spawnPoint then coords = {x = gData.spawnPoint.x, y = gData.spawnPoint.y} end
+                -- Recorremos TODOS los depósitos de la config
+                for impName, impData in pairs(externalGarages.Impounds) do
+                    local impPos = vector3(impData.coords.x, impData.coords.y, impData.coords.z)
+                    local dist = #(adminCoords - impPos)
 
-                -- 4. Depósitos (Búsqueda Exacta: ej 'mission_row')
-                elseif externalGarages.Impounds and externalGarages.Impounds[v.garage] then
-                    local iData = externalGarages.Impounds[v.garage]
-                    if iData.coords then coords = {x = iData.coords.x, y = iData.coords.y} end
-                
-                -- 5. >>> FALLBACK IMPOUND (SOLUCIÓN A TU ERROR) <<<
-                -- Si se llama 'impound' o el estado es 2 (Embargado), y no encontró coincidencia arriba
-                elseif (v.garage == 'impound' or v.state == 2) and externalGarages.Impounds then
-                    -- Intentamos coger el depósito principal 'mission_row'
-                    local defaultImpound = externalGarages.Impounds['mission_row']
-                    
-                    -- Si no existe mission_row, cogemos el primero que haya en la lista
-                    if not defaultImpound then
-                        for _, data in pairs(externalGarages.Impounds) do
-                            defaultImpound = data
-                            break
-                        end
+                    if closestDist == -1 or dist < closestDist then
+                        closestDist = dist
+                        closestImpoundData = impData
+                        closestImpoundName = impData.label or impName
                     end
+                end
 
-                    if defaultImpound and defaultImpound.coords then
-                        coords = {x = defaultImpound.coords.x, y = defaultImpound.coords.y}
+                if closestImpoundData then
+                    coords = {
+                        x = closestImpoundData.coords.x,
+                        y = closestImpoundData.coords.y
+                    }
+                    locationLabel = "Depósito (" .. closestImpoundName .. ")"
+                end
+
+                -- B. LÓGICA GARAJE NORMAL
+            elseif v.garage and externalGarages then
+                local foundData = nil
+                if externalGarages.Garages and externalGarages.Garages[v.garage] then
+                    foundData = externalGarages.Garages[v.garage]
+                elseif externalGarages.JobGarages and externalGarages.JobGarages[v.garage] then
+                    foundData = externalGarages.JobGarages[v.garage]
+                elseif externalGarages.GangGarages and externalGarages.GangGarages[v.garage] then
+                    foundData = externalGarages.GangGarages[v.garage]
+                end
+
+                if foundData then
+                    local raw = foundData.coords or foundData.spawnPoint
+                    if raw then
+                        coords = {
+                            x = raw.x,
+                            y = raw.y
+                        }
                     end
                 end
             end
@@ -496,95 +462,189 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
                 model = vehModel,
                 label = label,
                 plate = v.plate,
-                garage = v.garage,
+                garage = locationLabel,
                 category = category,
-                state = v.state, -- Agregamos el estado por si acaso
+                state = v.state,
                 coords = coords
             })
         end
     end
 
-    -- 2. CASAS (Con búsqueda de coordenadas GPS)
+    -- ============================================================
+    -- 4. CASAS (qb-houses)
+    -- ============================================================
     local pHouses = MySQL.query.await('SELECT * FROM player_houses WHERE citizenid = ?', {citizenid})
     if pHouses then
         for _, h in pairs(pHouses) do
-            local coords = { x = 0, y = 0 }
-            
-            -- Buscamos la ubicación física en la tabla houselocations
+            local coords = nil
             local loc = MySQL.single.await('SELECT coords FROM houselocations WHERE name = ?', {h.house})
-            
             if loc and loc.coords then
-                -- Decodificamos el JSON
-                local decoded = json.decode(loc.coords)
-                if decoded then
-                    -- qb-houses vanilla guarda: {"enter": {"x":..., "y":..., "z":...}, "cam":...}
+                local status, decoded = pcall(json.decode, loc.coords)
+                if status and decoded then
                     if decoded.enter then
-                        coords = { x = decoded.enter.x, y = decoded.enter.y }
-                    -- Algunos forks guardan directo: {"x":..., "y":...}
-                    elseif decoded.x and decoded.y then
-                        coords = { x = decoded.x, y = decoded.y }
+                        coords = {
+                            x = decoded.enter.x,
+                            y = decoded.enter.y
+                        }
+                    elseif decoded.x then
+                        coords = {
+                            x = decoded.x,
+                            y = decoded.y
+                        }
                     end
                 end
             end
-
             table.insert(response.properties, {
                 type = 'house',
                 name = h.house,
                 label = h.label or h.house,
                 hasGarage = (h.garage ~= nil),
-                coords = coords -- Coordenadas reales o 0,0 si falló
+                coords = coords
             })
         end
     end
 
-    -- 3. APARTAMENTOS
+    -- ============================================================
+    -- 5. APARTAMENTOS (DINÁMICO DESDE QB-APARTMENTS)
+    -- ============================================================
     local pApts = MySQL.query.await('SELECT * FROM apartments WHERE citizenid = ?', {citizenid})
-    
-    local aptLocations = nil
+
+    local aptConfig = nil
+    -- 1. Intentamos leer la config REAL de qb-apartments usando el export
     if GetResourceState('qb-apartments') == 'started' then
-        aptLocations = exports['qb-apartments']:GetApartmentsConfig()
+        -- Usamos pcall por seguridad
+        local ok, result = pcall(function()
+            return exports['qb-apartments']:GetApartmentsConfig()
+        end)
+        if ok and result then
+            aptConfig = result
+        end
     end
+
+    -- 2. Fallback de emergencia (solo si el export falla, que no debería)
+    local DEFAULT_APTS = {
+        ["apartment1"] = {
+            x = -667.02,
+            y = -1105.24,
+            label = "South Rockford Drive"
+        },
+        ["apartment2"] = {
+            x = -1288.52,
+            y = -430.51,
+            label = "Morningwood Blvd"
+        },
+        ["apartment3"] = {
+            x = 269.73,
+            y = -640.75,
+            label = "Integrity Way"
+        },
+        ["apartment4"] = {
+            x = -619.29,
+            y = 37.69,
+            label = "Tinsel Towers"
+        },
+        ["apartment5"] = {
+            x = 291.517,
+            y = -1078.674,
+            label = "Fantastic Plaza"
+        }
+    }
 
     if pApts then
         for _, a in pairs(pApts) do
-            local coords = { x = 0, y = 0 }
-            local aptLabel = a.name -- Ej: "apartment1"
+            local coords = nil
+            local aptLabel = a.name
 
-            if aptLocations then
-                -- Tu base de datos guarda "apartment1" en la columna 'name' o 'type'
-                -- Usamos eso para buscar en el Config que acabamos de exportar
-                local key = a.name 
-                local aptData = aptLocations[key]
-
-                if aptData and aptData.coords and aptData.coords.enter then
-                    -- Tu config usa vector4, sacamos x, y
-                    coords = { x = aptData.coords.enter.x, y = aptData.coords.enter.y }
-                    
-                    -- Si el config tiene un label bonito ("South Rockford Drive"), lo usamos
-                    if aptData.label then aptLabel = aptData.label end
-                else
-                    -- Fallback: Si no lo encuentra por 'name', probamos por 'type' (algunas DBs varían)
-                    if a.type and aptLocations[a.type] then
-                        local fallbackData = aptLocations[a.type]
-                        if fallbackData.coords and fallbackData.coords.enter then
-                            coords = { x = fallbackData.coords.enter.x, y = fallbackData.coords.enter.y }
-                            if fallbackData.label then aptLabel = fallbackData.label end
-                        end
-                    end
+            -- A. INTENTO POR EXPORT (DINÁMICO)
+            if aptConfig and aptConfig[a.name] then
+                local d = aptConfig[a.name]
+                -- qb-apartments usa 'coords.enter' (vector4)
+                if d.coords and d.coords.enter then
+                    coords = {
+                        x = d.coords.enter.x,
+                        y = d.coords.enter.y
+                    }
+                elseif d.poly then -- Soporte para configs viejas
+                    coords = {
+                        x = d.poly.x,
+                        y = d.poly.y
+                    }
                 end
+                if d.label then
+                    aptLabel = d.label
+                end
+
+                -- B. INTENTO POR TABLA MANUAL (SI FALLA A)
+            elseif DEFAULT_APTS[a.name] then
+                coords = DEFAULT_APTS[a.name]
+                aptLabel = DEFAULT_APTS[a.name].label
+                -- C. INTENTO POR TIPO (A veces guardan el tipo en vez del nombre)
+            elseif DEFAULT_APTS[a.type] then
+                coords = DEFAULT_APTS[a.type]
+                aptLabel = DEFAULT_APTS[a.type].label
             end
 
             table.insert(response.properties, {
                 type = 'apartment',
                 name = a.name,
-                label = aptLabel, 
+                label = aptLabel,
                 hasGarage = false,
                 coords = coords
             })
         end
     end
 
-    -- Enviamos todo al JS
+    -- ============================================================
+    -- 6. HISTORIAL
+    -- ============================================================
+    response.history = {}
+    response.punishCounts = {
+        bans = 0,
+        kicks = 0,
+        warns = 0
+    }
+    if license then
+        local cleanLicense = license:gsub("license:", "")
+        local bans = MySQL.query.await('SELECT * FROM bans WHERE license = ?', {cleanLicense})
+        if bans then
+            for _, b in pairs(bans) do
+                response.punishCounts.bans = response.punishCounts.bans + 1
+                local isExp = (tonumber(b.expire) ~= 0 and tonumber(b.expire) < os.time())
+                table.insert(response.history, {
+                    type = "BAN",
+                    reason = b.reason,
+                    admin = b.bannedby or "Sistema",
+                    date = b.created_at and os.date("%d/%m/%Y", b.created_at) or os.date("%d/%m/%Y"),
+                    expiry = b.expire == 0 and "PERMANENTE" or os.date("%d/%m/%Y", b.expire),
+                    active = not isExp,
+                    rawDate = b.expire or 0
+                })
+            end
+        end
+        local warns = MySQL.query.await('SELECT * FROM warns WHERE license = ?', {cleanLicense})
+        if warns then
+            for _, w in pairs(warns) do
+                local isKick = w.reason and string.find(w.reason, "%[KICK%]")
+                if isKick then
+                    response.punishCounts.kicks = response.punishCounts.kicks + 1
+                else
+                    response.punishCounts.warns = response.punishCounts.warns + 1
+                end
+                table.insert(response.history, {
+                    type = isKick and "KICK" or "WARN",
+                    reason = w.reason,
+                    admin = w.warnedby or "Admin",
+                    date = w.warnedtime and os.date("%d/%m/%Y", w.warnedtime) or os.date("%d/%m/%Y"),
+                    active = false,
+                    rawDate = w.warnedtime or 0
+                })
+            end
+        end
+        table.sort(response.history, function(a, b)
+            return a.rawDate > b.rawDate
+        end)
+    end
+
     cb(response)
 end)
 
@@ -690,8 +750,9 @@ RegisterNetEvent('DP-AdminMenu:server:playerAction', function(action, targetId, 
         TriggerClientEvent('QBCore:Notify', src, 'Menú de ropa abierto a ' .. tName, 'success')
 
     elseif action == 'screenshot' then
-        DebugLog("^3[DP-AdminMenu SERVER] 📸 Ordenando captura al ID: " .. targetSrc .. " devuelta a Admin: " .. src ..
-                     "^7")
+        DebugLog(
+            "^3[DP-AdminMenu SERVER] 📸 Ordenando captura al ID: " .. targetSrc .. " devuelta a Admin: " .. src ..
+                "^7")
         TriggerClientEvent('DP-AdminMenu:client:captureScreen', targetSrc, src)
 
     elseif action == 'remove_stress' then
@@ -1144,13 +1205,13 @@ RegisterNetEvent('DP-AdminMenu:server:setJob', function(targetId, job, grade)
             -- 2. ACCIÓN PRINCIPAL
             targetPlayer.Functions.SetJob(job, gradeLevel)
 
-            -- 3. NOTIFICACIONES (Del código nuevo)
+            -- 3. NOTIFICACIONES
             TriggerClientEvent('QBCore:Notify', src, "Trabajo actualizado a: " .. job .. " (" .. gradeLevel .. ")",
                 "success")
             TriggerClientEvent('QBCore:Notify', targetSrc, "Tu trabajo ha sido actualizado por administración.",
                 "primary")
 
-            -- 4. LOGS (Del código nuevo)
+            -- 4. LOGS
             TriggerEvent('DP-AdminMenu:server:log', 'JOB',
                 'Cambió trabajo de ' .. GetPlayerName(targetSrc) .. ' a ' .. job .. ' (' .. gradeLevel .. ')')
 
@@ -1597,6 +1658,350 @@ QBCore.Commands.Add('noclip', 'Alternar modo NoClip (Admin)', {}, false, functio
     TriggerClientEvent('DP-AdminMenu:client:toggleNoclip', source)
 end, 'admin')
 
+-- ==========================================================================
+--      SISTEMA DE SANCIONES (CORREGIDO ERROR WARNEDTIME)
+-- ==========================================================================
+
+-- 1. WARN CRÍTICO + REGISTRO DE SESIÓN
+RegisterNetEvent('DP-AdminMenu:server:warnPlayer', function(data)
+    local src = source
+    local targetId = tonumber(data.targetId)
+    local reason = data.reason or "Sin motivo"
+    local adminName = GetPlayerName(src)
+
+    local targetPlayer = QBCore.Functions.GetPlayer(targetId)
+    if not targetPlayer then
+        return
+    end
+
+    local name = targetPlayer.PlayerData.charinfo.firstname .. " " .. targetPlayer.PlayerData.charinfo.lastname
+    local license = QBCore.Functions.GetIdentifier(targetId, 'license')
+    local cleanLicense = license:gsub("license:", "")
+
+    -- A. Guardar en Base de Datos
+    MySQL.insert('INSERT INTO warns (name, license, reason, warnedby, warnedtime) VALUES (?, ?, ?, ?, ?)',
+        {name, cleanLicense, reason, adminName, os.time()})
+
+    -- B. ACTIVAR MODO ANTI-EVASIÓN
+    activeWarns[targetId] = {
+        active = true,
+        license = cleanLicense,
+        name = name,
+        admin = adminName
+    }
+
+    -- C. Enviar Pantalla de Bloqueo al Cliente
+    TriggerClientEvent('DP-AdminMenu:client:showCriticalWarn', targetId, {
+        reason = reason,
+        admin = adminName
+    })
+
+    TriggerClientEvent('QBCore:Notify', src, 'Advertencia crítica enviada.', 'success')
+    TriggerClientEvent('DP-AdminMenu:client:syncDetails', -1, targetPlayer.PlayerData.citizenid)
+end)
+
+-- 2. CONFIRMACIÓN DEL JUGADOR (Evita el ban)
+RegisterNetEvent('DP-AdminMenu:server:warnConfirmed', function()
+    local src = source
+    if activeWarns[src] then
+        activeWarns[src] = nil -- Limpiamos la alerta
+    end
+end)
+
+-- 3. KICK (EXPULSAR)
+RegisterNetEvent('DP-AdminMenu:server:kickPlayer', function(data)
+    DebugLog("^3[DP-AdminMenu] SERVIDOR: Recibido Evento KICK^7")
+    local src = source
+    local targetId = tonumber(data.targetId)
+    local reason = data.reason or "Expulsado"
+
+    local targetPlayer = QBCore.Functions.GetPlayer(targetId)
+    if targetPlayer then
+        local name = targetPlayer.PlayerData.charinfo.firstname .. " " .. targetPlayer.PlayerData.charinfo.lastname
+        local license = QBCore.Functions.GetIdentifier(targetId, 'license')
+        local cleanLicense = license:gsub("license:", "")
+        local adminName = GetPlayerName(src)
+
+        DebugLog("^3[DP-AdminMenu] Guardando historial de Kick (Con Time)...^7")
+
+        -- CORRECCIÓN: Añadido 'warnedtime' y 'os.time()'
+        MySQL.insert('INSERT INTO warns (name, license, reason, warnedby, warnedtime) VALUES (?, ?, ?, ?, ?)',
+            {name, cleanLicense, reason, adminName, os.time()}, function(id)
+                if id then
+                    DebugLog("^2[DP-AdminMenu] Historial guardado. Expulsando...^7")
+                    Wait(200)
+                    DropPlayer(targetId, "\n⛔ EXPULSADO: " .. reason)
+                    TriggerClientEvent('QBCore:Notify', src, 'Jugador expulsado', 'success')
+                    TriggerClientEvent('DP-AdminMenu:client:syncDetails', -1, targetPlayer.PlayerData.citizenid)
+                end
+            end)
+    else
+        DebugLog("^1[DP-AdminMenu] Jugador no encontrado para Kick.^7")
+    end
+end)
+
+-- 4. BAN (ONLINE & OFFLINE)
+-- OJO: Le cambiamos el nombre para no chocar con tu evento antiguo de autoban
+RegisterNetEvent('DP-AdminMenu:server:banPlayerFromMenu', function(data)
+    DebugLog("^3[DP-AdminMenu] SERVIDOR: Recibido Evento BAN^7") -- DEBUG
+    local src = source
+    local targetId = tonumber(data.targetId)
+    local citizenid = data.citizenid
+    local reason = data.reason
+    local duration = tonumber(data.duration)
+    local senderName = GetPlayerName(src)
+    local expireDate = (duration == 2147483647) and 0 or (os.time() + duration)
+
+    -- CASO ONLINE
+    if targetId then
+        local targetPlayer = QBCore.Functions.GetPlayer(targetId)
+        if targetPlayer then
+            DebugLog("^3[DP-AdminMenu] Baneando Online...^7")
+            local name = targetPlayer.PlayerData.name
+            local license = QBCore.Functions.GetIdentifier(targetId, 'license')
+            local cleanLicense = license:gsub("license:", "")
+            local discord = QBCore.Functions.GetIdentifier(targetId, 'discord') or "N/A"
+            local ip = QBCore.Functions.GetIdentifier(targetId, 'ip') or "N/A"
+
+            MySQL.insert(
+                'INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                {name, cleanLicense, discord, ip, reason, expireDate, senderName, 'active'}, function(id)
+                    if id then
+                        -- Insertamos manualmente en la tabla de historial para que el JS lo lea bien al refrescar
+                        table.insert(response.history, {
+                            type = "BAN",
+                            reason = reason,
+                            admin = senderName, -- Enviamos el nombre del admin (DonMaderos en tu caso)
+                            date = os.date("%d/%m/%Y"), -- Enviamos la fecha actual corregida
+                            expiry = expireDate == 0 and "PERMANENTE" or os.date("%d/%m/%Y", expireDate),
+                            active = true,
+                            rawDate = os.time()
+                        })
+                        DebugLog("^2[DP-AdminMenu] Ban guardado.^7")
+                        Wait(200)
+                        DropPlayer(targetId, "\n⛔ BANEADO: " .. reason)
+                        TriggerClientEvent('QBCore:Notify', src, 'Baneo aplicado', 'success')
+                        TriggerClientEvent('DP-AdminMenu:client:syncDetails', -1, citizenid)
+                    else
+                        DebugLog("^1[DP-AdminMenu] Fallo SQL en Ban Online.^7")
+                    end
+                end)
+        end
+    else
+        -- CASO OFFLINE
+        DebugLog("^3[DP-AdminMenu] Intentando Ban Offline...^7")
+        if not citizenid then
+            return
+        end
+
+        local playerResult = MySQL.single
+                                 .await('SELECT license, charinfo FROM players WHERE citizenid = ?', {citizenid})
+        if playerResult then
+            local cleanLicense = playerResult.license
+            if string.find(cleanLicense, "license:") then
+                cleanLicense = cleanLicense:gsub("license:", "")
+            end
+            local charinfo = json.decode(playerResult.charinfo)
+            local name = charinfo.firstname .. " " .. charinfo.lastname
+
+            MySQL.insert(
+                'INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                {name, cleanLicense, "N/A", "N/A", reason, expireDate, senderName, 'active'}, function(id)
+                    if id then
+                        DebugLog("^2[DP-AdminMenu] Ban Offline guardado.^7")
+                        TriggerClientEvent('QBCore:Notify', src, 'Ban Offline aplicado', 'success')
+                        TriggerClientEvent('DP-AdminMenu:client:syncDetails', -1, citizenid)
+                    else
+                        DebugLog("^1[DP-AdminMenu] Fallo SQL en Ban Offline.^7")
+                    end
+                end)
+        else
+            DebugLog("^1[DP-AdminMenu] No se encontraron datos offline.^7")
+        end
+    end
+end)
+
+-- ==========================================================================
+--      SISTEMA CK (CHARACTER KILL) - VERSIÓN CORREGIDA Y ROBUSTA
+-- ==========================================================================
+RegisterNetEvent('DP-AdminMenu:server:ckPlayer', function(data)
+    local src = source
+    local targetId = tonumber(data.targetId)
+    local citizenid = data.citizenid
+
+    -- [FIX] Guardamos el nombre AHORA, antes de que nadie sea expulsado
+    local adminName = GetPlayerName(src) or "Desconocido"
+
+    -- 1. SEGURIDAD: Permisos
+    if not QBCore.Functions.HasPermission(src, 'admin') and not QBCore.Functions.HasPermission(src, 'god') then
+        print("^1[DP-AdminMenu] INTENTO DE CK SIN PERMISOS POR ID: " .. src .. "^7")
+        return
+    end
+
+    if not citizenid then
+        TriggerClientEvent('QBCore:Notify', src, 'Error: No se detectó CitizenID', 'error')
+        return
+    end
+
+    -- 2. EXPULSIÓN INMEDIATA (PASO 1)
+    local targetPlayer = QBCore.Functions.GetPlayerByCitizenId(citizenid)
+
+    if targetPlayer then
+        DropPlayer(targetPlayer.PlayerData.source,
+            "\n💀 TU PERSONAJE HA SIDO ELIMINADO (CK) DEFINITIVAMENTE.\n\nContacta con administración si crees que es un error.")
+    elseif targetId and GetPlayerName(targetId) then
+        DropPlayer(targetId, "\n💀 TU PERSONAJE HA SIDO ELIMINADO (CK) DEFINITIVAMENTE.")
+    end
+
+    -- Iniciamos hilo separado
+    CreateThread(function()
+        print("^3[DP-AdminMenu] Iniciando proceso de CK para CitizenID: " .. citizenid .. " (Admin: " .. adminName ..
+                  ")^7")
+
+        -- ============================================================
+        -- PASO 2: EL GRAN BACKUP (LECTURA SEGURA)
+        -- ============================================================
+        local fullBackup = {
+            meta = {
+                date = os.date('%Y-%m-%d %H:%M:%S'),
+                admin = adminName,
+                citizenid = citizenid,
+                license = data.license or "Unknown"
+            },
+            data = {}
+        }
+
+        local directTables = {'players', 'player_vehicles', 'player_houses', 'apartments', 'player_outfits',
+                              'playerskins', 'player_contacts', 'player_mails', 'player_peds', 'bank_accounts',
+                              'shared_garages', 'shared_garage_members', 'player_vehicles_fuel_type'}
+
+        -- Backup protegido (Si una tabla falla, sigue con la siguiente)
+        for _, tbl in ipairs(directTables) do
+            local success, result = pcall(function()
+                return MySQL.query.await('SELECT * FROM ' .. tbl .. ' WHERE citizenid = ?', {citizenid})
+            end)
+            if success and result then
+                fullBackup.data[tbl] = result
+            end
+        end
+
+        -- Backup Inventarios (Por Matrícula/Casa)
+        local trunkRes = MySQL.query.await(
+            'SELECT * FROM trunkitems WHERE plate IN (SELECT plate FROM player_vehicles WHERE citizenid = ?)',
+            {citizenid})
+        fullBackup.data['trunkitems'] = trunkRes
+
+        local gloveRes = MySQL.query.await(
+            'SELECT * FROM gloveboxitems WHERE plate IN (SELECT plate FROM player_vehicles WHERE citizenid = ?)',
+            {citizenid})
+        fullBackup.data['gloveboxitems'] = gloveRes
+
+        local stashRes = MySQL.query.await(
+            'SELECT * FROM stashitems WHERE stash IN (SELECT house FROM player_houses WHERE citizenid = ?) OR stash = ?',
+            {citizenid, citizenid})
+        fullBackup.data['stashitems'] = stashRes
+
+        -- ============================================================
+        -- PASO 3: ESCRITURA DE LOG (JSON)
+        -- ============================================================
+        local logFile = LoadResourceFile(GetCurrentResourceName(), "ck_backups.json") or "[]"
+        local currentLogs = json.decode(logFile)
+        if type(currentLogs) ~= 'table' then
+            currentLogs = {}
+        end
+
+        table.insert(currentLogs, 1, fullBackup)
+        SaveResourceFile(GetCurrentResourceName(), "ck_backups.json", json.encode(currentLogs, {
+            indent = true
+        }), -1)
+        print("^2[DP-AdminMenu] Backup guardado correctamente en ck_backups.json^7")
+
+        -- ============================================================
+        -- PASO 4: LA PURGA (DELETE EN CASCADA ROBUSTO)
+        -- ============================================================
+
+        -- A. LIMPIEZA PREVIA DE TABLAS "PELIGROSAS" O SECUNDARIAS
+        -- Lo hacemos fuera de la transacción principal con pcall para que si fallan (como shared_garage_members), NO paren el CK.
+        local optionalDeletes =
+            {"DELETE FROM trunkitems WHERE plate IN (SELECT plate FROM player_vehicles WHERE citizenid = '" .. citizenid ..
+                "')",
+             "DELETE FROM gloveboxitems WHERE plate IN (SELECT plate FROM player_vehicles WHERE citizenid = '" ..
+                citizenid .. "')",
+             "DELETE FROM player_vehicles_fuel_type WHERE plate IN (SELECT plate FROM player_vehicles WHERE citizenid = '" ..
+                citizenid .. "')", -- Corregido: Por matrícula
+            "DELETE FROM stashitems WHERE stash IN (SELECT house FROM player_houses WHERE citizenid = '" .. citizenid ..
+                "')", "DELETE FROM stashitems WHERE stash = '" .. citizenid .. "'",
+            -- Intentamos borrar shared_garage_members de forma segura
+             "DELETE FROM shared_garage_members WHERE citizenid = '" .. citizenid .. "'"}
+
+        for _, query in ipairs(optionalDeletes) do
+            pcall(function()
+                MySQL.query.await(query)
+            end)
+        end
+
+        -- B. TRANSACCIÓN PRINCIPAL (SÓLO TABLAS NUCLEARES QUE SABEMOS QUE EXISTEN Y USAN CITIZENID)
+        -- Esto asegura que el jugador se borre sí o sí.
+        local mainQueries = {}
+
+        table.insert(mainQueries, {
+            query = 'DELETE FROM player_vehicles WHERE citizenid = ?',
+            values = {citizenid}
+        })
+        table.insert(mainQueries, {
+            query = 'DELETE FROM player_houses WHERE citizenid = ?',
+            values = {citizenid}
+        })
+        table.insert(mainQueries, {
+            query = 'DELETE FROM apartments WHERE citizenid = ?',
+            values = {citizenid}
+        })
+        table.insert(mainQueries, {
+            query = 'DELETE FROM playerskins WHERE citizenid = ?',
+            values = {citizenid}
+        })
+        table.insert(mainQueries, {
+            query = 'DELETE FROM player_outfits WHERE citizenid = ?',
+            values = {citizenid}
+        })
+        table.insert(mainQueries, {
+            query = 'DELETE FROM player_contacts WHERE citizenid = ?',
+            values = {citizenid}
+        })
+        table.insert(mainQueries, {
+            query = 'DELETE FROM player_mails WHERE citizenid = ?',
+            values = {citizenid}
+        })
+        table.insert(mainQueries, {
+            query = 'DELETE FROM bank_accounts WHERE citizenid = ?',
+            values = {citizenid}
+        })
+
+        -- EL JUGADOR (El final)
+        table.insert(mainQueries, {
+            query = 'DELETE FROM players WHERE citizenid = ?',
+            values = {citizenid}
+        })
+
+        MySQL.transaction(mainQueries, function(success)
+            if success then
+                print("^2[DP-AdminMenu] PURGA COMPLETADA EXITOSAMENTE. El CitizenID " .. citizenid ..
+                          " ha sido eliminado.^7")
+                -- Intentamos notificar (si el admin no eras tú mismo)
+                if GetPlayerName(src) then
+                    TriggerClientEvent('QBCore:Notify', src, 'CK Completado. Backup generado y datos borrados.',
+                        'success')
+                end
+            else
+                print("^1[DP-AdminMenu] ERROR EN TRANSACCIÓN PRINCIPAL. Revisa si todas las tablas CORE existen.^7")
+                if GetPlayerName(src) then
+                    TriggerClientEvent('QBCore:Notify', src, 'Error SQL durante el CK (Ver consola)', 'error')
+                end
+            end
+        end)
+    end)
+end)
+
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH
 AddEventHandler('playerJoining', function()
     GlobalRefresh()
@@ -1605,18 +2010,33 @@ end)
 AddEventHandler('playerDropped', function()
     local src = source
 
+    -- A. LIMPIEZA DE ADMINS (Tu lógica original)
     if adminsInGodmode[src] then
         adminsInGodmode[src] = nil
     end
-
     if AdminsOnDuty[src] then
         AdminsOnDuty[src] = nil
+    end
+    if AdminsWatching[src] then
+        AdminsWatching[src] = nil
     end
 
     GlobalRefresh()
 
-    if AdminsWatching[src] then
-        AdminsWatching[src] = nil
+    -- B. NUEVA LÓGICA (Anti-Evasión de Warn)
+    if activeWarns[src] and activeWarns[src].active then
+        print("^1[ANTI-EVASION] El jugador ID " .. src .. " se desconectó con un WARN pendiente. Baneando...^7")
+
+        local data = activeWarns[src]
+        local banReason = "ANTI-RP: Evasión de Advertencia Administrativa (Desconexión)"
+        local expireDate = os.time() + 3600 -- 1 Hora
+
+        MySQL.insert(
+            'INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            {data.name, data.license, "discord:unknown", "ip:unknown", banReason, expireDate, "Sistema Anti-Evasión",
+             'active'})
+
+        activeWarns[src] = nil
     end
 end)
 

@@ -17,7 +17,7 @@ function escapeHtml(text) {
 }
 
 function log(msg) {
-    if (isDebugActive) console.log(`^4[DP-ADMIN JAVASCRIPT]^7 ${msg}`);
+    if (isDebugActive) console.log(`^4[DP-AdminMenu JAVASCRIPT]^7 ${msg}`);
 }
 
 // Estado Global de la Aplicación
@@ -40,7 +40,14 @@ let dragOffsetY = 0;
 let isEditMode = false;
 let currentDetailsId = null;
 let wasDetailsOpen = false;
-let isProcessingAction = false; // Bloqueador global
+let isProcessingAction = false; // Bloqueador global para evitar acciones simultáneas
+let currentPlayerDataGlobal = null; // Para guardar datos del jugador (online/offline)
+let pendingSanction = { type: null, targetId: null, citizenid: null, reason: null, duration: 0 };
+let warnSpaceHeld = false;
+let warnStartTime = 0;
+let warnTimerInterval = null;
+const WARN_DURATION = 5000; // 5 Segundos
+
 
 // Estados de Botones (Toggle) - AQUÍ GUARDAMOS SI LA HERRAMIENTA ESTÁ ACTIVA
 const actionStates = {
@@ -184,7 +191,7 @@ const gtaPaintData = {
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    log("DOM Listo. Arrancando interfaz DP-Admin...");
+    log("DOM Listo. Arrancando interfaz DP-AdminMenu...");
 
     // Cacheo de Elementos Globales
     const mainAdminPanel = document.getElementById('admin-menu');
@@ -587,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStatBar('stat-hunger', s.hunger);
             updateStatBar('stat-thirst', s.thirst);
 
-            // --- 3. NUEVOS STATS ---
+            // --- 3. STATS ---
             updateStatBar('stat-alcohol', s.alcohol);
             updateStatBar('stat-stamina', s.stamina);
 
@@ -598,17 +605,120 @@ document.addEventListener('DOMContentLoaded', () => {
             const screenshotModal = document.getElementById('screenshot-modal');
             if (screenshotModal) screenshotModal.style.display = 'none';
 
-            // Intenta ocultar cualquier contenedor genérico
             const allContainers = document.querySelectorAll('.container');
             allContainers.forEach(el => el.style.display = 'none');
 
             selectedPlayer = null;
-
-            // >>> AÑADE ESTO AQUÍ TAMBIÉN <<<
             if (typeof isDetailsOpen !== 'undefined') isDetailsOpen = false;
 
             const allItems = document.querySelectorAll('.player-list-item');
             allItems.forEach(item => item.classList.remove('selected'));
+
+        } else if (data.action === 'refresh_player_details') {
+            const targetCid = data.citizenid;
+
+            // Verificamos si tenemos abierto el panel de ese mismo jugador
+            if (isDetailsOpen && currentPlayerDataGlobal && currentPlayerDataGlobal.citizenid === targetCid) {
+
+                // Forzamos la recarga de datos (badges, historial, etc.)
+                // Usamos 'currentDetailsId' que ya lo tenemos guardado
+                window.openPlayerDetails({
+                    id: currentDetailsId,
+                    citizenid: targetCid,
+                    name: currentPlayerDataGlobal.name
+                });
+            }
+
+        } else if (data.action === "openMap") {
+            const modal = document.getElementById('goto-modal');
+            if (modal) {
+                modal.style.display = "flex";
+                if (data.locations) {
+                    setupMapData(data.locations);
+                }
+                window.resetMap();
+            }
+
+        } else if (data.action === 'openWarnScreen') {
+
+            // 1. CERRAR CUALQUIER OTRA INTERFAZ ABIERTA (Admin Menu y Detalles)
+            if (mainAdminPanel) mainAdminPanel.style.display = 'none'; // Ocultar menú principal
+            const detailsModal = document.getElementById('player-details-modal');
+            if (detailsModal) detailsModal.style.display = 'none';     // Ocultar detalles jugador
+            document.body.classList.remove('menu-open');             // Quitar estado de menú abierto
+
+            // 2. Mostrar Pantalla de Warn
+            const screen = document.getElementById('warn-screen');
+            if (screen) {
+                document.getElementById('warn-reason-text').textContent = data.reason || "SIN MOTIVO";
+                document.getElementById('warn-admin-name').textContent = data.admin || "SISTEMA";
+                screen.style.display = 'flex';
+            }
+
+            // 3. Resetear barra y variables
+            const bar = document.getElementById('warn-progress-fill');
+            if (bar) bar.style.width = '0%';
+
+            warnSpaceHeld = false;
+            if (warnTimerInterval) clearInterval(warnTimerInterval);
+
+            // 4. Lógica de Teclado
+            const handleKeyDown = (e) => {
+                if (e.code === 'Space' && !warnSpaceHeld) {
+                    warnSpaceHeld = true;
+                    warnStartTime = Date.now();
+
+                    // Iniciar animación
+                    warnTimerInterval = setInterval(() => {
+                        const elapsed = Date.now() - warnStartTime;
+                        // Calculamos porcentaje (0 a 100)
+                        const progress = Math.min((elapsed / WARN_DURATION) * 100, 100);
+
+                        if (bar) bar.style.width = `${progress}%`;
+
+                        // ¡COMPLETADO! (>= 5000ms)
+                        if (elapsed >= WARN_DURATION) {
+                            // Forzamos visualmente el 100% por si acaso
+                            if (bar) bar.style.width = '100%';
+
+                            clearInterval(warnTimerInterval);
+
+                            // Pequeña espera de 100ms para que el usuario vea la barra llena
+                            setTimeout(() => {
+                                completeWarn(handleKeyDown, handleKeyUp);
+                            }, 100);
+                        }
+                    }, 20); // 20ms = 50 FPS (Fluido)
+                }
+            };
+
+            const handleKeyUp = (e) => {
+                if (e.code === 'Space') {
+                    warnSpaceHeld = false;
+                    clearInterval(warnTimerInterval);
+                    if (bar) bar.style.width = '0%'; // Resetear si suelta
+                }
+            };
+
+            // 5. Función de Éxito
+            function completeWarn(downFn, upFn) {
+                document.removeEventListener('keydown', downFn);
+                document.removeEventListener('keyup', upFn);
+
+                // Ocultar UI de Warn
+                if (screen) screen.style.display = 'none';
+
+                // Avisar al Servidor
+                fetch(`https://${GetParentResourceName()}/warnConfirmed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+            }
+
+            // Registrar eventos
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
         }
     });
 
@@ -3494,8 +3604,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. ENVIAR CAMBIO AL SERVIDOR
-        // Respetando tu URL 'https://dp-adminmenu/...'
-        fetch(`https://dp-adminmenu/toggleServerOption`, {
+        // Respetando tu URL 'https://DP-AdminMenu/...'
+        fetch(`https://DP-AdminMenu/toggleServerOption`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4308,20 +4418,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.addEventListener('message', function (event) {
-        const data = event.data;
-        if (data.action === "openMap") {
-            const modal = document.getElementById('goto-modal');
-            if (modal) {
-                modal.style.display = "flex";
-                if (data.locations) {
-                    setupMapData(data.locations);
-                }
-                window.resetMap();
-            }
-        }
-    });
-
     // ==========================================================================
     //      SISTEMA DE ARRASTRE AVANZADO (CON LÍMITES Y ANTI-SALIDA)
     // ==========================================================================
@@ -4675,14 +4771,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!detailsModal || !mainMenu) return;
 
-        // [CORRECCIÓN] Determinamos si está realmente online
-        // Si viene de Reportes, puede tener 'isOffline: true'
+        // Determinamos si está realmente online
         const isOnline = (playerData.id && playerData.id != 0 && !playerData.isOffline);
 
         if (playerData) {
-            currentDetailsId = playerData.id; // Puede ser null si es offline
+            currentDetailsId = playerData.id;
+            currentPlayerDataGlobal = playerData;
 
-            // [CORRECCIÓN] Solo activamos Live Stats si está ONLINE
             if (isOnline) {
                 fetch(`https://${GetParentResourceName()}/toggleWatch`, {
                     method: 'POST',
@@ -4724,40 +4819,55 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.innerHTML = '<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:loading" style="animation: spin 1s linear infinite; display: inline-block;"></span><span>Cargando...</span></div>';
         });
 
-        // --- 2. PETICIÓN AL SERVIDOR (CORREGIDA) ---
-        // Enviamos citizenid para que el servidor busque en SQL si falla la ID
-        fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, { // OJO: Asegúrate que tu callback en LUA se llame 'getPlayerFullDetails' o 'getDetailedData' según uses.
+        // --- 2. PETICIÓN AL SERVIDOR ---
+        fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 targetId: playerData.id,
-                citizenid: playerData.citizenid // <--- ESTO ES LA CLAVE PARA LOS REPORTES
+                citizenid: playerData.citizenid
             })
         })
             .then(resp => resp.json())
             .then(fullDataRaw => {
-                // [CORRECCIÓN SEGURIDAD] Si el servidor devuelve null, paramos aquí para no romper el script
                 if (!fullDataRaw) {
                     console.warn("El servidor no devolvió datos para este jugador.");
-                    ['pd-properties-list', 'pd-vehicles-list'].forEach(id => {
+                    ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) el.innerHTML = '<div class="pd-empty-state"><span>Datos no disponibles</span></div>';
                     });
                     return;
                 }
 
-                // Adaptador por si tu callback devuelve { data: ... } o directo
                 const fullData = fullDataRaw.data ? fullDataRaw.data : fullDataRaw;
 
+                // ============================================================
+                // 🚨 AQUÍ ESTÁ EL CAMBIO IMPORTANTE (FIX CK) 🚨
+                // Actualizamos la variable global para que el botón CK tenga datos
+                // ============================================================
+                if (fullData) {
+                    currentPlayerDataGlobal = { ...currentPlayerDataGlobal, ...fullData };
+
+                    // Aseguramos el citizenid
+                    if (fullData.citizenid) {
+                        currentPlayerDataGlobal.citizenid = fullData.citizenid;
+                    }
+
+                    // Guardamos la licencia para el log del backup
+                    if (fullData.identifiers) {
+                        const licenseEntry = fullData.identifiers.find(id => id.includes('license:'));
+                        if (licenseEntry) currentPlayerDataGlobal.license = licenseEntry;
+                    }
+                }
+                // ============================================================
+
                 if (!fullData) {
-                    // Si falla todo, mostramos error
-                    ['pd-properties-list', 'pd-vehicles-list'].forEach(id => {
+                    ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
                         document.getElementById(id).innerHTML = '<div class="pd-empty-state"><span>Datos no encontrados</span></div>';
                     });
                     return;
                 }
 
-                // Si el servidor responde que viene de SQL (Offline), forzamos bandera
                 if (fullDataRaw.fromSQL) {
                     const badgeEl = document.getElementById('pd-status-badge');
                     if (badgeEl) {
@@ -4767,10 +4877,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ============================================================
-                // RENDERIZADO DE DATOS
+                // RENDERIZADO DE DATOS (TU CÓDIGO ORIGINAL)
                 // ============================================================
                 document.getElementById('pd-ic-name').textContent = fullData.charName || playerData.charName || "Desconocido";
-                document.getElementById('pd-ic-name').style.color = "";
 
                 // 1. INFO GENERAL
                 const fields = [
@@ -4783,11 +4892,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 fields.forEach(f => {
                     const el = document.getElementById(f.id);
-                    if (el) {
-                        el.textContent = f.val;
-                        el.style.color = "";
-                        el.style.fontSize = "";
-                    }
+                    if (el) el.textContent = f.val;
                 });
 
                 if (document.getElementById('pd-job-boss')) document.getElementById('pd-job-boss').style.display = fullData.isJobBoss ? 'block' : 'none';
@@ -4804,61 +4909,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ===========================================
-                // 3. RENDERIZADO DE PROPIEDADES (+GPS)
+                // 3. RENDERIZADO DE PROPIEDADES (CON FIX GPS)
                 // ===========================================
                 const propList = document.getElementById('pd-properties-list');
                 const props = fullData.properties || [];
+
                 const propCount = document.getElementById('pd-prop-count');
+                const propLabel = document.getElementById('pd-prop-label');
+
                 if (propCount) propCount.innerText = props.length;
+                if (propLabel) propLabel.innerText = (props.length === 1) ? "PROPIEDAD" : "PROPIEDADES";
 
                 if (propList) {
                     propList.innerHTML = '';
                     if (props.length === 0) {
-                        propList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:home-search-outline"></span><span>Sin propiedades</span></div>`;
+                        propList.innerHTML = `
+                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
+                                <span class="iconify" data-icon="mdi:home-off-outline" style="font-size:30px; opacity:0.2;"></span>
+                                <span style="font-size:9px; font-weight:700; margin-top:5px; opacity:0.5;">SIN PROPIEDADES</span>
+                            </div>`;
                     } else {
                         props.forEach(p => {
-                            const icon = p.type === 'house' ? 'mdi:home-variant' : 'mdi:office-building';
-                            const typeLabel = p.type === 'house' ? 'Casa' : 'Apto';
-                            const garageBadge = p.hasGarage ? `<span class="pd-badge badge-garage">Garage</span>` : '';
+                            // --- VALIDACIÓN DE COORDENADAS ---
+                            const hasCoords = (p.coords && typeof p.coords.x === 'number' && typeof p.coords.y === 'number');
+                            const cx = hasCoords ? p.coords.x : 0;
+                            const cy = hasCoords ? p.coords.y : 0;
+                            const gpsBtnStyle = hasCoords ? '' : 'opacity: 0.3; cursor: not-allowed;';
+                            // IMPORTANTE: Sin comillas en los números
+                            const gpsAction = hasCoords ? `onclick="setGPS(${cx}, ${cy})"` : '';
 
-                            // Botón GPS (Solo funciona si hay coords, asumimos que server las manda o 0,0)
-                            // Usamos p.coords.x si existe, si no 0
-                            const cx = p.coords ? p.coords.x : 0;
-                            const cy = p.coords ? p.coords.y : 0;
+                            const icon = p.type === 'house' ? 'mdi:home-variant-outline' : 'mdi:office-building-outline';
+                            const garageClass = p.hasGarage ? 'badge-garage-yes' : 'badge-garage-no';
+                            const garageText = p.hasGarage ? 'TIENE GARAJE' : 'NO GARAJE';
+                            const rowClass = p.hasGarage ? 'row-active' : 'row-inactive';
 
                             const item = document.createElement('div');
-                            item.className = 'pd-card type-property';
+                            item.className = `asset-item-row ${rowClass}`;
                             item.innerHTML = `
-                            <div class="pd-card-icon"><span class="iconify" data-icon="${icon}" style="color: #e040fb;"></span></div>
-                            <div class="pd-card-content">
-                                <div class="pd-card-title">${p.label}</div>
-                                <div class="pd-card-subtitle">
-                                    <span class="pd-badge badge-house">${typeLabel}: ${p.name}</span>
-                                    ${garageBadge}
+                                <div class="asset-icon-box">
+                                    <span class="iconify" data-icon="${icon}"></span>
                                 </div>
-                            </div>
-                            <div class="pd-card-actions">
-                                <button class="mini-btn-gps" onclick="setGPS('${cx}', '${cy}')" title="Marcar GPS">
+                                <div class="asset-info">
+                                    <div class="asset-title">${p.label}</div>
+                                    <div class="asset-badges-row">
+                                        <span class="pd-mini-badge badge-loc">${p.name}</span>
+                                        <span class="pd-mini-badge ${garageClass}">${garageText}</span>
+                                    </div>
+                                </div>
+                                <button class="btn-gps-modern" style="${gpsBtnStyle}" ${gpsAction} title="${hasCoords ? 'Marcar GPS' : 'Sin ubicación'}">
                                     <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
                                 </button>
-                            </div>`;
+                            `;
                             propList.appendChild(item);
                         });
                     }
                 }
 
                 // ===========================================
-                // 4. RENDERIZADO DE VEHÍCULOS (+GPS)
+                // 4. RENDERIZADO DE VEHÍCULOS (CON FIX GPS)
                 // ===========================================
                 const vehList = document.getElementById('pd-vehicles-list');
                 const vehs = fullData.vehicles || [];
+
                 const vehCount = document.getElementById('pd-veh-count');
+                const vehLabel = document.getElementById('pd-veh-label');
+
                 if (vehCount) vehCount.innerText = vehs.length;
+                if (vehLabel) vehLabel.innerText = (vehs.length === 1) ? "VEHÍCULO" : "VEHÍCULOS";
 
                 if (vehList) {
                     vehList.innerHTML = '';
                     if (vehs.length === 0) {
-                        vehList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:car-off"></span><span>Sin vehículos</span></div>`;
+                        vehList.innerHTML = `
+                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
+                                <span class="iconify" data-icon="mdi:car-off" style="font-size:30px; opacity:0.2;"></span>
+                                <span style="font-size:9px; font-weight:700; margin-top:5px; opacity:0.5;">A PIE</span>
+                            </div>`;
                     } else {
                         const vehIcons = {
                             'car': 'mdi:car-sports', 'bike': 'mdi:motorbike', 'heli': 'mdi:helicopter',
@@ -4866,6 +4992,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
 
                         vehs.forEach(v => {
+                            // --- VALIDACIÓN DE COORDENADAS ---
+                            const hasCoords = (v.coords && typeof v.coords.x === 'number' && typeof v.coords.y === 'number');
+                            const cx = hasCoords ? v.coords.x : 0;
+                            const cy = hasCoords ? v.coords.y : 0;
+                            const gpsBtnStyle = hasCoords ? '' : 'opacity: 0.3; cursor: not-allowed;';
+                            const gpsAction = hasCoords ? `onclick="setGPS(${cx}, ${cy})"` : '';
+
+                            // Lógica de iconos
                             let iconKey = 'unknown';
                             if (['compacts', 'sedans', 'suvs', 'coupes', 'muscle', 'sports', 'classics', 'super', 'vans', 'utility'].includes(v.category)) iconKey = 'car';
                             else if (['motorcycles', 'cycles'].includes(v.category)) iconKey = 'bike';
@@ -4873,28 +5007,30 @@ document.addEventListener('DOMContentLoaded', () => {
                             else if (['planes'].includes(v.category)) iconKey = 'plane';
                             else if (['boats'].includes(v.category)) iconKey = 'boat';
                             else if (['commercial', 'industrial', 'service', 'military', 'offroad'].includes(v.category)) iconKey = 'truck';
-
                             const finalIcon = vehIcons[iconKey] || vehIcons['car'];
-                            const plateBadge = v.plate ? `<span class="pd-badge badge-plate">${v.plate}</span>` : `<span class="pd-badge badge-out">SIN PLACA</span>`;
-                            const garageBadge = v.garage ? `<span class="pd-badge badge-garage">EN: ${v.garage}</span>` : `<span class="pd-badge badge-out">FUERA</span>`;
 
-                            // Coordenas dummy si no vienen
-                            const cx = v.coords ? v.coords.x : 0;
-                            const cy = v.coords ? v.coords.y : 0;
+                            const isOut = !v.garage || v.garage === 'Out' || v.state === 0;
+                            const rowClass = isOut ? 'row-active' : 'row-inactive';
+                            const locationText = isOut ? "EN LA CALLE" : (v.garage || "GARAJE CENTRAL");
+                            const plateText = v.plate || "S/P";
 
                             const item = document.createElement('div');
-                            item.className = 'pd-card type-vehicle';
+                            item.className = `asset-item-row ${rowClass}`;
                             item.innerHTML = `
-                            <div class="pd-card-icon"><span class="iconify" data-icon="${finalIcon}" style="color: #00bcd4;"></span></div>
-                            <div class="pd-card-content">
-                                <div class="pd-card-title">${v.label || v.name}</div>
-                                <div class="pd-card-subtitle">${plateBadge} ${garageBadge}</div>
-                            </div>
-                            <div class="pd-card-actions">
-                                <button class="mini-btn-gps" onclick="setGPS('${cx}', '${cy}')" title="Marcar GPS">
+                                <div class="asset-icon-box">
+                                    <span class="iconify" data-icon="${finalIcon}"></span>
+                                </div>
+                                <div class="asset-info">
+                                    <div class="asset-title">${v.label || v.name}</div>
+                                    <div class="asset-badges-row">
+                                        <span class="pd-mini-badge badge-plate">${plateText}</span>
+                                        <span class="pd-mini-badge badge-loc">${locationText}</span>
+                                    </div>
+                                </div>
+                                <button class="btn-gps-modern" style="${gpsBtnStyle}" ${gpsAction} title="${hasCoords ? 'Marcar GPS' : 'Ubicación desconocida'}">
                                     <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
                                 </button>
-                            </div>`;
+                            `;
                             vehList.appendChild(item);
                         });
                     }
@@ -4904,31 +5040,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 5. RENDERIZADO DE SANCIONES
                 // ===========================================
                 const punishList = document.getElementById('pd-punishments-list');
-                const history = fullData.history || [];
-                const punishCount = document.getElementById('pd-punish-count');
-                if (punishCount) punishCount.innerText = history.length;
-
                 if (punishList) {
                     punishList.innerHTML = '';
+                    const history = fullData.history || [];
+
                     if (history.length === 0) {
-                        punishList.innerHTML = `<div class="pd-empty-state"><span class="iconify pd-empty-icon" data-icon="mdi:clipboard-check-outline"></span><span>Historial limpio</span></div>`;
+                        punishList.innerHTML = `
+                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
+                                <span class="iconify" data-icon="mdi:shield-check-outline" style="font-size:40px; opacity:0.2;"></span>
+                                <span style="font-size:10px; font-weight:700; margin-top:5px; opacity:0.5;">LIMPIO</span>
+                            </div>`;
                     } else {
                         history.forEach(h => {
-                            let icon = 'mdi:alert';
-                            if (h.type === 'ban') icon = 'mdi:account-cancel';
-                            if (h.type === 'kick') icon = 'mdi:door-open';
+                            let rowClass = "row-warn";
+                            let statusColor = "#555";
+                            let statusLabel = "WARN";
+                            let icon = "mdi:alert-circle-outline";
+                            let iconColor = "#555";
+
+                            if (h.type === 'BAN') {
+                                rowClass = "row-ban";
+                                statusColor = h.active ? "#fff" : "#666";
+                                statusLabel = h.active ? "ACTIVO" : "EXPIRADO";
+                                icon = "mdi:gavel";
+                                iconColor = "#e0e0e0";
+                            } else if (h.type === 'KICK') {
+                                rowClass = "row-kick";
+                                statusColor = "#999";
+                                statusLabel = "KICK";
+                                icon = "mdi:door-open";
+                                iconColor = "#999";
+                            }
 
                             const item = document.createElement('div');
-                            item.className = 'pd-card type-punish';
+                            item.className = `punish-item-row ${rowClass}`;
                             item.innerHTML = `
-                            <div class="pd-card-icon"><span class="iconify" data-icon="${icon}" style="color: #ff9800;"></span></div>
-                            <div class="pd-card-content">
-                                <div class="pd-card-title">${h.reason || 'Sin motivo'}</div>
-                                <div class="pd-card-subtitle">
-                                    <span class="pd-badge badge-punish">${(h.type || 'WARN').toUpperCase()}</span>
-                                    <span style="font-size:9px; color:#888;">Por: ${h.admin || '?'}</span>
+                                <div class="punish-icon-box">
+                                    <span class="iconify" data-icon="${icon}" style="color: ${iconColor};"></span>
                                 </div>
-                            </div>`;
+                                <div class="punish-main-info">
+                                    <div class="punish-reason">${h.reason || 'Sin motivo'}</div>
+                                    <div class="punish-meta">
+                                        <span>POR: <strong>${h.admin || '?'}</strong></span>
+                                    </div>
+                                </div>
+                                <div class="punish-date-box">
+                                    <div class="punish-status-text" style="color: ${statusColor}">${statusLabel}</div>
+                                    <div class="punish-date">${h.date}</div>
+                                </div>
+                            `;
                             punishList.appendChild(item);
                         });
                     }
@@ -5095,6 +5255,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // ============================================================
+        // 0. INTERCEPTOR DE SANCIONES (BAN / KICK / WARN)
+        // ============================================================
+        if (action === 'kick' || action === 'warn' || action === 'ban') {
+            openSanctionInput(action); // <-- Llamamos a la función del modal nuevo
+            return; // IMPORTANTE: Detiene la ejecución aquí
+        }
+
+        if (action === 'ck') return; // Ignoramos CK por ahora
+
+
         // --- 1. Interceptamos acciones de Dinero y Dimensión para abrir el modal
         const moneyActions = ['add_cash', 'remove_cash', 'add_bank', 'remove_bank', 'add_crypto', 'remove_crypto'];
 
@@ -5127,6 +5298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- 4. INTERCEPTOR PARA DIMENSIONES ---
+        // (Nota: Ya estaba cubierto en el punto 1, pero si lo tienes separado, déjalo)
         if (action === 'dimension_menu') {
             currentMoneyAction = null; // Nos aseguramos de limpiar el modo dinero
             openDimensionModal(currentDetailsId);
@@ -5320,23 +5492,271 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
     //      SISTEMA GPS (NECESARIO PARA EL BOTÓN)
     // ==========================================================================
-    window.setGPS = (x, y) => {
-        // Validamos que no sean 0 o nulos
-        if (!x || !y || (parseFloat(x) === 0 && parseFloat(y) === 0)) {
-            console.warn("GPS: Coordenadas inválidas (0,0)");
-            // Opcional: Mostrar un aviso visual si quieres
-            return;
+    window.setGPS = function (x, y) {
+        // 1. Convertimos a float (Decimales) para asegurar que son números
+        const lat = parseFloat(x);
+        const lon = parseFloat(y);
+
+        // 2. Validación de seguridad:
+        // - isNaN: Si no es un número válido
+        // - (0,0): Si son las coordenadas "null island" (error común)
+        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) {
+            console.error("[GPS] Error: Coordenadas inválidas recibidas:", x, y);
+            return; // No hacemos nada
         }
 
-        // Enviamos la orden al cliente (Lua)
+        // 3. Enviamos al Lua (Client) datos limpios
         fetch(`https://${GetParentResourceName()}/setGPS`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                x: x,
-                y: y
+                x: lat,
+                y: lon
             })
         });
     };
+
+    // ==========================================================================
+    //      SISTEMA DE SANCIONES (DEBUG VERSION)
+    // ==========================================================================
+
+    // 1. ABRIR EL MODAL DE INPUT
+    function openSanctionInput(type) {
+        log(`[DP-AdminMenu] Abriendo modal para: ${type}`); // DEBUG
+
+        if (!currentDetailsId && !currentPlayerDataGlobal) {
+            log("[DP-AdminMenu] No hay datos de jugador (currentDetailsId o Global perdidos)");
+            return;
+        }
+
+        pendingSanction.type = type;
+        pendingSanction.targetId = currentDetailsId;
+
+        if (currentPlayerDataGlobal) {
+            pendingSanction.citizenid = currentPlayerDataGlobal.citizenid;
+        }
+
+        const modal = document.getElementById('sanction-modal');
+        if (!modal) return log("[DP-AdminMenu] No encuentro el div 'sanction-modal' en el HTML");
+
+        // Resetear campos
+        document.getElementById('sanction-reason').value = "";
+        document.getElementById('ban-time-val').value = "";
+        modal.style.display = 'flex';
+
+        // Textos
+        const title = document.getElementById('sanction-title');
+        const durationGroup = document.getElementById('ban-duration-group');
+
+        if (type === 'kick') {
+            title.innerText = "EXPULSAR JUGADOR (KICK)";
+            durationGroup.style.display = 'none';
+        } else if (type === 'warn') {
+            title.innerText = "ENVIAR ADVERTENCIA (WARN)";
+            durationGroup.style.display = 'none';
+        } else if (type === 'ban') {
+            title.innerText = "BANEAR JUGADOR";
+            durationGroup.style.display = 'block';
+        }
+    }
+
+    // Funciones globales para cerrar (HTML onclick)
+    window.closeSanctionModal = () => { document.getElementById('sanction-modal').style.display = 'none'; };
+    window.closeConfirmSanctionModal = () => { document.getElementById('confirm-sanction-modal').style.display = 'none'; };
+
+    // ==========================================================================
+    //      INICIALIZACIÓN SEGURA DE BOTONES (DISEÑO PREMIUM)
+    // ==========================================================================
+    function initSanctionButtons() {
+        log("[DP-AdminMenu] Inicializando botones de sanción...");
+
+        const btnNext = document.getElementById('btn-sanction-next');
+        const btnExecute = document.getElementById('btn-sanction-execute');
+        const btnCk = document.getElementById('btn-ck-player');
+
+        if (!btnNext) console.error("[DP-AdminMenu] No encuentro el botón 'btn-sanction-next'");
+        if (!btnExecute) console.error("[DP-AdminMenu] No encuentro el botón 'btn-sanction-execute'");
+
+        // ----------------------------------------------------------------------
+        // 1. LÓGICA BOTÓN CK (DISEÑO ROJO Y PELIGROSO)
+        // ----------------------------------------------------------------------
+        if (btnCk) {
+            const newCk = btnCk.cloneNode(true);
+            btnCk.parentNode.replaceChild(newCk, btnCk);
+
+            newCk.addEventListener('click', () => {
+                if (!currentPlayerDataGlobal) return log("No hay datos de jugador para CK");
+
+                pendingSanction = {
+                    type: 'ck',
+                    targetId: currentPlayerDataGlobal.id,
+                    citizenid: currentPlayerDataGlobal.citizenid,
+                    reason: "CK - Eliminación Total"
+                };
+
+                const msgEl = document.getElementById('confirm-sanction-msg');
+
+                // HTML PREMIUM PARA CK
+                msgEl.innerHTML = `
+                    <div class="confirm-summary-box" style="border-color: #ff0000;">
+                        <div class="confirm-row">
+                            <span class="c-label">JUGADOR</span>
+                            <span class="c-value">${currentPlayerDataGlobal.name}</span>
+                        </div>
+                        <div class="confirm-row">
+                            <span class="c-label">ACCIÓN</span>
+                            <span class="c-badge ck">CHARACTER KILL</span>
+                        </div>
+                        <div class="confirm-row">
+                            <span class="c-label">CITIZEN ID</span>
+                            <span class="c-value">${currentPlayerDataGlobal.citizenid}</span>
+                        </div>
+                    </div>
+
+                    <div class="danger-alert-box">
+                        <span class="iconify danger-icon" data-icon="mdi:alert-decagram"></span>
+                        <div class="danger-text">
+                            <b>⚠️ ADVERTENCIA IRREVERSIBLE</b><br>
+                            Se generará un <u>Backup Completo</u> y se borrarán:<br>
+                            • Personaje y Cuentas Bancarias.<br>
+                            • Vehículos, Casas y sus inventarios.<br>
+                        </div>
+                    </div>
+                `;
+
+                closeSanctionModal();
+                document.getElementById('confirm-sanction-modal').style.display = 'flex';
+            });
+        }
+
+        // ----------------------------------------------------------------------
+        // 2. LÓGICA BOTÓN "CONTINUAR" (DISEÑO LIMPIO PARA WARN/BAN/KICK)
+        // ----------------------------------------------------------------------
+        if (btnNext) {
+            const newBtn = btnNext.cloneNode(true);
+            btnNext.parentNode.replaceChild(newBtn, btnNext);
+
+            newBtn.addEventListener('click', () => {
+                const reason = document.getElementById('sanction-reason').value;
+
+                if (!reason || reason.trim().length < 2) {
+                    const area = document.getElementById('sanction-reason');
+                    area.style.border = "1px solid red";
+                    setTimeout(() => area.style.border = "1px solid #555", 2000);
+                    return;
+                }
+
+                // Lógica BAN
+                let durationText = "N/A";
+                if (pendingSanction.type === 'ban') {
+                    const timeVal = document.getElementById('ban-time-val').value;
+                    const timeUnit = document.getElementById('ban-time-unit').value;
+
+                    if (timeUnit !== 'perm' && (!timeVal || timeVal <= 0)) {
+                        document.getElementById('ban-time-val').style.border = "1px solid red";
+                        return;
+                    }
+
+                    if (timeUnit === 'perm') {
+                        pendingSanction.duration = 2147483647;
+                        durationText = "PERMANENTE";
+                    } else {
+                        pendingSanction.duration = parseInt(timeVal) * parseInt(timeUnit);
+                        // Texto bonito para duración
+                        const unitLabel = (timeUnit == 3600) ? "Horas" : (timeUnit == 86400) ? "Días" : "Meses";
+                        durationText = `${timeVal} ${unitLabel}`;
+                    }
+                }
+
+                // Preparar HTML PREMIUM
+                const msgEl = document.getElementById('confirm-sanction-msg');
+                const typeUpper = pendingSanction.type.toUpperCase();
+                const badgeClass = pendingSanction.type; // 'warn', 'kick', 'ban'
+
+                // HTML LIMPIO
+                let htmlContent = `
+                    <div class="confirm-summary-box">
+                        <div class="confirm-row">
+                            <span class="c-label">OBJETIVO</span>
+                            <span class="c-value">${currentPlayerDataGlobal ? currentPlayerDataGlobal.name : 'Desconocido'}</span>
+                        </div>
+                        <div class="confirm-row">
+                            <span class="c-label">TIPO SANCIÓN</span>
+                            <span class="c-badge ${badgeClass}">${typeUpper}</span>
+                        </div>
+                `;
+
+                // Si es BAN, añadimos fila de duración
+                if (pendingSanction.type === 'ban') {
+                    htmlContent += `
+                        <div class="confirm-row">
+                            <span class="c-label">DURACIÓN</span>
+                            <span class="c-value" style="color:#ffcc00">${durationText}</span>
+                        </div>
+                    `;
+                }
+
+                // Añadimos el motivo al final
+                htmlContent += `
+                        <div class="confirm-row">
+                            <span class="c-label">MOTIVO</span>
+                            <span class="c-value reason-text" title="${reason}">${reason}</span>
+                        </div>
+                    </div>
+                `;
+
+                msgEl.innerHTML = htmlContent;
+
+                pendingSanction.reason = reason;
+                closeSanctionModal();
+                document.getElementById('confirm-sanction-modal').style.display = 'flex';
+            });
+        }
+
+        // ----------------------------------------------------------------------
+        // 3. LÓGICA BOTÓN "CONFIRMAR" (IGUAL QUE ANTES)
+        // ----------------------------------------------------------------------
+        if (btnExecute) {
+            const newExec = btnExecute.cloneNode(true);
+            btnExecute.parentNode.replaceChild(newExec, btnExecute);
+
+            newExec.addEventListener('click', () => {
+                log("[DP-AdminMenu] Click en CONFIRMAR. Enviando fetch...");
+                if (isProcessingAction) return;
+                isProcessingAction = true;
+
+                let endpoint = 'kickPlayer';
+                if (pendingSanction.type === 'ck') endpoint = 'ckPlayer';
+                else if (pendingSanction.type === 'warn') endpoint = 'warnPlayer';
+                else if (pendingSanction.type === 'ban') endpoint = 'banPlayer';
+
+                const payload = {
+                    targetId: pendingSanction.targetId,
+                    citizenid: pendingSanction.citizenid,
+                    reason: pendingSanction.reason,
+                    duration: pendingSanction.duration,
+                    license: currentPlayerDataGlobal ? currentPlayerDataGlobal.license : null
+                };
+
+                fetch(`https://${GetParentResourceName()}/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(resp => resp.text())
+                    .then(respText => {
+                        log("[DP-AdminMenu] Respuesta Server:", respText);
+                        closeConfirmSanctionModal();
+                        isProcessingAction = false;
+                    }).catch(err => {
+                        console.error("[DP-AdminMenu] Error en el FETCH:", err);
+                        isProcessingAction = false;
+                        closeConfirmSanctionModal();
+                    });
+            });
+        }
+    }
+
+    // Llamamos a la inicialización cuando el script carga (con un pequeño delay para asegurar HTML)
+    setTimeout(initSanctionButtons, 500);
 
 }); // FIN DEL DOMContentLoaded

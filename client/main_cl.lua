@@ -172,7 +172,7 @@ local isCursorModeActive = false
 
 local function DebugLog(msg)
     if Config.Debug then
-        print("^5[DP-ADMIN CLIENT]^7 " .. msg)
+        print("^5[DP-AdminMenu CLIENT]^7 " .. msg)
     end
 end
 
@@ -2191,7 +2191,7 @@ RegisterNUICallback('closeMenu', function(_, cb)
 end)
 
 -- ==========================================================================
---      9. NUEVOS EVENTOS PARA EL MODAL DE DETALLES (PLAYER DETAILS)
+--      9. EVENTOS PARA EL MODAL DE DETALLES (PLAYER DETAILS)
 -- ==========================================================================
 
 local isSpectating = false
@@ -2257,15 +2257,16 @@ end)
 -- 1. TARGET: ALGUIEN PIDE UNA FOTO TUYA (Se ejecuta en el JUGADOR)
 RegisterNetEvent('DP-AdminMenu:client:captureScreen', function(adminSource)
     -- LOG 1: Confirmamos que llega la orden desde el servidor
-    DebugLog("^3[DP-ADMIN DEBUG] 📸 Petición de captura recibida. Admin ID: " .. tostring(adminSource) .. "^7")
+    DebugLog("^3[DP-AdminMenu DEBUG] 📸 Petición de captura recibida. Admin ID: " .. tostring(adminSource) .. "^7")
 
     -- Verificación de seguridad: ¿Existe el script necesario?
     if GetResourceState('screenshot-basic') ~= 'started' then
-        DebugLog("^1[DP-ADMIN ERROR] ❌ El script 'screenshot-basic' NO está iniciado o no existe en el server.cfg^7")
+        DebugLog(
+            "^1[DP-AdminMenu ERROR] ❌ El script 'screenshot-basic' NO está iniciado o no existe en el server.cfg^7")
         return
     end
 
-    DebugLog("^3[DP-ADMIN DEBUG] ⏳ Solicitando foto a screenshot-basic...^7")
+    DebugLog("^3[DP-AdminMenu DEBUG] ⏳ Solicitando foto a screenshot-basic...^7")
 
     -- Usamos screenshot-basic
     exports['screenshot-basic']:requestScreenshot({
@@ -2274,29 +2275,30 @@ RegisterNetEvent('DP-AdminMenu:client:captureScreen', function(adminSource)
     }, function(data)
         -- LOG 2: Confirmamos que la foto se ha creado o ha fallado
         if data then
-            DebugLog("^3[DP-ADMIN DEBUG] ✅ Foto generada! Tamaño: " .. string.len(tostring(data)) .. " caracteres.^7")
+            DebugLog("^3[DP-AdminMenu DEBUG] ✅ Foto generada! Tamaño: " .. string.len(tostring(data)) ..
+                         " caracteres.^7")
 
             -- Enviamos la imagen (data) de vuelta al servidor
             TriggerServerEvent('DP-AdminMenu:server:relayScreenshot', adminSource, data)
-            DebugLog("^3[DP-ADMIN DEBUG] 📤 Enviando datos de vuelta al servidor...^7")
+            DebugLog("^3[DP-AdminMenu DEBUG] 📤 Enviando datos de vuelta al servidor...^7")
         else
             DebugLog(
-                "^1[DP-ADMIN ERROR] ❌ La foto se generó pero llegó VACÍA (nil). Fallo interno de screenshot-basic.^7")
+                "^1[DP-AdminMenu ERROR] ❌ La foto se generó pero llegó VACÍA (nil). Fallo interno de screenshot-basic.^7")
         end
     end)
 end)
 
 -- 2. ADMIN: RECIBES LA FOTO DEL JUGADOR (Se ejecuta en el ADMIN)
 RegisterNetEvent('DP-AdminMenu:client:receiveScreenshot', function(base64Data)
-    DebugLog("^3[DP-ADMIN DEBUG] 📥 El servidor me ha devuelto la foto. Procesando...^7")
+    DebugLog("^3[DP-AdminMenu DEBUG] 📥 El servidor me ha devuelto la foto. Procesando...^7")
 
     if not base64Data then
-        DebugLog("^1[DP-ADMIN ERROR] ❌ Los datos de la foto llegaron vacíos al Admin.^7")
+        DebugLog("^1[DP-AdminMenu ERROR] ❌ Los datos de la foto llegaron vacíos al Admin.^7")
         return
     end
 
     -- Enviamos la imagen al NUI (JavaScript) para mostrarla en el modal
-    DebugLog("^3[DP-ADMIN DEBUG] 🖥️ Enviando imagen al NUI (Javascript)...^7")
+    DebugLog("^3[DP-AdminMenu DEBUG] 🖥️ Enviando imagen al NUI (Javascript)...^7")
 
     SendNUIMessage({
         type = "updateScreenshot",
@@ -2524,11 +2526,78 @@ RegisterNUICallback('setGPS', function(data, cb)
         -- Opción 1: Usar el Waypoint nativo (El punto morado del mapa)
         -- Es lo más limpio y lo que el jugador espera.
         SetNewWaypoint(x, y)
-        
+
         QBCore.Functions.Notify("📍 GPS marcado en tu mapa", "success")
     else
         QBCore.Functions.Notify("❌ Error: Ubicación desconocida", "error")
     end
+
+    cb('ok')
+end)
+
+-- ==========================================================================
+--      PUENTE NUI Y LÓGICA DE BLOQUEO (WARN CRÍTICO)
+-- ==========================================================================
+
+RegisterNUICallback('kickPlayer', function(data, cb)
+    TriggerServerEvent('DP-AdminMenu:server:kickPlayer', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('warnPlayer', function(data, cb)
+    TriggerServerEvent('DP-AdminMenu:server:warnPlayer', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('banPlayer', function(data, cb)
+    TriggerServerEvent('DP-AdminMenu:server:banPlayerFromMenu', data)
+    cb('ok')
+end)
+
+-- SISTEMA DE BLOQUEO DE PANTALLA
+local isWarnActive = false
+
+RegisterNetEvent('DP-AdminMenu:client:showCriticalWarn', function(data)
+    isWarnActive = true
+
+    -- Sonido de Alerta Fuerte
+    PlaySoundFrontend(-1, "Beep_Red", "DLC_HEIST_HACKING_SNAKE_SOUNDS", 1)
+
+    -- Bloquear foco en la pantalla negra
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'openWarnScreen',
+        reason = data.reason,
+        admin = data.admin
+    })
+
+    -- Hilo para deshabilitar controles mientras la alerta esté activa
+    CreateThread(function()
+        while isWarnActive do
+            Wait(0)
+            DisableAllControlActions(0) -- Bloquea teclado y mando
+            HideHudAndRadarThisFrame() -- Oculta minimapa
+        end
+    end)
+end)
+
+-- Cuando el JS confirma que se pulsó espacio 5s
+RegisterNUICallback('warnConfirmed', function(_, cb)
+    isWarnActive = false
+    SetNuiFocus(false, false)
+    TriggerServerEvent('DP-AdminMenu:server:warnConfirmed')
+    cb('ok')
+end)
+
+-- ==========================================================================
+--      CALLBACK: PUENTE PARA EL CK (JS -> CLIENT -> SERVER)
+-- ==========================================================================
+RegisterNUICallback('ckPlayer', function(data, cb)
+    -- Opcional: Podrías poner un sonido dramático aquí si quisieras
+    -- PlaySoundFrontend(-1, "Bed", "WastedSounds", 1) 
+
+    -- Enviamos la orden al servidor para que haga el Backup y Borrado
+    TriggerServerEvent('DP-AdminMenu:server:ckPlayer', data)
 
     cb('ok')
 end)

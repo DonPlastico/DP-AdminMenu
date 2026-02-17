@@ -3536,16 +3536,6 @@ input:checked+.slider:before {
     background: rgba(255, 255, 255, 0.08);
 }
 
-.stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-}
-
 .stat-info h3 {
     margin: 0;
     font-size: 20px;
@@ -4120,7 +4110,7 @@ input:checked+.slider:before {
     left: 0;
     margin: 0 !important;
     padding: 0 !important;
-    
+
     transform: scale(1);
     /* Quitamos height de la transición para que no "baile" al redimensionar el menú */
     transition: width 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
@@ -4129,22 +4119,27 @@ input:checked+.slider:before {
     width: 1000px;
     min-width: 350px;
     /* Eliminamos cualquier height fijo aquí para que mande el JS */
-    
+
     background: var(--bg-panel);
     border-radius: 5px;
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-    overflow: hidden; /* Importante para que el contenido no se salga */
-    
-    flex-direction: column; /* Asegura que el contenido se apile verticalmente */
+    overflow: hidden;
+    /* Importante para que el contenido no se salga */
+
+    flex-direction: column;
+    /* Asegura que el contenido se apile verticalmente */
 }
 
 /* IMPORTANTE: El contenedor del contenido debe tener scroll */
 /* Ajusta esta clase según cómo se llame el div que envuelve tus datos */
-.player-details-container .modal-content, 
+.player-details-container .modal-content,
 .player-details-container .pd-main-content {
-    flex: 1; /* Ocupa todo el espacio disponible */
-    overflow-y: auto; /* Activa el scroll vertical */
-    padding: 15px; /* Tu padding interno */
+    flex: 1;
+    /* Ocupa todo el espacio disponible */
+    overflow-y: auto;
+    /* Activa el scroll vertical */
+    padding: 15px;
+    /* Tu padding interno */
 }
 
 /* Permitimos la selección ÚNICAMENTE en los valores (textos blancos/verdes) */
@@ -4178,9 +4173,20 @@ input:checked+.slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
-    background-color: var(--bg-element);
-    border-bottom: 1px solid var(--bg-border);
+    background: rgba(0, 0, 0, 0.4) !important;
+    /* Fondo más oscuro y limpio */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding: 20px !important;
+}
+
+#pd-charname {
+    color: #ffffff !important;
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase;
+    margin: 0 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 /* Grupo Izquierdo (Foto + Texto) */
@@ -4230,41 +4236,48 @@ input:checked+.slider:before {
 /* Badges de Estado */
 .status-badge {
     align-self: flex-start;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 9px;
-    font-weight: bold;
-    letter-spacing: 0.5px;
+    padding: 2px 8px !important;
+    border-radius: 2px !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
     text-transform: uppercase;
+    background: transparent !important;
+    border: 1px solid transparent;
 }
 
+/* Estado Online: Blanco */
 .status-badge.online {
-    background-color: rgba(14, 160, 33, 0.15);
-    color: #4cd137;
-    border: 1px solid rgba(14, 160, 33, 0.3);
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Estado Offline: Gris Oscuro */
 .status-badge.offline {
-    background-color: rgba(255, 68, 68, 0.15);
-    color: #ff6b6b;
-    border: 1px solid rgba(255, 68, 68, 0.3);
+    color: #555 !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-.btn-close-text {
-    background-color: rgba(255, 68, 68, 0.1);
-    color: var(--danger-text);
-    border: 1px solid var(--danger);
-    padding: 14px 20px;
+/* Botón Cerrar Minimalista */
+.btn-close-modern {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+    padding: 8px 16px;
     font-size: 10px;
-    font-weight: bold;
-    border-radius: 4px;
-    transition: all 0.3s;
-    height: fit-content;
+    font-weight: 900;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 2px;
 }
 
-.btn-close-text:hover {
-    background-color: var(--danger);
-    color: white;
+.btn-close-modern:hover {
+    background: #ff4444;
+    /* Rojo solo al cerrar para indicar acción */
+    color: #fff;
+    border-color: #ff4444;
+    box-shadow: 0 0 15px rgba(255, 68, 68, 0.2);
 }
 
 .pd-section-title {
@@ -4723,12 +4736,53 @@ input:checked+.slider:before {
     border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
+.asset-badges-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+}
+
+/* Estilo Base del Badge */
+.pd-mini-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+/* Estilo Matrícula (Técnico / Monospace) */
 .badge-plate {
     background: #111;
-    color: #ffb74d;
-    font-family: monospace;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    /* Fuente tipo máquina de escribir */
+    border-color: #444;
     letter-spacing: 1px;
-    border: 1px solid #333;
+}
+
+.badge-loc {
+    background: rgba(255, 255, 255, 0.05);
+    color: #aaa;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Estilo Garaje SI (Verde) */
+.badge-garage-yes {
+    background: rgba(46, 204, 113, 0.1);
+    color: #2ecc71;
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+/* Estilo Garaje NO (Rojo) */
+.badge-garage-no {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    border-color: rgba(231, 76, 60, 0.3);
 }
 
 .badge-house {
@@ -5029,6 +5083,847 @@ input:checked+.slider:before {
     opacity: 1;
     animation: scanMove 3s linear forwards;
 }
+
+/* ==========================================================================
+   NUEVO ESTILO MINIMALISTA (SANCIONES)
+   ========================================================================== */
+
+/* 1. Chips de Contadores (Cabecera) */
+.pd-punish-summary {
+    display: flex;
+    gap: 5px;
+}
+
+.punish-chip {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #666;
+    font-size: 9px;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* El chip de BAN resalta un poco más */
+.chip-ban {
+    color: #aaa;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 2. Contenedor de la Lista (Altura Aumentada) */
+.pd-punish-list-modern {
+    height: 280px;
+    /* Aquí controlas la altura */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.2);
+    /* Fondo sutil */
+    border-radius: 4px;
+    padding: 4px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+/* Scrollbar invisible para look limpio (opcional) */
+.pd-punish-list-modern::-webkit-scrollbar {
+    width: 3px;
+}
+
+.pd-punish-list-modern::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+/* 3. Fila de Sanción (La tarjeta) */
+.punish-item-row {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    gap: 12px;
+    transition: all 0.2s ease;
+    border-left: 2px solid transparent;
+    /* Borde izquierdo dinámico */
+}
+
+.punish-item-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    padding-left: 15px;
+    /* Efecto de movimiento suave al pasar ratón */
+}
+
+/* Variaciones Monocromáticas (Jerarquía Visual) */
+.row-ban {
+    border-left-color: #ffffff;
+}
+
+/* Blanco Puro (Grave) */
+.row-kick {
+    border-left-color: #999999;
+}
+
+/* Gris Medio */
+.row-warn {
+    border-left-color: #444444;
+}
+
+/* Gris Oscuro (Leve) */
+
+/* Icono circular */
+.punish-icon-box {
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 14px;
+}
+
+/* Textos */
+.punish-main-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.punish-reason {
+    color: #e0e0e0;
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.punish-meta {
+    font-size: 9px;
+    color: #555;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.punish-meta span {
+    margin-right: 8px;
+}
+
+.punish-meta strong {
+    color: #888;
+}
+
+/* Columna derecha (Fecha y Estado) */
+.punish-date-box {
+    text-align: right;
+    min-width: 70px;
+}
+
+.punish-status-text {
+    font-size: 9px;
+    font-weight: 900;
+    margin-bottom: 1px;
+    letter-spacing: 0.5px;
+}
+
+.punish-date {
+    color: #444;
+    font-size: 9px;
+    font-family: monospace;
+}
+
+/* 4. Botonera Moderna (Ghost Buttons) */
+.pd-punish-toolbar-modern {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-punish-mod {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+    padding: 8px 0;
+    flex: 1;
+    /* Todos ocupan el mismo ancho */
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Efectos Hover Monocromáticos */
+.btn-punish-mod:hover {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+}
+
+.btn-punish-mod.ck {
+    flex: 0 0 40px;
+}
+
+/* El CK más pequeño */
+
+/* ==========================================================================
+   REDISEÑO PROPIEDADES Y VEHÍCULOS (MINIMALISTA)
+   ========================================================================== */
+
+/* Contenedor de la columna */
+.pd-column-modern {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.3);
+    /* Fondo sutil */
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Lista Scrollable (Altura aumentada) */
+.pd-list-modern-scroll {
+    height: 250px;
+    /* Altura fija generosa */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 2px;
+}
+
+/* Scrollbar invisible/fina */
+.pd-list-modern-scroll::-webkit-scrollbar {
+    width: 3px;
+}
+
+.pd-list-modern-scroll::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+/* Fila Genérica (Base para Prop y Veh) */
+.asset-item-row {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    gap: 10px;
+    border-left: 2px solid #333;
+    /* Por defecto gris oscuro */
+    transition: all 0.2s ease;
+    border-radius: 2px;
+}
+
+.asset-item-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    padding-left: 12px;
+}
+
+/* Variaciones Visuales (Monocromáticas) */
+.row-active {
+    border-left-color: #fff;
+}
+
+/* Activo/Fuera (Blanco) */
+.row-inactive {
+    border-left-color: #555;
+}
+
+/* Guardado/Garaje (Gris) */
+
+/* Icono */
+.asset-icon-box {
+    color: #666;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+}
+
+/* Info Principal */
+.asset-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.asset-title {
+    color: #ddd;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.asset-meta {
+    font-size: 9px;
+    color: #555;
+    font-family: 'Roboto', monospace;
+    text-transform: uppercase;
+}
+
+/* Botón GPS Minimalista (Versión Grande) */
+.btn-gps-modern {
+    background: transparent;
+    /* Hacemos el borde un poco más visible también */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #888;
+    /* Color base un poco más claro */
+
+    /* NUEVAS MEDIDAS MÁS GRANDES */
+    width: 36px;
+    /* Antes 24px */
+    height: 36px;
+    /* Antes 24px */
+    font-size: 20px !important;
+    /* Tamaño del icono (importante para forzarlo) */
+
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transición más suave */
+    flex-shrink: 0;
+    /* Evita que se aplaste si el texto es largo */
+}
+
+.btn-gps-modern:hover {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+    transform: scale(1.1);
+    /* Efecto "pop" al pasar el ratón */
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    /* Un brillo sutil */
+}
+
+.btn-gps-modern:active {
+    transform: scale(0.95);
+    /* Efecto de click */
+}
+
+/* ==========================================================================
+   STATS MONOCROMÁTICAS (MINIMALISTAS)
+   ========================================================================== */
+
+/* Grid de 2 columnas para los stats */
+.pd-grid-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    /* Espacio entre tarjetas */
+}
+
+/* Tarjeta de Stat Individual */
+.stat-card-modern {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Cabecera (Icono + Nombre + Valor) */
+.stat-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #666;
+    margin-right: 5px;
+}
+
+.stat-name {
+    flex: 1;
+    color: #aaa;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.stat-number {
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+}
+
+/* Pista de la barra (Fondo) */
+.stat-track-modern {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+/* Relleno de la barra (Base) */
+.stat-fill-modern {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    /* Sombra interna sutil */
+}
+
+/* === PALETA MONOCROMÁTICA === */
+
+/* Salud: Blanco Brillante */
+.fill-white {
+    background: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+    /* Resplandor blanco */
+}
+
+/* Blindaje: Gris Plata */
+.fill-silver {
+    background: #bdbdbd;
+}
+
+/* Necesidades: Gris Medio */
+.fill-grey {
+    background: #757575;
+}
+
+/* Secundarios: Gris Oscuro */
+.fill-dark {
+    background: #424242;
+}
+
+/* ==========================================================================
+   DATOS DE JUGADOR (ESTILO TARJETA TÉCNICA)
+   ========================================================================== */
+
+/* Grid Principal */
+.pd-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* 2 Columnas */
+    gap: 8px;
+}
+
+/* Tarjeta de Información Individual */
+.info-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 12px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background 0.2s;
+}
+
+.info-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Etiqueta (Título pequeño) */
+.info-label {
+    font-size: 9px;
+    color: #666;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.info-label .iconify {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.mb-2 {
+    margin-bottom: 5px;
+}
+
+/* Valor Principal */
+.info-value {
+    color: #ccc;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Variaciones de Fuente */
+.info-value.highlight {
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+/* Nombre */
+.info-value.money-font {
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+/* Dinero */
+.info-value.code-font {
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+}
+
+/* IDs */
+
+/* Fila para Job/Gang + Badge */
+.info-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #ddd;
+    font-weight: 500;
+}
+
+/* Badge de Jefe (Minimalista) */
+.boss-pill {
+    background: #fff;
+    color: #000;
+    font-size: 8px;
+    font-weight: 900;
+    padding: 1px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- IDENTIFICADORES (MODERNO) --- */
+.pd-identifiers-modern {
+    background: #0a0a0a;
+    /* Casi negro */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: #888;
+
+    /* Efecto Spoiler */
+    filter: blur(4px);
+    opacity: 0.6;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+
+    /* Layout */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Al pasar el ratón o hacer click (clase 'revealed' la pone tu JS) */
+.pd-identifiers-modern.revealed {
+    filter: blur(0);
+    opacity: 1;
+    background: #000;
+    border-color: #444;
+    user-select: text;
+}
+
+/* Etiquetas individuales dentro de los identificadores */
+.pd-identifiers-modern span {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================================================
+   ADVERTENCIA CRÍTICA (ESTILO TXADMIN)
+   ========================================================================== */
+#warn-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(10, 10, 10, 0.98);
+    /* Casi opaco */
+    z-index: 99999;
+    /* Por encima de TODO */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Roboto', sans-serif;
+    user-select: none;
+}
+
+/* Bordes decorativos */
+.warn-border-top,
+.warn-border-bottom {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background: repeating-linear-gradient(45deg,
+            #ffcc00,
+            #ffcc00 20px,
+            #222 20px,
+            #222 40px);
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+}
+
+.warn-border-top {
+    top: 0;
+}
+
+.warn-border-bottom {
+    bottom: 0;
+}
+
+.warn-content {
+    text-align: center;
+    max-width: 800px;
+    width: 90%;
+    color: #fff;
+    animation: pulseWarn 2s infinite;
+}
+
+@keyframes pulseWarn {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.01);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.warn-icon {
+    font-size: 80px;
+    color: #ffcc00;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(255, 204, 0, 0.6);
+}
+
+.warn-header {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #ffcc00;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    border-bottom: 2px solid #333;
+    padding-bottom: 20px;
+}
+
+.warn-body {
+    margin-bottom: 40px;
+}
+
+.warn-label {
+    font-size: 14px;
+    color: #888;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.warn-reason {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 204, 0, 0.3);
+}
+
+.warn-admin-info {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+    font-style: italic;
+}
+
+.warn-admin-info span {
+    color: #aaa;
+    font-weight: bold;
+}
+
+.warn-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.warn-instructions {
+    font-size: 12px;
+    color: #aaa;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.key-badge {
+    background: #fff;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 900;
+}
+
+/* Barra de Progreso */
+.warn-progress-track {
+    width: 100%;
+    height: 10px;
+    background: #333;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #555;
+}
+
+.warn-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: #ffcc00;
+    box-shadow: 0 0 10px #ffcc00;
+}
+
+/* =========================================
+   ESTILOS PREMIUM PARA MODAL CONFIRMACIÓN
+   ========================================= */
+.confirm-summary-box {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.confirm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 8px;
+}
+
+.confirm-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.c-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.c-value {
+    font-size: 13px;
+    color: #fff;
+    font-weight: 500;
+    text-align: right;
+}
+
+.c-value.reason-text {
+    color: #ddd;
+    font-style: italic;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badges de Acción */
+.c-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.c-badge.ck {
+    background: #ff0000;
+    color: #fff;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+}
+
+.c-badge.ban {
+    background: #ff4444;
+    color: #fff;
+}
+
+.c-badge.kick {
+    background: #ffbb00;
+    color: #000;
+}
+
+.c-badge.warn {
+    background: #00ccff;
+    color: #000;
+}
+
+/* Caja de Alerta Roja (Para CK) */
+.danger-alert-box {
+    background: rgba(255, 0, 0, 0.1);
+    border-left: 3px solid #ff0000;
+    padding: 10px;
+    margin-top: 5px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.danger-icon {
+    font-size: 20px;
+    color: #ff0000;
+}
+
+.danger-text {
+    font-size: 11px;
+    color: #ffcccc;
+    line-height: 1.4;
+}
+
+.danger-text b {
+    color: #fff;
+}
+
+
+
+
+
+
+
+
 
 
 
