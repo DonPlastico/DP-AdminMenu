@@ -688,14 +688,23 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
         local warns = MySQL.query.await('SELECT * FROM warns WHERE license = ?', {cleanLicense})
         if warns then
             for _, w in pairs(warns) do
-                local isKick = w.reason and string.find(w.reason, "%[KICK%]")
-                if isKick then
+                -- NUEVO: Detectar si es KICK o CK por cómo lo guardaste en el servidor
+                local typeOfSanction = "WARN"
+
+                -- Si el Admin guardó el motivo con la palabra "CK" o "Expulsado", o nosotros lo forzamos:
+                if w.reason and string.upper(w.reason):find("KICK") or w.reason and
+                    string.upper(w.reason):find("EXPULSADO") then
+                    typeOfSanction = "KICK"
                     response.punishCounts.kicks = response.punishCounts.kicks + 1
+                elseif w.reason and string.upper(w.reason):find("CK") then
+                    typeOfSanction = "CK"
                 else
+                    typeOfSanction = "WARN"
                     response.punishCounts.warns = response.punishCounts.warns + 1
                 end
+
                 table.insert(response.history, {
-                    type = isKick and "KICK" or "WARN",
+                    type = typeOfSanction, -- WARN, KICK o CK
                     reason = w.reason,
                     admin = w.warnedby or "Admin",
                     date = w.warnedtime and os.date("%d/%m/%Y", w.warnedtime) or os.date("%d/%m/%Y"),
@@ -966,6 +975,36 @@ RegisterNetEvent('DP-AdminMenu:server:playerAction', function(action, targetId, 
 
             TriggerClientEvent('QBCore:Notify', src, 'Controlando jugador. Él te está especteando.', 'success')
         end
+
+    elseif action == 'fill_needs' then
+        local targetSrc = tonumber(targetId)
+        local Player = QBCore.Functions.GetPlayer(targetSrc)
+
+        if Player then
+            -- 1. Restaurar valores al 100% en la base de datos/memoria del jugador
+            Player.Functions.SetMetaData('hunger', 100)
+            Player.Functions.SetMetaData('thirst', 100)
+
+            -- 2. Forzar actualización del HUD del jugador (por si usa qb-hud o ps-hud)
+            TriggerClientEvent('hud:client:UpdateNeeds', targetSrc, 100, 100)
+
+            -- 3. Notificaciones
+            TriggerClientEvent('QBCore:Notify', src, 'Has rellenado comida/bebida al ID: ' .. targetSrc, 'success')
+            TriggerClientEvent('QBCore:Notify', targetSrc, 'Un administrador ha restaurado tus necesidades.', 'primary')
+        else
+            TriggerClientEvent('QBCore:Notify', src, 'El jugador no está online.', 'error')
+        end
+
+    elseif action == 'give_current_vehicle' then
+        local targetSrc = tonumber(targetId)
+        local Player = QBCore.Functions.GetPlayer(targetSrc)
+
+        if Player then
+            -- Le pedimos al cliente del objetivo que nos mande los datos de su coche actual
+            TriggerClientEvent('DP-AdminMenu:client:getVehicleInfoForGive', targetSrc, src)
+        else
+            TriggerClientEvent('QBCore:Notify', src, 'El jugador no está online.', 'error')
+        end
     end
 end)
 
@@ -1166,6 +1205,7 @@ RegisterNetEvent('DP-AdminMenu:server:updateWeather', function(weather, hour, ex
     if not (QBCore.Functions.HasPermission(src, 'admin') or QBCore.Functions.HasPermission(src, 'god')) then
         return TriggerClientEvent('QBCore:Notify', src, 'Sin permisos.', 'error')
     end
+
     extras = extras or {}
     GlobalState.CurrentWeather = weather
     GlobalState.Time = {
@@ -1173,9 +1213,16 @@ RegisterNetEvent('DP-AdminMenu:server:updateWeather', function(weather, hour, ex
         min = 0
     }
     GlobalState.FreezeTime = extras.freezeTime
+    GlobalState.Blackout = extras.blackout -- Guardamos estado del apagón
+
+    -- Llamamos a los exports
     exports['qb-weathersync']:setWeather(weather)
     exports['qb-weathersync']:setTime(hour, 0)
     exports['qb-weathersync']:setTimeFreeze(extras.freezeTime)
+
+    -- [NUEVO] Llamamos al apagón
+    exports['qb-weathersync']:setBlackout(extras.blackout)
+
     TriggerClientEvent('QBCore:Notify', src, 'Tiempo y Clima sincronizados.', 'success')
 end)
 
@@ -1804,9 +1851,8 @@ RegisterNetEvent('DP-AdminMenu:server:kickPlayer', function(data)
 end)
 
 -- 4. BAN (ONLINE & OFFLINE)
--- OJO: Le cambiamos el nombre para no chocar con tu evento antiguo de autoban
 RegisterNetEvent('DP-AdminMenu:server:banPlayerFromMenu', function(data)
-    DebugLog("^3[DP-AdminMenu] SERVIDOR: Recibido Evento BAN^7") -- DEBUG
+    DebugLog("^3[DP-AdminMenu] SERVIDOR: Recibido Evento BAN^7")
     local src = source
     local targetId = tonumber(data.targetId)
     local citizenid = data.citizenid
@@ -1821,25 +1867,16 @@ RegisterNetEvent('DP-AdminMenu:server:banPlayerFromMenu', function(data)
         if targetPlayer then
             DebugLog("^3[DP-AdminMenu] Baneando Online...^7")
             local name = targetPlayer.PlayerData.name
+
+            -- [FIX] Cogemos las licencias completas sin limpiarlas
             local license = QBCore.Functions.GetIdentifier(targetId, 'license')
-            local cleanLicense = license:gsub("license:", "")
             local discord = QBCore.Functions.GetIdentifier(targetId, 'discord') or "N/A"
             local ip = QBCore.Functions.GetIdentifier(targetId, 'ip') or "N/A"
 
             MySQL.insert(
                 'INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                {name, cleanLicense, discord, ip, reason, expireDate, senderName, 'active'}, function(id)
+                {name, license, discord, ip, reason, expireDate, senderName, 'active'}, function(id)
                     if id then
-                        -- Insertamos manualmente en la tabla de historial para que el JS lo lea bien al refrescar
-                        table.insert(response.history, {
-                            type = "BAN",
-                            reason = reason,
-                            admin = senderName, -- Enviamos el nombre del admin (DonMaderos en tu caso)
-                            date = os.date("%d/%m/%Y"), -- Enviamos la fecha actual corregida
-                            expiry = expireDate == 0 and "PERMANENTE" or os.date("%d/%m/%Y", expireDate),
-                            active = true,
-                            rawDate = os.time()
-                        })
                         DebugLog("^2[DP-AdminMenu] Ban guardado.^7")
                         Wait(200)
                         DropPlayer(targetId, "\n⛔ BANEADO: " .. reason)
@@ -1859,17 +1896,17 @@ RegisterNetEvent('DP-AdminMenu:server:banPlayerFromMenu', function(data)
 
         local playerResult = MySQL.single
                                  .await('SELECT license, charinfo FROM players WHERE citizenid = ?', {citizenid})
+
         if playerResult then
-            local cleanLicense = playerResult.license
-            if string.find(cleanLicense, "license:") then
-                cleanLicense = cleanLicense:gsub("license:", "")
-            end
+            -- [FIX] Usamos la licencia tal cual sale de la tabla players
+            local dbLicense = playerResult.license
+
             local charinfo = json.decode(playerResult.charinfo)
             local name = charinfo.firstname .. " " .. charinfo.lastname
 
             MySQL.insert(
                 'INSERT INTO bans (name, license, discord, ip, reason, expire, bannedby, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                {name, cleanLicense, "N/A", "N/A", reason, expireDate, senderName, 'active'}, function(id)
+                {name, dbLicense, "N/A", "N/A", reason, expireDate, senderName, 'active'}, function(id)
                     if id then
                         DebugLog("^2[DP-AdminMenu] Ban Offline guardado.^7")
                         TriggerClientEvent('QBCore:Notify', src, 'Ban Offline aplicado', 'success')
@@ -2063,6 +2100,62 @@ RegisterNetEvent('DP-AdminMenu:server:ckPlayer', function(data)
             end
         end)
     end)
+end)
+
+-- ==========================================================================
+--      EVENTOS: RESPUESTAS DEL GIVE VEHICLE
+-- ==========================================================================
+
+-- Si el jugador no estaba en un coche
+RegisterNetEvent('DP-AdminMenu:server:giveVehicleFailed', function(adminSrc, reason)
+    TriggerClientEvent('QBCore:Notify', adminSrc, reason, 'error')
+end)
+
+-- Si el jugador SÍ estaba en un coche y nos pasa los datos
+RegisterNetEvent('DP-AdminMenu:server:giveVehicleConfirm', function(adminSrc, vehicleModel, plate, props)
+    local targetSrc = source -- El jugador que nos envía la info (el Target)
+    local Admin = QBCore.Functions.GetPlayer(adminSrc)
+    local Target = QBCore.Functions.GetPlayer(targetSrc)
+
+    if not Admin or not Target then
+        return
+    end
+
+    -- 1. Comprobar si el coche ya tiene dueño en la base de datos
+    local result = MySQL.single.await('SELECT plate FROM player_vehicles WHERE plate = ?', {plate})
+
+    if result then
+        -- El coche ya le pertenece a alguien (puede ser a él mismo o a otro)
+        TriggerClientEvent('QBCore:Notify', adminSrc, "❌ Este vehículo YA PERTENECE a un jugador.", "error")
+        return
+    end
+
+    -- 2. Guardar en la base de datos
+    local cid = Target.PlayerData.citizenid
+    local license = Target.PlayerData.license
+    local garage = "pillboxgarage" -- Garaje central / plaza de cubos
+    local state = 0 -- 0 = Fuera del garaje (porque está montado en él ahora mismo)
+
+    -- Insertamos el vehículo con todas sus modificaciones (props) en formato JSON
+    MySQL.insert(
+        'INSERT INTO player_vehicles (license, citizenid, vehicle, hash, mods, plate, garage, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        {license, cid, vehicleModel, tostring(props.model), json.encode(props), plate, garage, state}, function(id)
+            if id then
+                -- Notificamos al Administrador
+                TriggerClientEvent('QBCore:Notify', adminSrc, "✅ Vehículo " .. vehicleModel .. " guardado para " ..
+                    Target.PlayerData.charinfo.firstname, "success")
+
+                -- Notificamos a la Víctima
+                TriggerClientEvent('QBCore:Notify', targetSrc,
+                    "Te han entregado las llaves de este vehículo. Guardado en Pillbox.", "success")
+
+                -- Le damos las llaves del coche usando el sistema estándar de QBCore
+                TriggerClientEvent('vehiclekeys:client:SetOwner', targetSrc, plate)
+            else
+                TriggerClientEvent('QBCore:Notify', adminSrc, "❌ Error crítico al guardar en la base de datos.",
+                    "error")
+            end
+        end)
 end)
 
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH

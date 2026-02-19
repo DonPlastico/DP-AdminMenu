@@ -395,54 +395,63 @@ document.addEventListener('DOMContentLoaded', () => {
             const soundOut = document.getElementById('audio-announce-out');
 
             // AJUSTAR VOLUMEN
-            soundIn.volume = 0.6;
-            soundOut.volume = 0.4;
+            if (soundIn) soundIn.volume = 0.6;
+            if (soundOut) soundOut.volume = 0.4;
 
             marquee.innerText = data.message;
             marquee.style.animation = 'none';
             bar.classList.remove('hide-announce');
 
             // --- SONIDO DE ENTRADA (ALERTA) ---
-            soundIn.currentTime = 0; // Reinicia el audio por si sonó hace poco
-            soundIn.play();
+            if (soundIn) {
+                soundIn.currentTime = 0; 
+                soundIn.play().catch(e => console.log("Audio play interceptado por navegador"));
+            }
 
-            // APLICAMOS CLASE DE ENTRADA
+            // APLICAMOS CLASE DE ENTRADA Y MOSTRAMOS
             bar.classList.add('show-announce');
             bar.style.display = 'flex';
 
-            // Cálculos de tamaño (Igual que antes)
-            const anchoBarra = content.offsetWidth;
-            const anchoTexto = marquee.offsetWidth;
-            const recorridoTotal = anchoBarra + anchoTexto;
-            const pixelesPorSegundo = 200;
-            const tiempoDeUnaVuelta = recorridoTotal / pixelesPorSegundo;
+            // 🚀 EL FIX MÁGICO: Esperar al siguiente "Frame" visual para medir
+            requestAnimationFrame(() => {
+                // Ahora sí, el contenedor existe visualmente y podemos medirlo
+                const anchoBarra = content.offsetWidth;
+                const anchoTexto = marquee.offsetWidth;
+                
+                const recorridoTotal = anchoBarra + anchoTexto;
+                const pixelesPorSegundo = 180; // Velocidad de lectura óptima
+                const tiempoDeUnaVuelta = recorridoTotal / pixelesPorSegundo;
 
-            marquee.style.setProperty('--distancia-recorrido', `-${recorridoTotal}px`);
+                // Definimos las variables de inicio y fin para el CSS
+                marquee.style.setProperty('--start-x', `${anchoBarra}px`);
+                marquee.style.setProperty('--end-x', `-${anchoTexto}px`);
 
-            setTimeout(() => {
+                // Arrancamos la animación
                 marquee.style.animation = `marquee-scroll ${tiempoDeUnaVuelta}s linear infinite`;
-            }, 10);
+            });
 
+            // Limpiamos el timer anterior si spamean anuncios
             if (announceTimeout) clearTimeout(announceTimeout);
 
             announceTimeout = setTimeout(() => {
+                // --- SONIDO DE SALIDA (WHOOSH) ---
+                if (soundOut) {
+                    soundOut.currentTime = 0;
+                    soundOut.play().catch(e => console.log("Audio play interceptado"));
+                }
 
-                // --- SONIDO DE SALIDA (WHOOSH/VIENTO) ---
-                soundOut.currentTime = 0;
-                soundOut.play();
-
-                // Animación de salida (Rebote hacia arriba)
+                // Animación de salida
                 bar.classList.remove('show-announce');
                 bar.classList.add('hide-announce');
 
-                // Esperamos a que termine la animación visual (750ms)
+                // Esperamos a que termine la animación visual (500ms)
                 setTimeout(() => {
                     if (bar.classList.contains('hide-announce')) {
                         bar.style.display = 'none';
                         marquee.style.animation = 'none';
                         bar.classList.remove('hide-announce');
                     }
-                }, 750);
+                }, 500);
 
             }, data.duration);
 
@@ -5015,7 +5024,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Estado: Verde si online, Gris si offline
                             const statusTitle = isOnlineChar ? 'Online' : 'Offline';
 
-                            // --- NUEVA ESTRUCTURA HTML (Icono + Info) ---
+                            // --- ESTRUCTURA HTML (Icono + Info) ---
                             card.innerHTML = `
                                 <div class="status-indicator" title="${statusTitle}"></div>
                                 
@@ -5266,6 +5275,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 5. RENDERIZADO DE SANCIONES (TU CÓDIGO)
                 // ===========================================
                 const punishList = document.getElementById('pd-punishments-list');
+                const punishCounts = fullData.punishCounts || { bans: 0, kicks: 0, warns: 0 }; // NUEVO: Extraemos los contadores
+
+                // NUEVO: Actualizamos los Badges del HTML
+                const countBansEl = document.getElementById('pd-count-bans');
+                const countKicksEl = document.getElementById('pd-count-kicks');
+                const countWarnsEl = document.getElementById('pd-count-warns');
+
+                if (countBansEl) countBansEl.textContent = punishCounts.bans;
+                if (countKicksEl) countKicksEl.textContent = punishCounts.kicks;
+                if (countWarnsEl) countWarnsEl.textContent = punishCounts.warns;
+
                 if (punishList) {
                     punishList.innerHTML = '';
                     const history = fullData.history || [];
@@ -5278,43 +5298,43 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>`;
                     } else {
                         history.forEach(h => {
-                            let rowClass = "row-warn";
-                            let statusColor = "#555";
+                            let rowClass = "row-warn"; // Clase por defecto
                             let statusLabel = "WARN";
                             let icon = "mdi:alert-circle-outline";
-                            let iconColor = "#555";
 
                             if (h.type === 'BAN') {
                                 rowClass = "row-ban";
-                                statusColor = h.active ? "#fff" : "#666";
-                                statusLabel = h.active ? "ACTIVO" : "EXPIRADO";
+                                statusLabel = "BAN";
                                 icon = "mdi:gavel";
-                                iconColor = "#e0e0e0";
+
                             } else if (h.type === 'KICK') {
                                 rowClass = "row-kick";
-                                statusColor = "#999";
                                 statusLabel = "KICK";
                                 icon = "mdi:door-open";
-                                iconColor = "#999";
+                                
+                            } else if (h.type === 'CK') {
+                                rowClass = "row-ck"; // Necesitarás crear esta clase en CSS si quieres borde rojo oscuro
+                                statusLabel = "CK";
+                                icon = "mdi:skull-crossbones";
                             }
 
                             const item = document.createElement('div');
                             item.className = `punish-item-row ${rowClass}`;
                             item.innerHTML = `
-                            <div class="punish-icon-box">
-                                <span class="iconify" data-icon="${icon}" style="color: ${iconColor};"></span>
-                            </div>
-                            <div class="punish-main-info">
-                                <div class="punish-reason">${h.reason || 'Sin motivo'}</div>
-                                <div class="punish-meta">
-                                    <span>POR: <strong>${h.admin || '?'}</strong></span>
+                                <div class="punish-icon-box">
+                                    <span class="iconify" data-icon="${icon}"></span>
                                 </div>
-                            </div>
-                            <div class="punish-date-box">
-                                <div class="punish-status-text" style="color: ${statusColor}">${statusLabel}</div>
-                                <div class="punish-date">${h.date}</div>
-                            </div>
-                        `;
+                                <div class="punish-main-info">
+                                    <div class="punish-reason">${h.reason || 'Sin motivo'}</div>
+                                    <div class="punish-meta">
+                                        <span>POR: <strong>${h.admin || '?'}</strong></span>
+                                    </div>
+                                </div>
+                                <div class="punish-date-box">
+                                    <div class="punish-status-text">${statusLabel}</div>
+                                    <div class="punish-date">${h.date}</div>
+                                </div>
+                            `;
                             punishList.appendChild(item);
                         });
                     }

@@ -606,8 +606,6 @@
             </div>
         </div>
 
-
-
         <div class="modal-overlay" id="weather-modal" style="display: none;">
             <div class="modal-box weather-box-custom">
                 <div class="modal-header">CONTROL CLIMÁTICO</div>
@@ -863,8 +861,9 @@
         </div>
 
         <div id="paint-modal" class="modal-overlay" style="display: none;">
-            <div class="modal-box" style="width: 600px; overflow: visible;">
+            <div class="modal-box" style="width: 600px; max-height: 90vh; display: flex; flex-direction: column;">
                 <div class="modal-header">GESTIONAR PINTURAS</div>
+
                 <div class="modal-body" style="text-align: center;">
                     <div class="input-group">
                         <p style="color: #aaa; margin-bottom: 20px;">
@@ -898,8 +897,7 @@
                                     <div class="color-preview-btn" id="btn-col-primary"
                                         onclick="openColorPicker('primary')">
                                         <div class="color-sample" id="sample-primary"
-                                            style="background-color: #000000;">
-                                        </div>
+                                            style="background-color: #000000;"></div>
                                     </div>
                                     <input type="hidden" id="val-col-primary" value="#000000">
 
@@ -937,8 +935,7 @@
                                     <div class="color-preview-btn" id="btn-col-secondary"
                                         onclick="openColorPicker('secondary')">
                                         <div class="color-sample" id="sample-secondary"
-                                            style="background-color: #000000;">
-                                        </div>
+                                            style="background-color: #000000;"></div>
                                     </div>
                                     <input type="hidden" id="val-col-secondary" value="#000000">
 
@@ -980,6 +977,7 @@
                                     <input type="hidden" id="val-col-wheels" value="#000000">
                                 </div>
                             </div>
+
                             <div class="paint-row">
                                 <label>HUMO DE RUEDAS</label>
                                 <div class="paint-controls">
@@ -1005,6 +1003,7 @@
                                     <input type="hidden" id="val-col-neon" value="#000000">
                                 </div>
                             </div>
+
                             <div class="paint-row">
                                 <label>LUCES (XENÓN)</label>
                                 <div class="paint-controls">
@@ -1038,7 +1037,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+
+                <div class="modal-footer"
+                    style="margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                     <button class="btn-confirm" id="btn-apply-paint">APLICAR CAMBIOS</button>
                     <button class="btn-cancel" onclick="closePaintModal()">CANCELAR</button>
                 </div>

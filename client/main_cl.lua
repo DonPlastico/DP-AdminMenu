@@ -2410,54 +2410,65 @@ end)
 -- ---------------------------------------------------------
 -- 1. PARA EL ADMIN (EL CONTROLADOR)
 -- ---------------------------------------------------------
-RegisterNetEvent('DP-AdminMenu:client:startControlling', function(targetServerId, targetCoords, targetName, targetCharName)
-    -- [NUEVO] Encender UI de Admin
-    SendNUIMessage({
-        type = 'showPuppetUI',
-        mode = 'admin',
-        targetName = targetName,
-        charName = targetCharName,
-        targetId = targetServerId
-    })
+RegisterNetEvent('DP-AdminMenu:client:startControlling',
+    function(targetServerId, targetCoords, targetName, targetCharName)
+        -- [NUEVO] Encender UI de Admin
+        SendNUIMessage({
+            type = 'showPuppetUI',
+            mode = 'admin',
+            targetName = targetName,
+            charName = targetCharName,
+            targetId = targetServerId
+        })
 
-    local ped = PlayerPedId()
-    SetEntityCoords(ped, targetCoords.x, targetCoords.y, targetCoords.z)
-    Wait(300) 
+        local ped = PlayerPedId()
+        SetEntityCoords(ped, targetCoords.x, targetCoords.y, targetCoords.z)
+        Wait(300)
 
-    local targetPlayer = GetPlayerFromServerId(targetServerId)
-    if targetPlayer ~= -1 then
-        local targetPed = GetPlayerPed(targetPlayer)
-        if targetPed and targetPed ~= 0 then
-            local targetModel = GetEntityModel(targetPed)
-            if IsModelInCdimage(targetModel) and IsModelValid(targetModel) then
-                RequestModel(targetModel)
-                local timeout = 0
-                while not HasModelLoaded(targetModel) and timeout < 50 do Wait(50) timeout = timeout + 1 end
+        local targetPlayer = GetPlayerFromServerId(targetServerId)
+        if targetPlayer ~= -1 then
+            local targetPed = GetPlayerPed(targetPlayer)
+            if targetPed and targetPed ~= 0 then
+                local targetModel = GetEntityModel(targetPed)
+                if IsModelInCdimage(targetModel) and IsModelValid(targetModel) then
+                    RequestModel(targetModel)
+                    local timeout = 0
+                    while not HasModelLoaded(targetModel) and timeout < 50 do
+                        Wait(50)
+                        timeout = timeout + 1
+                    end
 
-                if HasModelLoaded(targetModel) then
-                    SetPlayerModel(PlayerId(), targetModel)
-                    ped = PlayerPedId() 
-                    SetModelAsNoLongerNeeded(targetModel)
-                    ClonePedToTarget(targetPed, ped)
+                    if HasModelLoaded(targetModel) then
+                        SetPlayerModel(PlayerId(), targetModel)
+                        ped = PlayerPedId()
+                        SetModelAsNoLongerNeeded(targetModel)
+                        ClonePedToTarget(targetPed, ped)
+                    end
                 end
             end
         end
-    end
-end)
+    end)
 
 RegisterNetEvent('DP-AdminMenu:client:stopControlling', function()
     -- [NUEVO] Apagar UI de Admin
-    SendNUIMessage({ type = 'hidePuppetUI' })
+    SendNUIMessage({
+        type = 'hidePuppetUI'
+    })
 
     local scriptStates = {
         illenium = GetResourceState('illenium-appearance'),
         fivem_app = GetResourceState('fivem-appearance'),
         qb_clothing = GetResourceState('qb-clothing')
     }
-    if scriptStates.illenium == 'started' then TriggerEvent('illenium-appearance:client:reloadSkin', true)
-    elseif scriptStates.fivem_app == 'started' then TriggerEvent('fivem-appearance:client:reloadSkin', true)
-    elseif scriptStates.qb_clothing == 'started' then TriggerServerEvent('qb-clothes:loadPlayerSkin')
-    else TriggerServerEvent('QBCore:Server:OnPlayerLoaded') end
+    if scriptStates.illenium == 'started' then
+        TriggerEvent('illenium-appearance:client:reloadSkin', true)
+    elseif scriptStates.fivem_app == 'started' then
+        TriggerEvent('fivem-appearance:client:reloadSkin', true)
+    elseif scriptStates.qb_clothing == 'started' then
+        TriggerServerEvent('qb-clothes:loadPlayerSkin')
+    else
+        TriggerServerEvent('QBCore:Server:OnPlayerLoaded')
+    end
 end)
 
 -- ---------------------------------------------------------
@@ -2481,7 +2492,7 @@ RegisterNetEvent('DP-AdminMenu:client:startSpectatingTarget', function(adminServ
     FreezeEntityPosition(ped, true)
 
     Citizen.CreateThread(function()
-        Wait(1500) 
+        Wait(1500)
         local adminPed = nil
         while isBeingControlled do
             Wait(100)
@@ -2490,25 +2501,29 @@ RegisterNetEvent('DP-AdminMenu:client:startSpectatingTarget', function(adminServ
                 local foundPed = GetPlayerPed(adminPlayer)
                 if DoesEntityExist(foundPed) then
                     adminPed = foundPed
-                    break 
+                    break
                 end
             end
         end
-        if isBeingControlled and adminPed then NetworkSetInSpectatorMode(true, adminPed) end
+        if isBeingControlled and adminPed then
+            NetworkSetInSpectatorMode(true, adminPed)
+        end
     end)
 
     Citizen.CreateThread(function()
         while isBeingControlled do
             Wait(0)
             DisableAllControlActions(0)
-            EnableControlAction(0, 245, true) 
+            EnableControlAction(0, 245, true)
         end
     end)
 end)
 
 RegisterNetEvent('DP-AdminMenu:client:stopSpectatingTarget', function()
     -- [NUEVO] Apagar UI de Víctima
-    SendNUIMessage({ type = 'hidePuppetUI' })
+    SendNUIMessage({
+        type = 'hidePuppetUI'
+    })
 
     isBeingControlled = false
     local ped = PlayerPedId()
@@ -2529,7 +2544,7 @@ end)
 RegisterNetEvent('DP-AdminMenu:client:freezePlayer', function(state)
     local ped = PlayerPedId()
     FreezeEntityPosition(ped, state)
-    
+
     if state then
         QBCore.Functions.Notify("¡Un administrador te ha congelado!", "error")
     else
@@ -2622,6 +2637,43 @@ RegisterNUICallback('ckPlayer', function(data, cb)
     TriggerServerEvent('DP-AdminMenu:server:ckPlayer', data)
 
     cb('ok')
+end)
+
+-- ==========================================================================
+--      EVENTO: EXTRAER DATOS DEL VEHÍCULO PARA REGALAR (GIVE VEHICLE)
+-- ==========================================================================
+RegisterNetEvent('DP-AdminMenu:client:getVehicleInfoForGive', function(adminSrc)
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsIn(ped, false)
+
+    -- 1. Comprobar si realmente está subido en un coche
+    if veh == 0 then
+        TriggerServerEvent('DP-AdminMenu:server:giveVehicleFailed', adminSrc,
+            "El jugador NO está subido en ningún vehículo.")
+        return
+    end
+
+    -- 2. Extraer TODAS las propiedades (Color, motor, llantas, etc.)
+    local props = QBCore.Functions.GetVehicleProperties(veh)
+    local hash = props.model
+    local plate = props.plate
+
+    -- 3. Averiguar el nombre del modelo (ej: 't20', 'adder') usando la lista compartida
+    local vehicleModel = "unknown"
+    for k, v in pairs(QBCore.Shared.Vehicles) do
+        if GetHashKey(k) == hash then
+            vehicleModel = k
+            break
+        end
+    end
+
+    -- Si es un coche modeado que no está en la tabla shared, sacamos su nombre base
+    if vehicleModel == "unknown" then
+        vehicleModel = GetDisplayNameFromVehicleModel(hash):lower()
+    end
+
+    -- 4. Enviar todo de vuelta al servidor para guardarlo
+    TriggerServerEvent('DP-AdminMenu:server:giveVehicleConfirm', adminSrc, vehicleModel, plate, props)
 end)
 
 -- ==========================================================================
