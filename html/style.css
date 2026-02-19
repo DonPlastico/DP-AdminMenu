@@ -194,94 +194,116 @@ input[type=number]::-webkit-outer-spin-button {
 
 .page-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 15px;
-    height: 60px;
-    border-bottom: 1px solid var(--bg-border);
-    padding-bottom: 0;
-    padding-right: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding-bottom: 8px;
+    min-height: 30px;
+    flex-shrink: 0;
 }
 
 .section-title {
     font-size: 20px;
-    color: #fff;
+    font-weight: 900;
+    color: #e0e0e0;
     text-transform: uppercase;
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin: 0;
-    height: 40px;
+    letter-spacing: 0.5px;
     display: flex;
     align-items: center;
-    border-left: 5px solid var(--primary);
-    padding-left: 15px;
+    gap: 10px;
+    border: none !important;
+    line-height: 1;
+    margin-bottom: 0px;
+}
+
+.section-title .iconify {
+    font-size: 26px;
+    color: var(--primary);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 .search-bar {
     display: flex;
     align-items: center;
-    margin: 0;
-    width: 50%;
-    height: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    /* Fondo muy sutil */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0px 0px 0px 5px;
+    width: 250px;
+    transition: all 0.2s ease;
+}
+
+.search-bar:focus-within {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: #fff;
+    /* Borde blanco al usarlo */
 }
 
 .search-bar input {
-    height: 100%;
-    flex: 1;
-    background-color: var(--bg-button);
-    border: 1px solid var(--bg-border);
-    color: var(--text-main);
-    border-radius: 4px 0 0 4px;
-    padding: 0 15px;
-    outline: none;
+    background: transparent;
+    border: none;
+    color: #ccc;
     font-size: 13px;
+    width: 100%;
+    outline: none;
 }
 
-.search-bar input:focus {
-    background-color: #222;
-    border-color: var(--primary);
+.search-bar input::placeholder {
+    color: #555;
+    font-style: italic;
 }
 
-.search-bar .clear-btn {
-    height: 100%;
-    width: 40px;
-    background-color: var(--bg-button);
-    border: 1px solid var(--bg-border);
-    border-left: none;
-    color: var(--text-muted);
-    border-radius: 0 4px 4px 0;
+.clear-btn {
+    background: transparent;
+    border: none;
+    color: #444;
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 16px;
 }
 
-.search-bar .clear-btn:hover {
-    background-color: var(--bg-button-hover);
+.clear-btn:hover {
     color: #fff;
+}
+
+.btn-header-action {
+    background: transparent;
+    border: 1px solid #444;
+    color: #aaa;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 0 15px;
+    height: 35px;
+    /* Misma altura que el buscador aprox */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-header-action:hover {
+    border-color: #fff;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 button {
     position: relative;
     padding: 10px;
-    background-color: var(--bg-button);
-    color: var(--text-main);
-    border: none;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
-    transition: background 0.5s;
     text-transform: uppercase;
     font-size: 12px;
-}
-
-button:hover {
-    background-color: var(--bg-button-hover);
-}
-
-.action-buttons button {
-    padding: 7px;
 }
 
 .btn-toggled::after {
@@ -295,15 +317,6 @@ button:hover {
     border-radius: 50%;
     box-shadow: 0 0 6px #0ea021;
     animation: pulse-green 5s infinite;
-}
-
-.btn-danger {
-    background-color: var(--danger-bg);
-    color: var(--danger-text);
-}
-
-.btn-danger:hover {
-    background-color: var(--danger-hover);
 }
 
 .btn-preset {
@@ -493,7 +506,7 @@ input:checked+.slider:before {
    6. MÓDULO: JUGADORES (LISTA)
    ========================================================================== */
 .scroll-list {
-    max-height: 63vh;
+    max-height: 66vh;
     overflow-y: auto;
 }
 
@@ -658,16 +671,8 @@ input:checked+.slider:before {
 .rc-footer {
     display: flex;
     gap: 5px;
-    padding: 10px;
+    padding: 5px;
     background-color: var(--bg-button);
-    border-top: 1px solid var(--bg-button);
-}
-
-.rc-footer button {
-    flex: 1;
-    font-size: 10px;
-    padding: 8px;
-    margin: 0;
 }
 
 .report-container {
@@ -873,7 +878,7 @@ input:checked+.slider:before {
     border-radius: 6px;
     border: 1px solid var(--bg-button);
     overflow: hidden;
-    height: 63vh;
+    height: 66vh;
     display: flex;
     flex-direction: column;
 }
@@ -1095,7 +1100,7 @@ input:checked+.slider:before {
 .chat-container {
     display: flex;
     flex-direction: column;
-    height: 63vh;
+    height: 66vh;
     background-color: transparent;
     overflow: hidden;
 }
@@ -1213,7 +1218,6 @@ input:checked+.slider:before {
     flex: 0 0 45px;
     width: 100%;
     display: flex;
-    gap: 0;
     box-shadow: 0 -2px 10px rgb(0 0 0 / 50%);
     z-index: 10;
     position: relative;
@@ -2899,7 +2903,7 @@ span#live-weather-text {
     grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
     gap: 15px;
     padding-right: 8px;
-    max-height: 63vh;
+    max-height: 66vh;
     overflow-y: auto;
     align-content: start;
 }
@@ -4290,7 +4294,8 @@ input:checked+.slider:before {
 }
 
 /* Ajuste de tamaño de los botones */
-.pd-actions-list button {
+.pd-actions-list button,
+#actions button{
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #666;
@@ -4306,7 +4311,8 @@ input:checked+.slider:before {
     min-height: 32px;
 }
 
-.pd-actions-list button:hover {
+.pd-actions-list button:hover,
+#actions button:hover {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #666;
@@ -4314,7 +4320,9 @@ input:checked+.slider:before {
 
 /* Asegurar que los botones de ancho completo respeten la altura */
 .pd-actions-list .full-width,
-.pd-actions-list .btn-danger {
+.pd-actions-list .btn-danger,
+#actions .btn-danger,
+.rc-footer button  {
     width: 100%;
     display: block;
     background: #fff;
@@ -4323,7 +4331,9 @@ input:checked+.slider:before {
 }
 
 .pd-actions-list .full-width:hover,
-.pd-actions-list .btn-danger:hover {
+.pd-actions-list .btn-danger:hover,
+#actions .btn-danger:hover,
+.rc-footer button:hover {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #666;
@@ -5817,7 +5827,58 @@ input:checked+.slider:before {
     cursor: not-allowed !important;
 }
 
+/* ==========================================================================
+   UI DE PUPPET MASTER (CONTROL DE JUGADOR BOTTOM)
+   ========================================================================== */
+#puppet-ui-container {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px 25px;
+    z-index: 9999;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+    display: none; /* Se activa por JS */
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    animation: slideUpFade 0.4s ease;
+}
 
+.puppet-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+/* El nombre destacado */
+.puppet-highlight {
+    color: #fff;
+    font-weight: 700;
+}
+
+/* El nombre del PJ (Más pequeño y gris) */
+.puppet-charname {
+    color: #888;
+    font-size: 11px;
+    font-style: italic;
+}
+
+/* Badge para las IDs */
+.puppet-badge {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ccc;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: monospace;
+}
 
 
 
@@ -6123,4 +6184,9 @@ input:checked+.slider:before {
     100% {
         transform: scale(1);
     }
+}
+
+@keyframes slideUpFade {
+    0% { bottom: -20px; opacity: 0; }
+    100% { bottom: 30px; opacity: 1; }
 }

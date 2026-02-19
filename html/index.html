@@ -161,43 +161,54 @@
 
             <div class="page" id="home">
                 <div class="page-header">
-                    <div class="section-title">JUGADORES (<span id="total-players">0</span>)</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:account-group"></span>
+                        <span>LISTA DE JUGADORES <span id="total-players">(0)</span></span>
+                    </div>
                     <div class="search-bar">
                         <input type="text" placeholder="Buscar por Nombre o ID...">
                         <button class="clear-btn"><span class="iconify" data-icon="mdi:close"></span></button>
                     </div>
                 </div>
-                <div class="scroll-list">
-                </div>
+                <div class="scroll-list"></div>
             </div>
 
             <div class="page" id="actions" style="display: none;">
 
                 <div class="sub-section">
                     <div class="page-header">
-                        <div class="section-title">OPCIONES PRINCIPALES</div>
+                        <div class="section-title">
+                            <span class="iconify" data-icon="mdi:tune"></span>
+                            <span>OPCIONES PRINCIPALES</span>
+                        </div>
                     </div>
                     <div class="grid-2">
                         <button id="btn-noclip" onclick="toggleAction('noclip')">NOCLIP</button>
                         <button id="btn-revive" onclick="triggerAction('revive')">REVIVE</button>
                         <button id="btn-godmode" onclick="toggleAction('godmode')">GODMODE</button>
                         <button id="btn-invisible" onclick="toggleAction('invisible')">INVISIBLE</button>
-                        <button id="btn-superspeed" onclick="toggleAction('superspeed')">SUPER VELOCIDAD</button>
-                        <button id="btn-superjump" onclick="toggleAction('superjump')">SUPER SALTO</button>
+                        <button class="btn-danger" id="btn-superspeed" onclick="toggleAction('superspeed')">SUPER
+                            VELOCIDAD</button>
+                        <button class="btn-danger" id="btn-superjump" onclick="toggleAction('superjump')">SUPER
+                            SALTO</button>
                         <button id="btn-stamina" onclick="toggleAction('stamina')">NO RESISTENCIA</button>
                         <button id="btn-blips" onclick="toggleAction('blips')">BLIPS</button>
                         <button id="btn-clothing" onclick="triggerAction('clothing')">MENÚ DE ROPA</button>
                         <button id="btn-tags" onclick="toggleAction('tags')">TAGS / NOMBRES</button>
-                        <button id="btn-tpm" onclick="triggerAction('tpm')">TPM</button>
-                        <button id="btn-goto" onclick="triggerMapOpen()">MAPA TÁCTICO</button>
-                        <button id="btn-cuffs" onclick="toggleAction('cuffs')" class="full-width">PONER ESPOSAS - QUITAR
+                        <button class="btn-danger" id="btn-tpm" onclick="triggerAction('tpm')">TPM</button>
+                        <button class="btn-danger" id="btn-goto" onclick="triggerMapOpen()">MAPA TÁCTICO</button>
+                        <button id="btn-cuffs" onclick="toggleAction('cuffs')" class="btn-danger full-width">PONER
+                            ESPOSAS - QUITAR
                             ESPOSAS</button>
                     </div>
                 </div>
 
                 <div class="sub-section">
                     <div class="page-header">
-                        <div class="section-title">OPCIONES SERVIDOR</div>
+                        <div class="section-title">
+                            <span class="iconify" data-icon="mdi:server-network"></span>
+                            <span>OPCIONES SERVIDOR</span>
+                        </div>
                     </div>
                     <div class="grid-2">
                         <button id="btn-announce" onclick="openAnnounceModal()">ANUNCIO</button>
@@ -206,21 +217,25 @@
                             CERCANOS</button>
                         <button class="btn-danger" onclick="triggerAction('delete_all_veh')">BORRAR TODOS LOS
                             VEHÍCULOS</button>
-                        <button class="btn-danger" onclick="triggerAction('delete_nearby_peds')">BORRAR PEATONES
+                        <button onclick="triggerAction('delete_nearby_peds')">BORRAR PEATONES
                             CERCANOS</button>
-                        <button class="btn-danger" onclick="triggerAction('delete_all_peds')">BORRAR TODOS LOS
+                        <button onclick="triggerAction('delete_all_peds')">BORRAR TODOS LOS
                             PEATONES</button>
                         <button class="btn-danger" onclick="triggerAction('delete_nearby_objects')">BORRAR OBJETOS
                             CERCANOS</button>
                         <button class="btn-danger" onclick="triggerAction('delete_all_objects')">BORRAR TODOS LOS
                             OBJETOS</button>
-                        <button id="btn-weather" onclick="openWeatherModal()" class="full-width">CLIMA</button>
+                        <button id="btn-weather" onclick="openWeatherModal()"
+                            class="btn-danger full-width">CLIMA</button>
                     </div>
                 </div>
 
                 <div class="sub-section">
                     <div class="page-header">
-                        <div class="section-title">OPCIONES VEHÍCULOS</div>
+                        <div class="section-title">
+                            <span class="iconify" data-icon="mdi:car-cog"></span>
+                            <span>OPCIONES VEHÍCULOS</span>
+                        </div>
                     </div>
                     <div class="grid-2">
                         <button onclick="triggerAction('repair_vehicle')">REPARAR</button>
@@ -232,22 +247,26 @@
                         <button onclick="openLiveryModal()">ESTABLECER CALCOMANÍA</button>
                         <button class="btn-danger" onclick="triggerAction('force_unlock')">FORZAR DESBLOQUEO</button>
                         <button class="btn-danger" onclick="triggerAction('force_lock')">FORZAR BLOQUEO</button>
-                        <button class="full-width" onclick="triggerAction('wash_vehicle')">LAVAR VEHÍCULO</button>
+                        <button class="btn-danger full-width" onclick="triggerAction('wash_vehicle')">LAVAR
+                            VEHÍCULO</button>
                     </div>
                 </div>
 
                 <div class="sub-section">
                     <div class="page-header">
-                        <div class="section-title">HERRAMIENTAS DE DESARROLLO</div>
+                        <div class="section-title">
+                            <span class="iconify" data-icon="mdi:code-braces"></span>
+                            <span>HERRAMIENTAS DE DESARROLLO</span>
+                        </div>
                     </div>
                     <div class="grid-2">
                         <button onclick="copyCoords('vec3')">COORDENADAS VEC3</button>
                         <button onclick="copyCoords('vector3')">COORDENADAS VECTOR3</button>
-                        <button onclick="copyCoords('vec4')">COORDENADAS VEC4</button>
-                        <button onclick="copyCoords('vector4')">COORDENADAS VECTOR4</button>
+                        <button class="btn-danger" onclick="copyCoords('vec4')">COORDENADAS VEC4</button>
+                        <button class="btn-danger" onclick="copyCoords('vector4')">COORDENADAS VECTOR4</button>
                         <button onclick="copyCoords('xyz')">COORDENADAS X, Y, Z</button>
                         <button onclick="copyCoords('xyzh')">COORDENADAS X, Y, Z, H</button>
-                        <button class="full-width" id="btn-entity_info"
+                        <button class="btn-danger full-width" id="btn-entity_info"
                             onclick="toggleAction('entity_info')">INFORMACIÓN DE ENTIDADES</button>
                     </div>
                 </div>
@@ -255,16 +274,22 @@
 
             <div class="page" id="reports" style="display: none;">
                 <div class="page-header">
-                    <div class="section-title">REPORTES ACTIVOS</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:clipboard-alert-outline"></span>
+                        <span>REPORTES ACTIVOS</span>
+                    </div>
                 </div>
                 <div class="report-list"></div>
             </div>
 
             <div class="page" id="bans" style="display: none;">
                 <div class="page-header">
-                    <div class="section-title">LISTA DE BANEADOS</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:gavel"></span>
+                        <span>LISTA DE BANEADOS</span>
+                    </div>
                     <div class="search-bar">
-                        <input type="text" id="ban-search" placeholder="Buscar por ID, Nombre, Licencia, Motivo...">
+                        <input type="text" id="ban-search" placeholder="Buscar por ID, Nombre, Motivo...">
                         <button class="clear-btn" id="btn-clear-bans">
                             <span class="iconify" data-icon="mdi:close"></span>
                         </button>
@@ -290,7 +315,10 @@
 
             <div class="page" id="chat" style="display: none;">
                 <div class="page-header">
-                    <div class="section-title">CHAT DE ADMINISTRADORES</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:chat-processing-outline"></span>
+                        <span>CHAT DE ADMINISTRADORES</span>
+                    </div>
                 </div>
 
                 <div class="chat-container">
@@ -324,22 +352,22 @@
 
             <div class="page" id="jobs" style="display: none;">
                 <div class="page-header">
-                    <div class="section-title">LISTA DE TRABAJOS (<span id="total-jobs">0</span>)</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:briefcase-outline"></span>
+                        <span>LISTA DE TRABAJOS <span id="total-jobs">(0)</span></span>
+                    </div>
 
-                    <div style="display: flex; gap: 25px; align-items: center;">
-
-                        <div class="search-bar" style="width: 220px;">
+                    <div class="header-actions">
+                        <div class="search-bar">
                             <input type="text" id="job-search-input" placeholder="Buscar trabajo...">
                             <button class="clear-btn" id="btn-clear-jobs">
                                 <span class="iconify" data-icon="mdi:close"></span>
                             </button>
                         </div>
 
-                        <button id="btn-job-action" class="btn-main"
-                            style="height: 40px; width: 139px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <button id="btn-job-action" class="btn-header-action">
                             VER RANGOS
                         </button>
-
                     </div>
                 </div>
 
@@ -350,22 +378,22 @@
 
             <div class="page" id="gangs" style="display: none;">
                 <div class="page-header">
-                    <div class="section-title">LISTA DE BANDAS (<span id="total-gangs">0</span>)</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:account-tie-hat-outline"></span>
+                        <span>LISTA DE BANDAS <span id="total-gangs">(0)</span></span>
+                    </div>
 
-                    <div style="display: flex; gap: 25px; align-items: center;">
-
-                        <div class="search-bar" style="width: 220px;">
+                    <div class="header-actions">
+                        <div class="search-bar">
                             <input type="text" id="gang-search-input" placeholder="Buscar banda...">
                             <button class="clear-btn" id="btn-clear-gangs">
                                 <span class="iconify" data-icon="mdi:close"></span>
                             </button>
                         </div>
 
-                        <button id="btn-gang-action" class="btn-main"
-                            style="height: 40px; width: 139px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <button id="btn-gang-action" class="btn-header-action">
                             VER RANGOS
                         </button>
-
                     </div>
                 </div>
 
@@ -376,11 +404,13 @@
 
             <div class="page" id="vehicles" style="display: none;">
                 <div class="page-header">
-                    <div class="section-title">CATÁLOGO DE VEHÍCULOS</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:car-info"></span>
+                        <span>CATÁLOGO DE VEHÍCULOS</span>
+                    </div>
 
                     <div class="search-bar">
-                        <input type="text" id="veh-search-input" placeholder="Buscar por Nombre, Marca, Categoría..."
-                            style="flex:1;">
+                        <input type="text" id="veh-search-input" placeholder="Buscar vehículo...">
                         <button class="clear-btn" id="btn-clear-veh">
                             <span class="iconify" data-icon="mdi:close"></span>
                         </button>
@@ -400,10 +430,12 @@
 
             <div class="page" id="items" style="display: none;">
                 <div class="page-header">
-                    <div class="section-title">GESTOR DE ÍTEMS Y ARMAS</div>
+                    <div class="section-title">
+                        <span class="iconify" data-icon="mdi:package-variant-closed"></span>
+                        <span>GESTOR DE ÍTEMS</span>
+                    </div>
                     <div class="search-bar">
-                        <input type="text" id="item-search-input"
-                            placeholder="Buscar por Nombre, Código, Descripción..." style="flex:1;">
+                        <input type="text" id="item-search-input" placeholder="Buscar ítem...">
                         <button class="clear-btn" id="btn-clear-items">
                             <span class="iconify" data-icon="mdi:close"></span>
                         </button>
@@ -1896,7 +1928,12 @@
                 </div>
 
                 <div class="mt-20">
-                    <div class="pd-section-title">PANEL DE ACCIONES</div>
+                    <div class="pd-section-header">
+                        <div class="pd-section-title">
+                            <span class="iconify" data-icon="mdi:tune"></span>
+                            <span>PANEL DE ACCIONES</span>
+                        </div>
+                    </div>
 
                     <div class="pd-actions-list">
                         <div class="grid-3">
@@ -1912,7 +1949,7 @@
                         </div>
                         <div class="grid-2">
                             <button onclick="playerAction('tp_to_player')">TP A OTRO JUGADOR</button>
-                            <button id="pd-btn-freeze" onclick="playerToggle('freeze')">CONGELAR/DESCONGELAR</button>
+                            <button id="pd-btn-freeze" onclick="playerAction('freeze')">CONGELAR/DESCONGELAR</button>
                         </div>
                         <div class="grid-2">
                             <button onclick="playerAction('kill')">MATAR</button>
@@ -2026,7 +2063,6 @@
 
     <div id="screenshot-modal" style="display: none;">
         <div class="screenshot-content">
-
             <div class="pd-header">
                 <div class="pd-header-left">
                     <div class="pd-icon-box">
@@ -2056,7 +2092,6 @@
                     CERRAR VISTA
                 </button>
             </div>
-
         </div>
     </div>
 
@@ -2169,6 +2204,11 @@
         </div>
 
         <div class="warn-border-bottom"></div>
+    </div>
+
+    <div id="puppet-ui-container" style="display: none;">
+        <div class="puppet-content" id="puppet-text-content">
+        </div>
     </div>
 
     <audio id="audio-announce-in" src="sounds/alert.mp3" preload="auto"></audio>

@@ -719,6 +719,35 @@ document.addEventListener('DOMContentLoaded', () => {
             // Registrar eventos
             document.addEventListener('keydown', handleKeyDown);
             document.addEventListener('keyup', handleKeyUp);
+
+        } else if (data.type === 'showPuppetUI') {
+            const container = document.getElementById('puppet-ui-container');
+            const content = document.getElementById('puppet-text-content');
+            if (container && content) {
+                if (data.mode === 'admin') {
+                    // Vista del Administrador
+                    content.innerHTML = `
+                        <span class="iconify" data-icon="mdi:controller-classic-outline" style="font-size: 24px; color: #00ffcc;"></span> 
+                        <span>ESTÁS CONTROLANDO AL JUGADOR:</span> 
+                        <span class="puppet-highlight">${data.targetName}</span> 
+                        <span class="puppet-charname">(${data.charName})</span> 
+                        <span class="puppet-badge">ID: ${data.targetId}</span>
+                    `;
+                } else if (data.mode === 'victim') {
+                    // Vista de la Víctima
+                    content.innerHTML = `
+                        <span class="iconify" data-icon="mdi:eye-outline" style="font-size: 24px; color: var(--danger);"></span> 
+                        <span>ESTÁS SIENDO CONTROLADO POR EL ADMINISTRADOR:</span> 
+                        <span class="puppet-highlight">${data.adminName}</span> 
+                        <span class="puppet-badge">ID: ${data.adminId}</span>
+                    `;
+                }
+                container.style.display = 'flex';
+            }
+
+        } else if (data.type === 'hidePuppetUI') {
+            const container = document.getElementById('puppet-ui-container');
+            if (container) container.style.display = 'none';
         }
     });
 
@@ -4823,11 +4852,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Reset visual de campos
+        // ============================================================
+        // RESET VISUAL DE CAMPOS Y BOTONES
+        // ============================================================
         document.getElementById('pd-bank').textContent = "...";
         document.getElementById('pd-citizenid').textContent = "...";
         document.getElementById('pd-phone').textContent = "...";
         document.getElementById('pd-identifiers').innerHTML = '<span>Cargando...</span>';
+
+        // RESET DEL BOTÓN CONGELAR
+        const freezeBtn = document.getElementById('pd-btn-freeze');
+        if (freezeBtn) {
+            freezeBtn.classList.remove('active');
+            freezeBtn.innerHTML = 'CONGELAR';
+            if (typeof actionStates !== 'undefined') actionStates.freeze = false;
+        }
 
         // --- 2. PETICIÓN AL SERVIDOR ---
         fetch(`https://${GetParentResourceName()}/getPlayerFullDetails`, {
@@ -4910,20 +4949,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 🚨 ACTUALIZACIÓN DE MEMORIA GLOBAL (FIX CK)
                 // ============================================================
                 if (fullData) {
-                    // Si ya teníamos datos globales, los mezclamos con los nuevos
                     if (!currentPlayerDataGlobal) currentPlayerDataGlobal = {};
-
                     currentPlayerDataGlobal = { ...currentPlayerDataGlobal, ...fullData };
-
-                    // Aseguramos que el citizenid no se pierda
                     if (fullData.citizenid) currentPlayerDataGlobal.citizenid = fullData.citizenid;
-
-                    // Actualizamos licencias si vienen
                     if (fullData.identifiers) {
                         const licenseEntry = fullData.identifiers.find(id => id.includes('license:'));
                         if (licenseEntry) currentPlayerDataGlobal.license = licenseEntry;
                     }
                 }
+
+                // ============================================================
+                // ❄️ NUEVO: LECTURA DEL ESTADO REAL DE CONGELACIÓN
+                // ============================================================
+                if (typeof actionStates === 'undefined') window.actionStates = {};
+
+                // Leemos el estado del servidor
+                actionStates.freeze = fullData.isFrozen || false;
+
+                const freezeBtnReal = document.getElementById('pd-btn-freeze');
+                if (freezeBtnReal) {
+                    if (actionStates.freeze) {
+                        freezeBtnReal.classList.add('active');
+                        freezeBtnReal.innerHTML = 'DESCONGELAR';
+                    } else {
+                        freezeBtnReal.classList.remove('active');
+                        freezeBtnReal.innerHTML = 'CONGELAR';
+                    }
+                }
+                // ============================================================
 
                 if (!fullData) {
                     ['pd-properties-list', 'pd-vehicles-list', 'pd-punishments-list'].forEach(id => {
@@ -4957,8 +5010,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             card.className = `mini-char-card ${isActive ? 'active-profile' : ''} ${isOnlineChar ? 'is-online-char' : ''}`;
 
                             // Icono: Relleno si es el activo, contorno si no
-                            const icon = isActive ? 'mdi:account' : 'mdi:account-outline';  
-                            
+                            const icon = isActive ? 'mdi:account' : 'mdi:account-outline';
+
                             // Estado: Verde si online, Gris si offline
                             const statusTitle = isOnlineChar ? 'Online' : 'Offline';
 
@@ -4988,11 +5041,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 // 3. Llamar a detalles
                                 openPlayerDetails({
-                                    id: targetId,               
-                                    citizenid: char.citizenid,  
-                                    name: steamName,            
-                                    charName: char.name,        
-                                    isOffline: !isOnlineChar    
+                                    id: targetId,
+                                    citizenid: char.citizenid,
+                                    name: steamName,
+                                    charName: char.name,
+                                    isOffline: !isOnlineChar
                                 });
                             };
                             charList.appendChild(card);
@@ -5480,8 +5533,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 5. INTERCEPTOR PARA SCREENSHOT ---
         if (action === 'screenshot') {
-            openScreenshotModal();
-            return;
+            openScreenshotModal(); // 1. Arranca la cinemática en el HTML
+
+            // 2. Avisamos al servidor PARA QUE SAQUE LA FOTO AHORA MISMO
+            fetch(`https://${GetParentResourceName()}/playerAction`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'screenshot',
+                    targetId: currentDetailsId
+                })
+            }).catch(err => console.error("Error pidiendo screenshot:", err));
+
+            return; // 3. Paramos aquí para no enviar un segundo fetch en el punto 7
         }
 
         // --- 6. INTERCEPTOR PARA CONTROLAR JUGADOR (VISUAL) ---
@@ -5499,7 +5563,44 @@ document.addEventListener('DOMContentLoaded', () => {
             // así envía automáticamente { action: 'control_player', targetId: ID } al Lua.
         }
 
-        // --- 7. ENVÍO GENÉRICO (Resto de botones: Revive, Kill, Freeze, etc.) ---
+        // --- 7. INTERCEPTOR PARA CONGELAR ---
+        if (action === 'freeze') {
+            // Inicializamos el estado si no existe
+            if (typeof actionStates.freeze === 'undefined') {
+                actionStates.freeze = false;
+            }
+
+            // Invertimos el estado
+            actionStates.freeze = !actionStates.freeze;
+
+            // Cambiamos la acción real que se envía al servidor
+            const realAction = actionStates.freeze ? 'freeze' : 'unfreeze';
+
+            // Actualizamos el botón visualmente
+            const freezeBtn = document.getElementById('pd-btn-freeze');
+            if (freezeBtn) {
+                if (actionStates.freeze) {
+                    freezeBtn.classList.add('active'); // O ponle la clase que lo ponga azul/rojo
+                    freezeBtn.innerHTML = 'DESCONGELAR';
+                } else {
+                    freezeBtn.classList.remove('active');
+                    freezeBtn.innerHTML = 'CONGELAR';
+                }
+            }
+
+            // Enviamos la petición modificada y SALIMOS para que no haga el envío genérico doble
+            fetch(`https://${GetParentResourceName()}/playerAction`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: realAction,
+                    targetId: currentDetailsId
+                })
+            });
+            return;
+        }
+
+        // --- ENVÍO GENÉRICO (Resto de botones: Revive, Kill, Freeze, etc.) ---
         fetch(`https://${GetParentResourceName()}/playerAction`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

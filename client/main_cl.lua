@@ -2404,63 +2404,84 @@ RegisterNUICallback('toggleWatch', function(data, cb)
 end)
 
 -- ====================================================================
---      LÓGICA PUPPET MASTER (CONTROL REMOTO)
+--      LÓGICA PUPPET MASTER (CONTROL REMOTO AVANZADO)
 -- ====================================================================
 
--- PARA EL ADMIN (EL CONTROLADOR)
-RegisterNetEvent('DP-AdminMenu:client:startControlling', function(targetServerId, targetCoords)
+-- ---------------------------------------------------------
+-- 1. PARA EL ADMIN (EL CONTROLADOR)
+-- ---------------------------------------------------------
+RegisterNetEvent('DP-AdminMenu:client:startControlling', function(targetServerId, targetCoords, targetName, targetCharName)
+    -- [NUEVO] Encender UI de Admin
+    SendNUIMessage({
+        type = 'showPuppetUI',
+        mode = 'admin',
+        targetName = targetName,
+        charName = targetCharName,
+        targetId = targetServerId
+    })
+
     local ped = PlayerPedId()
-
-    -- 1. Teleport a la posición de la víctima
     SetEntityCoords(ped, targetCoords.x, targetCoords.y, targetCoords.z)
+    Wait(300) 
 
-    -- 2. Clonar Apariencia
     local targetPlayer = GetPlayerFromServerId(targetServerId)
     if targetPlayer ~= -1 then
         local targetPed = GetPlayerPed(targetPlayer)
-        local targetModel = GetEntityModel(targetPed)
+        if targetPed and targetPed ~= 0 then
+            local targetModel = GetEntityModel(targetPed)
+            if IsModelInCdimage(targetModel) and IsModelValid(targetModel) then
+                RequestModel(targetModel)
+                local timeout = 0
+                while not HasModelLoaded(targetModel) and timeout < 50 do Wait(50) timeout = timeout + 1 end
 
-        -- Cargamos modelo
-        if IsModelInCdimage(targetModel) and IsModelValid(targetModel) then
-            RequestModel(targetModel)
-            while not HasModelLoaded(targetModel) do
-                Wait(0)
+                if HasModelLoaded(targetModel) then
+                    SetPlayerModel(PlayerId(), targetModel)
+                    ped = PlayerPedId() 
+                    SetModelAsNoLongerNeeded(targetModel)
+                    ClonePedToTarget(targetPed, ped)
+                end
             end
-            SetPlayerModel(PlayerId(), targetModel)
-            ped = PlayerPedId() -- Actualizar referencia del ped nuevo
-            SetModelAsNoLongerNeeded(targetModel)
-
-            -- Copiamos ropa exacta
-            ClonePedToTarget(targetPed, ped)
         end
     end
 end)
 
 RegisterNetEvent('DP-AdminMenu:client:stopControlling', function()
-    -- Restauramos el skin original del Admin
-    TriggerServerEvent('qb-clothes:loadPlayerSkin') -- O el evento que use tu server para cargar skin
+    -- [NUEVO] Apagar UI de Admin
+    SendNUIMessage({ type = 'hidePuppetUI' })
 
-    -- Opcional: Si usas illenium-appearance u otro, usa su export:
-    -- exports['illenium-appearance']:setPlayerAppearance(appearance)
+    local scriptStates = {
+        illenium = GetResourceState('illenium-appearance'),
+        fivem_app = GetResourceState('fivem-appearance'),
+        qb_clothing = GetResourceState('qb-clothing')
+    }
+    if scriptStates.illenium == 'started' then TriggerEvent('illenium-appearance:client:reloadSkin', true)
+    elseif scriptStates.fivem_app == 'started' then TriggerEvent('fivem-appearance:client:reloadSkin', true)
+    elseif scriptStates.qb_clothing == 'started' then TriggerServerEvent('qb-clothes:loadPlayerSkin')
+    else TriggerServerEvent('QBCore:Server:OnPlayerLoaded') end
 end)
 
--- ====================================================================
---      LÓGICA VÍCTIMA (ESPECTADOR OBLIGADO)
--- ====================================================================
+-- ---------------------------------------------------------
+-- 2. LÓGICA VÍCTIMA (ESPECTADOR OBLIGADO)
+-- ---------------------------------------------------------
 local isBeingControlled = false
 
-RegisterNetEvent('DP-AdminMenu:client:startSpectatingTarget', function(adminServerId)
+RegisterNetEvent('DP-AdminMenu:client:startSpectatingTarget', function(adminServerId, adminName)
+    -- [NUEVO] Encender UI de Víctima
+    SendNUIMessage({
+        type = 'showPuppetUI',
+        mode = 'victim',
+        adminName = adminName,
+        adminId = adminServerId
+    })
+
     isBeingControlled = true
     local ped = PlayerPedId()
-
-    -- 1. Nos hacemos invisibles
     SetEntityVisible(ped, false, false)
     SetEntityCollision(ped, false, false)
     FreezeEntityPosition(ped, true)
 
-    -- 2. Activamos el espectador UNA SOLA VEZ (no en bucle)
     Citizen.CreateThread(function()
-        -- Esperamos a que el ped del admin cargue
+        Wait(1500) 
         local adminPed = nil
         while isBeingControlled do
             Wait(100)
@@ -2469,50 +2490,51 @@ RegisterNetEvent('DP-AdminMenu:client:startSpectatingTarget', function(adminServ
                 local foundPed = GetPlayerPed(adminPlayer)
                 if DoesEntityExist(foundPed) then
                     adminPed = foundPed
-                    break -- Ya lo encontramos, salimos de este bucle de búsqueda
+                    break 
                 end
             end
         end
-
-        -- Si encontramos al admin y seguimos siendo controlados, activamos la cámara
-        if isBeingControlled and adminPed then
-            NetworkSetInSpectatorMode(true, adminPed)
-        end
+        if isBeingControlled and adminPed then NetworkSetInSpectatorMode(true, adminPed) end
     end)
 
-    -- 3. Bucle SOLO para bloquear teclas (mucho más estable)
     Citizen.CreateThread(function()
         while isBeingControlled do
             Wait(0)
             DisableAllControlActions(0)
-            EnableControlAction(0, 245, true) -- Chat
-            EnableControlAction(0, 38, true) -- E (Opcional)
+            EnableControlAction(0, 245, true) 
         end
     end)
-
-    QBCore.Functions.Notify("Un admin ha tomado el control. Estás especteando sus acciones.", "primary", 10000)
 end)
 
 RegisterNetEvent('DP-AdminMenu:client:stopSpectatingTarget', function()
+    -- [NUEVO] Apagar UI de Víctima
+    SendNUIMessage({ type = 'hidePuppetUI' })
+
     isBeingControlled = false
     local ped = PlayerPedId()
-
-    -- 1. FORZAMOS APAGADO DE ESPECTADOR
-    -- El segundo parámetro 'ped' le dice al juego: "Pon la cámara en MÍ"
     NetworkSetInSpectatorMode(false, ped)
-
-    -- 2. Restaurar estado físico
     FreezeEntityPosition(ped, false)
     SetEntityVisible(ped, true, false)
     SetEntityCollision(ped, true, true)
 
-    -- 3. Limpieza extra de cámara por si acaso
     if GetRenderingCam() ~= -1 then
         RenderScriptCams(false, false, 0, true, true)
         DestroyAllCams(true)
     end
+end)
 
-    QBCore.Functions.Notify("Has recuperado el control.", "success")
+-- ==========================================================================
+--      EVENTO: CONGELAR/DESCONGELAR JUGADOR (Desde el Server)
+-- ==========================================================================
+RegisterNetEvent('DP-AdminMenu:client:freezePlayer', function(state)
+    local ped = PlayerPedId()
+    FreezeEntityPosition(ped, state)
+    
+    if state then
+        QBCore.Functions.Notify("¡Un administrador te ha congelado!", "error")
+    else
+        QBCore.Functions.Notify("¡Has sido descongelado!", "success")
+    end
 end)
 
 -- ==========================================================================

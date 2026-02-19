@@ -8,6 +8,7 @@ local AdminsOnDuty = {}
 local isRefreshPending = false -- Variable para el sistema Anti-Crash
 local controllingAdmins = {} -- Almacena quién controla a quién
 local activeWarns = {} -- Tabla de memoria: [source] = true
+local frozenPlayers = {}
 
 -- 1. Leemos la memoria del servidor (KVP)
 local savedWhitelist = GetResourceKvpInt('dp_whitelist_active')
@@ -292,7 +293,7 @@ end)
 -- ==========================================================================
 QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(source, cb, data)
     -- CHIVATO: Si no sale esto en la consola, el script no está cargando
-    print("^3[DP-AdminMenu] Petición recibida. Datos: " .. json.encode(data) .. "^7")
+    DebugLog("^3[DP-AdminMenu] Petición recibida. Datos: " .. json.encode(data) .. "^7")
 
     local targetId = type(data) == 'table' and tonumber(data.targetId) or tonumber(data)
     local reqCitizenId = type(data) == 'table' and data.citizenid or nil
@@ -319,6 +320,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
         response = {
             hasChar = true,
             fromSQL = false,
+            isFrozen = frozenPlayers[Player.PlayerData.source] or false,
             id = Player.PlayerData.source,
             charName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
             citizenid = citizenid,
@@ -333,7 +335,8 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
             isGangBoss = Player.PlayerData.gang.isboss,
             identifiers = GetPlayerIdentifiers(Player.PlayerData.source),
             stats = {
-                health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or (GetEntityHealth(ped) - 100),
+                health = (Player.PlayerData.metadata['isdead'] or Player.PlayerData.metadata['inlaststand']) and 0 or
+                    (GetEntityHealth(ped) - 100),
                 armor = GetPedArmour(ped),
                 hunger = Player.PlayerData.metadata['hunger'],
                 thirst = Player.PlayerData.metadata['thirst'],
@@ -341,12 +344,12 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
                 stamina = 100
             }
         }
-        
-    -- 3. JUGADOR OFFLINE (LÓGICA BLINDADA)
+
+        -- 3. JUGADOR OFFLINE (LÓGICA BLINDADA)
     elseif reqCitizenId then
-        print("^3[DP-AdminMenu] Buscando OFFLINE en SQL: " .. reqCitizenId .. "^7")
+        DebugLog("^3[DP-AdminMenu] Buscando OFFLINE en SQL: " .. reqCitizenId .. "^7")
         local result = MySQL.single.await('SELECT * FROM players WHERE citizenid = ?', {reqCitizenId})
-        
+
         if result then
             citizenid = result.citizenid
             license = result.license
@@ -354,16 +357,16 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
             -- A. EXTRACCIÓN DE DINERO POR FUERZA BRUTA (Anti-Crash)
             local moneyStr = tostring(result.money or "")
             local accountsStr = tostring(result.accounts or "") -- Por si acaso
-            
+
             -- Buscamos "bank": seguido de números
             local bankDinero = moneyStr:match('"bank":%s*(%d+)')
             if not bankDinero then
                 bankDinero = accountsStr:match('"bank":%s*(%d+)')
             end
-            
+
             -- Si no encuentra nada, pone 0
             local finalBank = tonumber(bankDinero) or 0
-            print("^2[DP-AdminMenu] Dinero Offline Encontrado: " .. finalBank .. "^7")
+            DebugLog("^2[DP-AdminMenu] Dinero Offline Encontrado: " .. finalBank .. "^7")
 
             -- B. DECODIFICACIÓN SEGURA DEL RESTO
             local function safeDecode(str)
@@ -380,14 +383,15 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
                 hasChar = true,
                 fromSQL = true,
                 id = nil,
-                charName = (charinfo.firstname and charinfo.lastname) and (charinfo.firstname .. ' ' .. charinfo.lastname) or "Desconocido",
+                charName = (charinfo.firstname and charinfo.lastname) and
+                    (charinfo.firstname .. ' ' .. charinfo.lastname) or "Desconocido",
                 citizenid = citizenid,
                 phone = charinfo.phone or "Sin móvil",
-                
+
                 -- AQUÍ VA EL DINERO QUE HEMOS CALCULADO
                 bank = finalBank,
                 cash = 0,
-                
+
                 job = job.label or "Desempleado",
                 jobGrade = (job.grade and job.grade.name) or "Sin Rango",
                 isJobBoss = job.isboss or false,
@@ -405,7 +409,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
                 }
             }
         else
-            print("^1[DP-AdminMenu] SQL devolvió NULO para: " .. reqCitizenId .. "^7")
+            DebugLog("^1[DP-AdminMenu] SQL devolvió NULO para: " .. reqCitizenId .. "^7")
             cb(nil)
             return
         end
@@ -420,20 +424,26 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getDetailedData', function(
     response.relatedCharacters = {}
 
     if license then
-        local allChars = MySQL.query.await('SELECT citizenid, charinfo, money FROM players WHERE license = ?', {license})
+        local allChars = MySQL.query
+                             .await('SELECT citizenid, charinfo, money FROM players WHERE license = ?', {license})
         if allChars then
             for _, char in pairs(allChars) do
                 local ok, cInfo = pcall(json.decode, char.charinfo or "{}")
-                if not ok then cInfo = {} end
-                
+                if not ok then
+                    cInfo = {}
+                end
+
                 -- Detectamos si ESTE personaje específico está online ahora mismo
                 local isOnlineNow = false
                 local pObj = QBCore.Functions.GetPlayerByCitizenId(char.citizenid)
-                if pObj then isOnlineNow = true end
+                if pObj then
+                    isOnlineNow = true
+                end
 
                 table.insert(response.relatedCharacters, {
                     citizenid = char.citizenid,
-                    name = (cInfo.firstname and cInfo.lastname) and (cInfo.firstname .. ' ' .. cInfo.lastname) or "Desconocido",
+                    name = (cInfo.firstname and cInfo.lastname) and (cInfo.firstname .. ' ' .. cInfo.lastname) or
+                        "Desconocido",
                     isOnlineChar = isOnlineNow
                 })
             end
@@ -743,12 +753,14 @@ RegisterNetEvent('DP-AdminMenu:server:playerAction', function(action, targetId, 
         TriggerClientEvent('QBCore:Notify', src, 'Has revivido a ' .. tName, 'success')
 
     elseif action == 'freeze' then
-        FreezeEntityPosition(tPed, true)
-        TriggerClientEvent('QBCore:Notify', src, 'Jugador ' .. tName .. ' CONGELADO.', 'primary')
+        frozenPlayers[targetSrc] = true -- GUARDAMOS EN MEMORIA
+        TriggerClientEvent('DP-AdminMenu:client:freezePlayer', targetSrc, true)
+        TriggerClientEvent('QBCore:Notify', src, 'Jugador ' .. tName .. ' CONGELADO ❄️', 'primary')
 
-    elseif action == 'unfreeze' then -- (Por si añades botón de descongelar)
-        FreezeEntityPosition(tPed, false)
-        TriggerClientEvent('QBCore:Notify', src, 'Jugador ' .. tName .. ' descongelado.', 'success')
+    elseif action == 'unfreeze' then
+        frozenPlayers[targetSrc] = false -- BORRAMOS DE MEMORIA
+        TriggerClientEvent('DP-AdminMenu:client:freezePlayer', targetSrc, false)
+        TriggerClientEvent('QBCore:Notify', src, 'Jugador ' .. tName .. ' DESCONGELADO 🔥', 'success')
 
         -- --- LÓGICA DE BRING Y RETURN ---
     elseif action == 'bring' then
@@ -915,21 +927,11 @@ RegisterNetEvent('DP-AdminMenu:server:playerAction', function(action, targetId, 
         if controllingAdmins[src] then
             local data = controllingAdmins[src]
 
-            -- 1. PRIMERO: Ordenar a la víctima que deje de espectear (Mientras aun estás cerca)
-            -- Esto es crucial para que la cámara no se buguee al teleportarte tú lejos
             TriggerClientEvent('DP-AdminMenu:client:stopSpectatingTarget', data.target)
-
-            -- Pequeña espera técnica para asegurar que el cliente procesa la cámara
             Wait(100)
-
-            -- 2. Traer al Target a donde está el Admin (Clon) ahora
             local currentAdminCoords = GetEntityCoords(adminPed)
             SetEntityCoords(targetPed, currentAdminCoords.x, currentAdminCoords.y, currentAdminCoords.z)
-
-            -- 3. Devolver al Admin a su sitio original
             SetEntityCoords(adminPed, data.originalCoords.x, data.originalCoords.y, data.originalCoords.z)
-
-            -- 4. Admin recupera su skin
             TriggerClientEvent('DP-AdminMenu:client:stopControlling', src)
 
             controllingAdmins[src] = nil
@@ -941,19 +943,26 @@ RegisterNetEvent('DP-AdminMenu:server:playerAction', function(action, targetId, 
                 return
             end
 
+            -- Recopilamos la información extra para el UI (Nombres)
+            local adminName = GetPlayerName(src) or "Admin"
+            local targetName = GetPlayerName(targetSrc) or "Jugador"
+            local tPlayer = QBCore.Functions.GetPlayer(targetSrc)
+            local targetCharName = tPlayer and
+                                       (tPlayer.PlayerData.charinfo.firstname .. ' ' ..
+                                           tPlayer.PlayerData.charinfo.lastname) or "Desconocido"
+
             controllingAdmins[src] = {
                 target = targetSrc,
                 originalCoords = GetEntityCoords(adminPed)
-                -- Ya no guardamos bucket porque no lo cambiamos
             }
 
-            -- 1. Enviamos orden a la víctima: "¡Vuélvete invisible y mira a la ID [src]!"
-            -- Pasamos 'src' (ID del Admin) para que la víctima sepa a quién espectear
-            TriggerClientEvent('DP-AdminMenu:client:startSpectatingTarget', targetSrc, src)
+            -- Enviamos a la víctima (ID de quien controla y su nombre)
+            TriggerClientEvent('DP-AdminMenu:client:startSpectatingTarget', targetSrc, src, adminName)
 
-            -- 2. Admin clona y se mueve
+            -- Enviamos al Admin (ID de la víctima, coordenadas y nombres)
             local tCoords = GetEntityCoords(targetPed)
-            TriggerClientEvent('DP-AdminMenu:client:startControlling', src, targetSrc, tCoords)
+            TriggerClientEvent('DP-AdminMenu:client:startControlling', src, targetSrc, tCoords, targetName,
+                targetCharName)
 
             TriggerClientEvent('QBCore:Notify', src, 'Controlando jugador. Él te está especteando.', 'success')
         end
@@ -1888,7 +1897,7 @@ RegisterNetEvent('DP-AdminMenu:server:ckPlayer', function(data)
 
     -- 1. SEGURIDAD: Permisos
     if not QBCore.Functions.HasPermission(src, 'admin') and not QBCore.Functions.HasPermission(src, 'god') then
-        print("^1[DP-AdminMenu] INTENTO DE CK SIN PERMISOS POR ID: " .. src .. "^7")
+        DebugLog("^1[DP-AdminMenu] INTENTO DE CK SIN PERMISOS POR ID: " .. src .. "^7")
         return
     end
 
@@ -1909,8 +1918,8 @@ RegisterNetEvent('DP-AdminMenu:server:ckPlayer', function(data)
 
     -- Iniciamos hilo separado
     CreateThread(function()
-        print("^3[DP-AdminMenu] Iniciando proceso de CK para CitizenID: " .. citizenid .. " (Admin: " .. adminName ..
-                  ")^7")
+        DebugLog("^3[DP-AdminMenu] Iniciando proceso de CK para CitizenID: " .. citizenid .. " (Admin: " .. adminName ..
+                     ")^7")
 
         -- ============================================================
         -- PASO 2: EL GRAN BACKUP (LECTURA SEGURA)
@@ -1968,7 +1977,7 @@ RegisterNetEvent('DP-AdminMenu:server:ckPlayer', function(data)
         SaveResourceFile(GetCurrentResourceName(), "ck_backups.json", json.encode(currentLogs, {
             indent = true
         }), -1)
-        print("^2[DP-AdminMenu] Backup guardado correctamente en ck_backups.json^7")
+        DebugLog("^2[DP-AdminMenu] Backup guardado correctamente en ck_backups.json^7")
 
         -- ============================================================
         -- PASO 4: LA PURGA (DELETE EN CASCADA ROBUSTO)
@@ -2039,15 +2048,15 @@ RegisterNetEvent('DP-AdminMenu:server:ckPlayer', function(data)
 
         MySQL.transaction(mainQueries, function(success)
             if success then
-                print("^2[DP-AdminMenu] PURGA COMPLETADA EXITOSAMENTE. El CitizenID " .. citizenid ..
-                          " ha sido eliminado.^7")
+                DebugLog("^2[DP-AdminMenu] PURGA COMPLETADA EXITOSAMENTE. El CitizenID " .. citizenid ..
+                             " ha sido eliminado.^7")
                 -- Intentamos notificar (si el admin no eras tú mismo)
                 if GetPlayerName(src) then
                     TriggerClientEvent('QBCore:Notify', src, 'CK Completado. Backup generado y datos borrados.',
                         'success')
                 end
             else
-                print("^1[DP-AdminMenu] ERROR EN TRANSACCIÓN PRINCIPAL. Revisa si todas las tablas CORE existen.^7")
+                DebugLog("^1[DP-AdminMenu] ERROR EN TRANSACCIÓN PRINCIPAL. Revisa si todas las tablas CORE existen.^7")
                 if GetPlayerName(src) then
                     TriggerClientEvent('QBCore:Notify', src, 'Error SQL durante el CK (Ver consola)', 'error')
                 end
@@ -2075,11 +2084,15 @@ AddEventHandler('playerDropped', function()
         AdminsWatching[src] = nil
     end
 
+    if frozenPlayers[src] then
+        frozenPlayers[src] = nil
+    end
+
     GlobalRefresh()
 
     -- B. NUEVA LÓGICA (Anti-Evasión de Warn)
     if activeWarns[src] and activeWarns[src].active then
-        print("^1[ANTI-EVASION] El jugador ID " .. src .. " se desconectó con un WARN pendiente. Baneando...^7")
+        DebugLog("^1[ANTI-EVASION] El jugador ID " .. src .. " se desconectó con un WARN pendiente. Baneando...^7")
 
         local data = activeWarns[src]
         local banReason = "ANTI-RP: Evasión de Advertencia Administrativa (Desconexión)"
