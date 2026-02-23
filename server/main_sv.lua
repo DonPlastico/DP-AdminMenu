@@ -122,13 +122,13 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:getPlayers', function(source, cb)
 end)
 
 QBCore.Functions.CreateCallback('DP-AdminMenu:getReports', function(source, cb)
-    MySQL.query("SELECT * FROM dp_reports WHERE status != 'closed' ORDER BY created_at ASC", {}, function(result)
+    MySQL.query("SELECT * FROM dp_reports WHERE status != 'closed' ORDER BY created_at DESC", {}, function(result)
         cb(result or {})
     end)
 end)
 
 QBCore.Functions.CreateCallback('DP-AdminMenu:getBans', function(source, cb)
-    MySQL.query("SELECT * FROM bans WHERE status = 'active' ORDER BY id ASC", {}, function(result)
+    MySQL.query("SELECT * FROM bans WHERE status = 'active' ORDER BY id DESC", {}, function(result)
         local adaptedResult = {}
         for _, ban in ipairs(result or {}) do
             table.insert(adaptedResult, {

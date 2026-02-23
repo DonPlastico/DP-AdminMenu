@@ -276,7 +276,7 @@
                 <div class="page-header">
                     <div class="section-title">
                         <span class="iconify" data-icon="mdi:clipboard-alert-outline"></span>
-                        <span>REPORTES ACTIVOS</span>
+                        <span>REPORTES ACTIVOS <span id="total-reports">(0)</span></span>
                     </div>
                 </div>
                 <div class="report-list"></div>
@@ -286,7 +286,7 @@
                 <div class="page-header">
                     <div class="section-title">
                         <span class="iconify" data-icon="mdi:gavel"></span>
-                        <span>LISTA DE BANEADOS</span>
+                        <span>LISTA DE BANEADOS <span id="total-bans">(0)</span></span>
                     </div>
                     <div class="search-bar">
                         <input type="text" id="ban-search" placeholder="Buscar por ID, Nombre, Motivo...">
@@ -2052,10 +2052,7 @@
                         <button class="btn-punish-mod kick" onclick="playerAction('kick')">KICK</button>
                         <button class="btn-punish-mod warn" onclick="playerAction('warn')">WARN</button>
                         <div style="flex-grow: 1;"></div>
-                        <button id="btn-ck-player" class="btn-action btn-danger-dark"
-                            title="Character Kill (Borrado Total)">
-                            <span class="iconify" data-icon="mdi:skull-crossbones"></span> CK
-                        </button>
+                        <button id="btn-ck-player" class="btn-action btn-danger-dark" style="padding: 0px 50px;">CK</button>
                     </div>
                 </div>
             </div>

@@ -59,8 +59,8 @@ const actionStates = {
 };
 
 // Configuración Externa
-const discordWebhook = "https://discord.com/api/webhooks/1459417838530855074/LNstohvnbz6UpxPCvk8UMDCMKp7MUJAzDfRIBhgmbO7NTuewvaji2dOMSkfUt3yA8eLP";
-// const discordWebhook = "Meter_Tu_Webhook_Aquí";
+const imgbbApiKey = "3171000eda16cef09aa593f4cc1ede01";
+// const imgbbApiKey = "PONE_AQUI_TU_API_KEY_DE_IMGBB";
 
 // Formateo de Fechas (Español)
 const dateOptions = {
@@ -279,15 +279,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('menu-open');
             isDebugActive = data.debugMode;
 
-            allPlayers = data.players || [];
-            allBans = data.bans || [];
-            allJobs = data.jobs || [];
-            allGangs = data.gangs || [];
+            // FIX: Solo reemplazamos la memoria si el servidor envía el dato. Si no lo envía (undefined), conservamos lo que teníamos.
+            if (data.players !== undefined) allPlayers = data.players;
+            if (data.bans !== undefined) allBans = data.bans;
+            if (data.jobs !== undefined) allJobs = data.jobs;
+            if (data.gangs !== undefined) allGangs = data.gangs;
 
             renderPlayerList(allPlayers);
-            renderReports(data.reports || []);
+            if (data.reports !== undefined) renderReports(data.reports);
             renderBans(allBans);
-            renderChat(data.chat || []);
+            if (data.chat !== undefined) renderChat(data.chat);
             renderJobList(allJobs);
             renderGangList(allGangs);
 
@@ -404,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- SONIDO DE ENTRADA (ALERTA) ---
             if (soundIn) {
-                soundIn.currentTime = 0; 
+                soundIn.currentTime = 0;
                 soundIn.play().catch(e => console.log("Audio play interceptado por navegador"));
             }
 
@@ -417,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Ahora sí, el contenedor existe visualmente y podemos medirlo
                 const anchoBarra = content.offsetWidth;
                 const anchoTexto = marquee.offsetWidth;
-                
+
                 const recorridoTotal = anchoBarra + anchoTexto;
                 const pixelesPorSegundo = 180; // Velocidad de lectura óptima
                 const tiempoDeUnaVuelta = recorridoTotal / pixelesPorSegundo;
@@ -503,9 +504,14 @@ document.addEventListener('DOMContentLoaded', () => {
             setText('ei-rel-hash', d.relGroup);
 
         } else if (data.type === 'updateAllLists') {
-            allPlayers = data.players || [];
-            allJobs = data.jobs || [];
-            allGangs = data.gangs || [];
+            // FIX: Solo actualizamos lo que nos envíe el servidor en este momento
+            if (data.players !== undefined) allPlayers = data.players;
+            if (data.jobs !== undefined) allJobs = data.jobs;
+            if (data.gangs !== undefined) allGangs = data.gangs;
+            if (data.bans !== undefined) {
+                allBans = data.bans;
+                renderBans(allBans);
+            }
 
             renderPlayerList(allPlayers);
 
@@ -885,15 +891,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerListContainer = document.querySelector('#home .scroll-list');
 
     function renderPlayerList(list) {
+        const totalPlayersCounter = document.getElementById('total-players');
+        if (totalPlayersCounter) {
+            totalPlayersCounter.innerText = `(${list ? list.length : 0})`;
+        }
+
         playerListContainer.innerHTML = '';
+
         if (!list || list.length === 0) {
             playerListContainer.innerHTML = '<div style="padding:15px; color:#888;">No hay nadie conectado :(</div>';
             return;
         }
+
         list.forEach(player => {
             const card = document.createElement('div');
             card.className = 'player-card';
-            // AÑADIDO: Evento onclick pasando los datos
+
+            // Evento onclick pasando los datos
             card.onclick = function () {
                 openPlayerDetails({
                     id: player.id,
@@ -955,17 +969,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatReportDescription(text) {
         if (!text) return "";
 
-        // 1. PRIMERO: Limpiamos el texto de código malicioso.
-        // Si alguien puso <button>, ahora será &lt;button&gt; (texto visible, no funcional)
+        // 1. Limpiamos el texto
         let safeText = escapeHtml(text);
 
-        // 2. Regex para detectar URLs de imágenes
-        // (Nota: detectará URLs incluso si tienen caracteres escapados como &amp;)
+        // 2. Detectamos estrictamente URLs que terminen en formatos de imagen
         const imageRegex = /(https?:\/\/\S+\.(?:png|jpg|jpeg|gif|webp)(\?\S*)?)/gi;
 
-        // 3. Reemplazamos SOLO las URLs detectadas por nuestras imágenes
+        // 3. Reemplazamos
         return safeText.replace(imageRegex, function (url) {
-            // IMPORTANTE: 'url' aquí ya es segura porque pasó por escapeHtml
             return `<img src="${url}" 
                      class="report-inline-img" 
                      onclick="openImageModal('${url}')" 
@@ -975,10 +986,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderReports(list) {
         const container = document.querySelector('.report-list');
+
+        const totalReportsCounter = document.getElementById('total-reports');
+        if (totalReportsCounter) totalReportsCounter.innerText = `(${list ? list.length : 0})`;
+
         container.innerHTML = '';
 
         if (!list || list.length === 0) {
-            container.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">Relax, no hay reportes pendientes.</div>';
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; padding: 50px; text-align: center; color: #666; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <span class="iconify" data-icon="mdi:check-circle-outline" style="font-size: 40px; color: var(--success);"></span>
+                    <h2>TODO LIMPIO</h2>
+                    <p>No hay reportes pendientes en este momento.</p>
+                </div>`;
             return;
         }
 
@@ -988,11 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const charName = escapeHtml(rep.sender_name || "Anonimo");
             const titleSafe = escapeHtml(rep.title || "Sin Asunto");
 
-            // ============================================================
-            // 1. NUEVA LÓGICA DE IDENTIFICACIÓN DE JUGADOR
-            // ============================================================
-            // Buscamos si el autor del reporte está en la lista de jugadores conectados (allPlayers)
-            // IMPORTANTE: Tu LUA debe enviar 'citizenid' en la lista de reportes para que esto sea 100% preciso.
+            // Lógica de Jugador Online/Offline
             const onlinePlayer = typeof allPlayers !== 'undefined'
                 ? allPlayers.find(p => p.citizenid === rep.citizenid)
                 : null;
@@ -1000,7 +1016,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let playerParams = {};
 
             if (onlinePlayer) {
-                // ESTÁ ONLINE: Usamos su ID de sesión actual (que puede ser distinta al rep.src)
                 playerParams = {
                     id: onlinePlayer.id,
                     name: onlinePlayer.name,
@@ -1008,9 +1023,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     citizenid: rep.citizenid
                 };
             } else {
-                // ESTÁ OFFLINE: Preparamos datos para búsqueda SQL
                 playerParams = {
-                    id: null, // Null fuerza al sistema a buscar en base de datos
+                    id: null,
                     citizenid: rep.citizenid,
                     name: steamName,
                     charName: charName,
@@ -1018,41 +1032,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
 
-            // Convertimos el objeto a texto seguro para el HTML
             const paramsString = JSON.stringify(playerParams).replace(/"/g, "&quot;");
-            // ============================================================
 
-            let statusBadge = rep.status === 'open'
-                ? '<span class="badge unassigned">LIBRE</span>'
-                : `<span class="badge assigned">LLEVA: ${escapeHtml(rep.assigned_to)}</span>`;
+            // Estilos dinámicos según estado
+            const isOpen = rep.status === 'open';
 
-            let assignBtn = rep.status === 'open'
-                ? `<button class="btn-assign" data-id="${rep.id}" data-player="${steamName}">ME LO QUEDO</button>`
-                : `<button disabled style="opacity:0.5; cursor:not-allowed;">OCUPADO</button>`;
+            const statusBadge = isOpen
+                ? `<span class="badge unassigned"><span class="iconify" data-icon="mdi:clock-alert-outline"></span> PENDIENTE</span>`
+                : `<span class="badge assigned"><span class="iconify" data-icon="mdi:account-hard-hat"></span> ASIGNADO: ${escapeHtml(rep.assigned_to)}</span>`;
+
+            const assignBtn = isOpen
+                ? `<button class="btn-assign" data-id="${rep.id}" data-player="${steamName}"><span class="iconify" data-icon="mdi:hand-back-right"></span> ATENDER</button>`
+                : `<button class="btn-disabled" disabled><span class="iconify" data-icon="mdi:lock-outline"></span> OCUPADO</button>`;
+
+            // TRADUCTOR DE ETIQUETAS
+            let translatedType = rep.type.toUpperCase();
+            if (rep.type === 'support') translatedType = 'SOPORTE';
+            if (rep.type === 'player') translatedType = 'JUGADOR';
 
             const card = document.createElement('div');
             card.className = 'report-card';
 
-            // Inyectamos los datos YA LIMPIOS
+            // Inyectamos los datos con el nuevo HTML estructurado
             card.innerHTML = `
-            <div class="rc-header">
-                <span class="rc-title">${steamName} (${charName})</span>
-                <div class="rc-badges">${statusBadge}<span class="badge type">${rep.type}</span></div>
-            </div>
-            <div class="rc-body">
-                <div class="rc-subject">${titleSafe}</div>
-                
-                <div class="rc-desc">${formatReportDescription(rep.description)}</div>
-                
-            </div>
-            <div class="rc-footer">
-                ${assignBtn}
-                <button onclick="openPlayerDetails(${paramsString})">
-                    INFORMACIÓN DEL JUGADOR
-                </button>
-                <button class="btn-danger btn-delete" data-id="${rep.id}">CERRAR/BORRAR</button>
-            </div>
-        `;
+                <div class="rc-header">
+                    <div class="rc-user-info">
+                        <span class="iconify" data-icon="mdi:account-box"></span>
+                        <span class="rc-title">${steamName} <small>(${charName})</small></span>
+                        <span class="rc-id">#${rep.id}</span>
+                    </div>
+                    <div class="rc-badges">
+                        ${statusBadge}
+                        <span class="badge type"><span class="iconify" data-icon="mdi:tag-outline"></span> ${translatedType}</span>
+                    </div>
+                </div>
+                <div class="rc-body">
+                    <div class="rc-subject">
+                        ${titleSafe}
+                    </div>
+                    <div class="rc-desc">${formatReportDescription(rep.description)}</div>
+                </div>
+                <div class="rc-footer">
+                    ${assignBtn}
+                    <button class="btn-info" onclick="openPlayerDetails(${paramsString})">
+                        <span class="iconify" data-icon="mdi:card-account-details"></span> JUGADOR
+                    </button>
+                    <button class="btn-delete" data-id="${rep.id}">
+                        <span class="iconify" data-icon="mdi:check-all"></span> CERRAR
+                    </button>
+                </div>
+                `;
+
             container.appendChild(card);
         });
 
@@ -1085,6 +1115,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const banListBody = document.getElementById('ban-list-body');
 
     function renderBans(list) {
+
+        const totalBansCounter = document.getElementById('total-bans');
+        if (totalBansCounter) totalBansCounter.innerText = `(${list ? list.length : 0})`;
+
         if (!banListBody) return;
         banListBody.innerHTML = '';
         if (!list || list.length === 0) {
@@ -1209,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Si hay imágenes, las pintamos en rejilla
             if (images && images.length > 0) {
-                contentHtml += `<div class="chat-images-grid" style="display:flex; gap:5px; flex-wrap:wrap; margin-top:5px;">`;
+                contentHtml += `<div class="chat-images-grid" style="display:flex; gap:5px; flex-wrap:wrap;/* margin-top:5px; */padding: 5px 15px;background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);border-left: 2px solid #444444;animation: slideInUp 0.5s ease-out forwards;transition: all 0.2s ease;">`;
                 images.forEach(imgUrl => {
                     contentHtml += `<img src="${imgUrl}" class="chat-image" style="max-width:150px; border-radius:4px; cursor:pointer;" onclick="openImageModal('${imgUrl}')">`;
                 });
@@ -1456,22 +1490,43 @@ document.addEventListener('DOMContentLoaded', () => {
         closeExtendModal();
     });
 
-    // Custom Select Logic (Generic)
-    const customWrap = document.querySelector('.custom-select-wrapper');
-    const customTrig = document.getElementById('custom-trigger');
-    if (customTrig) {
-        customTrig.addEventListener('click', () => { if (!extPerm.checked) customWrap.classList.toggle('open'); });
-        document.querySelectorAll('.custom-option').forEach(opt => {
-            opt.addEventListener('click', function () {
-                document.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                this.classList.add('selected');
-                customTrig.querySelector('span').textContent = this.textContent;
-                extUnit.value = this.getAttribute('data-value');
-                customWrap.classList.remove('open');
-                recalcNewDate();
+    // ==========================================================================
+    // LÓGICA SELECT DESPLEGABLE (AISLADO PARA EVITAR CONFLICTOS DE IDs)
+    // ==========================================================================
+    if (extModal) {
+        // Buscamos el wrapper y el trigger ESPECÍFICAMENTE dentro de este modal
+        const localWrap = extModal.querySelector('.custom-select-wrapper');
+        const localTrig = extModal.querySelector('.custom-select-trigger');
+
+        if (localTrig && localWrap) {
+
+            // 1. Abrir/Cerrar al hacer click
+            localTrig.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!extPerm.checked) localWrap.classList.toggle('open');
             });
-        });
-        window.addEventListener('click', (e) => { if (!customWrap.contains(e.target)) customWrap.classList.remove('open'); });
+
+            // 2. Seleccionar una opción
+            localWrap.querySelectorAll('.custom-option').forEach(opt => {
+                opt.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    localWrap.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    localTrig.querySelector('span').textContent = this.textContent;
+
+                    if (extUnit) extUnit.value = this.getAttribute('data-value');
+                    localWrap.classList.remove('open');
+                    recalcNewDate(); // Recalcula la fecha abajo
+                });
+            });
+
+            // 3. Cerrar si se hace click fuera del menú
+            window.addEventListener('click', (e) => {
+                if (!localWrap.contains(e.target)) {
+                    localWrap.classList.remove('open');
+                }
+            });
+        }
     }
 
     // Anuncio Global Modal
@@ -1887,7 +1942,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. LIMPIEZA Y ORDEN
         jobListContainer.innerHTML = '';
-        if (totalJobsCounter) totalJobsCounter.innerText = list ? list.length : 0;
+        if (totalJobsCounter) totalJobsCounter.innerText = `(${list ? list.length : 0})`;
 
         if (!list || list.length === 0) {
             jobListContainer.innerHTML = '<div style="padding:15px; color:#888; text-align:center;">No se encontraron trabajos.</div>';
@@ -2022,7 +2077,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         gangListContainer.innerHTML = '';
-        if (totalGangsCounter) totalGangsCounter.innerText = list ? list.length : 0;
+        if (totalGangsCounter) totalGangsCounter.innerText = `(${list ? list.length : 0})`;
         if (!list || list.length === 0) {
             gangListContainer.innerHTML = '<div style="padding:15px; color:#888; text-align:center;">No se encontraron bandas activas.</div>';
             return;
@@ -2718,16 +2773,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="veh-value val-code">${veh.model}</span>
                         </div>
                     </div>
+                </div>
 
-                    <div class="veh-actions">
-                        <button class="btn-spawn" onclick="spawnVehicle('${veh.model}')" title="Spawnear para mí">
-                            <span class="iconify" data-icon="mdi:key-variant"></span> SPAWNEAR
-                        </button>
-                        
-                        <button class="btn-give" onclick="window.openGiveVehicleModal('${veh.model}', '${veh.name}')" title="Dar a jugador">
-                            <span class="iconify" data-icon="mdi:gift-outline"></span> DAR
-                        </button>
-                    </div>
+                <div class="veh-actions">
+                    <button class="btn-spawn" onclick="spawnVehicle('${veh.model}')" title="Spawnear para mí">
+                        <span class="iconify" data-icon="mdi:key-variant"></span> SPAWNEAR
+                    </button>
+                    
+                    <button class="btn-give" onclick="window.openGiveVehicleModal('${veh.model}', '${veh.name}')" title="Dar a jugador">
+                        <span class="iconify" data-icon="mdi:gift-outline"></span> DAR
+                    </button>
                 </div>
             `;
             fragment.appendChild(card);
@@ -2917,16 +2972,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             </span>
                         </div>
                     </div>
+                </div>
 
-                    <div class="veh-actions" style="margin-top: auto; padding-top: 10px;">
-                        <button class="btn-spawn" onclick="spawnItem('${code}')" title="Darmelo a mí">
-                            <span class="iconify" data-icon="mdi:download"></span> SACAR
-                        </button>
-                        
-                        <button class="btn-give" onclick="openGiveItemModal('${code}', '${label}', '${item.type}', '${item.ammoType || ''}')" title="Dar a otro jugador">
-                            <span class="iconify" data-icon="mdi:gift-outline"></span> DAR
-                        </button>
-                    </div>
+                <div class="veh-actions" style="margin-top: auto; padding-top: 10px;">
+                    <button class="btn-spawn" onclick="spawnItem('${code}')" title="Darmelo a mí">
+                        <span class="iconify" data-icon="mdi:download"></span> SACAR
+                    </button>
+                    
+                    <button class="btn-give" onclick="openGiveItemModal('${code}', '${label}', '${item.type}', '${item.ammoType || ''}')" title="Dar a otro jugador">
+                        <span class="iconify" data-icon="mdi:gift-outline"></span> DAR
+                    </button>
                 </div>
             `;
             fragment.appendChild(card);
@@ -3699,24 +3754,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Subir imagen a Discord y obtener URL (Magia negra)
-    async function uploadImageToDiscord(file) {
+    // 4. Subir imagen a ImgBB y obtener URL permanente
+    async function uploadImageToImgBB(file) {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('image', file);
 
-        // IMPORTANTE: Añadimos ?wait=true para que Discord nos devuelva el JSON con la URL
         try {
-            const response = await fetch(discordWebhook + "?wait=true", {
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
                 method: 'POST',
                 body: formData
             });
 
-            if (!response.ok) throw new Error('Error subiendo imagen');
+            if (!response.ok) throw new Error('Error subiendo imagen a ImgBB');
 
             const data = await response.json();
-            // Discord devuelve un objeto Message con un array 'attachments'
-            if (data.attachments && data.attachments.length > 0) {
-                return data.attachments[0].url; // Retornamos la URL permanente
+
+            // LA CLAVE: 'display_url' es el enlace directo (termina en .png/.jpg)
+            if (data && data.data && data.data.display_url) {
+                return data.data.display_url;
+            } else if (data && data.data && data.data.url) {
+                return data.data.url; // Fallback por si acaso
             }
         } catch (error) {
             console.error("Fallo al subir imagen:", error);
@@ -3746,7 +3803,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. SI HAY FOTOS, SUBIRLAS PRIMERO A DISCORD
         if (pendingAttachments.length > 0) {
             // Usamos Promise.all para subirlas todas en paralelo (más rápido)
-            const uploadPromises = pendingAttachments.map(file => uploadImageToDiscord(file));
+            const uploadPromises = pendingAttachments.map(file => uploadImageToImgBB(file));
             const results = await Promise.all(uploadPromises);
 
             // Filtramos las que hayan fallado (null) y nos quedamos con las URLs
@@ -4730,8 +4787,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. SUBIDA DE IMÁGENES A DISCORD (Si las hay)
         if (reportAttachments.length > 0) {
-            // Usamos la función global uploadImageToDiscord que definimos para el chat
-            const uploadPromises = reportAttachments.map(file => uploadImageToDiscord(file));
+            const uploadPromises = reportAttachments.map(file => uploadImageToImgBB(file));
 
             // Esperamos a que todas suban
             const uploadedUrls = await Promise.all(uploadPromises);
@@ -4821,14 +4877,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (playerData) {
             currentDetailsId = playerData.id;
 
-            // 1. ANTES DE GUARDAR, RESCATAMOS LA LISTA DEL PERFIL ANTERIOR
-            // Si ya teníamos datos en memoria (del perfil online) y el nuevo (offline) no trae lista...
-            if (currentPlayerDataGlobal && currentPlayerDataGlobal.relatedCharacters && !playerData.relatedCharacters) {
-                // ...COPIAMOS la lista al nuevo objeto para no perderla.
-                playerData.relatedCharacters = currentPlayerDataGlobal.relatedCharacters;
+            // 1. FIX BUG: LIMPIAR MEMORIA SI ES OTRO JUGADOR
+            if (currentPlayerDataGlobal) {
+                let isSamePlayer = false;
+                if (playerData.citizenid && currentPlayerDataGlobal.citizenid === playerData.citizenid) isSamePlayer = true;
+                if (playerData.id && currentPlayerDataGlobal.id === playerData.id) isSamePlayer = true;
+
+                // Si NO es el mismo jugador, borramos la memoria para no cruzar datos
+                if (!isSamePlayer) {
+                    currentPlayerDataGlobal = null;
+                }
             }
 
-            // 2. AHORA SÍ, GUARDAMOS LOS DATOS EN GLOBAL
+            // 2. RESCATAMOS LA LISTA DEL PERFIL ANTERIOR (Solo si es el mismo)
             // Como ya le hemos inyectado la lista en el paso anterior, ahora se guarda con ella.
             currentPlayerDataGlobal = playerData;
 
@@ -4907,13 +4968,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (el) el.innerHTML = '<div class="pd-empty-state"><span style="color:#aaa">Datos no disponibles</span></div>';
                     });
 
-                    // --- 3. ¡LA CLAVE! RECUPERAR LA LISTA MULTI-CHAR DE LA MEMORIA ---
-                    // Si ya teníamos datos de este jugador (porque venimos de su perfil online), los usamos.
-                    if (currentPlayerDataGlobal && currentPlayerDataGlobal.relatedCharacters) {
-                        const charList = document.getElementById('pd-multichar-list');
-                        if (charList) {
-                            charList.innerHTML = '';
-                            currentPlayerDataGlobal.relatedCharacters.forEach(char => {
+                    // --- 3. RECUPERAR LA LISTA MULTI-CHAR DE LA MEMORIA ---
+                    const charList = document.getElementById('pd-multichar-list');
+                    if (charList) {
+                        charList.innerHTML = '';
+                        if (currentPlayerDataGlobal && currentPlayerDataGlobal.relatedCharacters && currentPlayerDataGlobal.relatedCharacters.length > 0) {
+
+                            // ORDENAR: El conectado (Online) se pone el primero en la lista
+                            const sortedChars = [...currentPlayerDataGlobal.relatedCharacters].sort((a, b) => {
+                                if (a.isOnlineChar && !b.isOnlineChar) return -1;
+                                if (!a.isOnlineChar && b.isOnlineChar) return 1;
+                                return 0; // El resto se queda en su orden normal de BD
+                            });
+
+                            sortedChars.forEach(char => {
                                 // Marcamos como activo el que acabamos de clicar (aunque haya fallado la carga)
                                 const isActive = (char.citizenid === playerData.citizenid);
                                 const isOnlineChar = char.isOnlineChar;
@@ -4946,6 +5014,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 };
                                 charList.appendChild(card);
                             });
+                        } else {
+                            // DISEÑO PARA CUANDO NO TIENE PERSONAJES (NUEVO)
+                            charList.innerHTML = `
+                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444; padding: 20px;">
+                                <span class="iconify" data-icon="mdi:account-off-outline" style="font-size:30px; opacity:0.2;"></span>
+                                <span style="font-size:10px; font-weight:700; margin-top:5px; opacity:0.5; text-align:center;">SIN PERFILES<br>ASOCIADOS</span>
+                            </div>`;
                         }
                     }
 
@@ -5004,13 +5079,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ============================================================
-                // 🚀 NUEVO: RENDERIZADO DE PERFILES MULTI-PERSONAJE (ESTILO MODERNO)
+                // RENDERIZADO DE PERFILES MULTI-PERSONAJE
                 // ============================================================
                 const charList = document.getElementById('pd-multichar-list');
                 if (charList) {
                     charList.innerHTML = '';
                     if (fullData.relatedCharacters && fullData.relatedCharacters.length > 0) {
-                        fullData.relatedCharacters.forEach(char => {
+
+                        // ORDENAR: El conectado (Online) se pone el primero en la lista
+                        const sortedChars = [...fullData.relatedCharacters].sort((a, b) => {
+                            if (a.isOnlineChar && !b.isOnlineChar) return -1;
+                            if (!a.isOnlineChar && b.isOnlineChar) return 1;
+                            return 0; // El resto se queda en su orden normal de BD
+                        });
+
+                        sortedChars.forEach(char => {
                             const isActive = (char.citizenid === fullData.citizenid);
                             const isOnlineChar = char.isOnlineChar;
 
@@ -5311,7 +5394,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 rowClass = "row-kick";
                                 statusLabel = "KICK";
                                 icon = "mdi:door-open";
-                                
+
                             } else if (h.type === 'CK') {
                                 rowClass = "row-ck"; // Necesitarás crear esta clase en CSS si quieres borde rojo oscuro
                                 statusLabel = "CK";
