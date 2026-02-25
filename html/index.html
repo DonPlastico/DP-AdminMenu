@@ -160,20 +160,42 @@
         <div class="content">
 
             <div class="page" id="home">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:account-group"></span>
-                        <span>LISTA DE JUGADORES <span id="total-players">(0)</span></span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:account-group"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>JUGADORES</h2>
+                            <p>Lista de jugadores activos <span id="total-players" class="badge-count">(0)</span></p>
+                        </div>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" placeholder="Buscar por Nombre o ID...">
-                        <button class="clear-btn"><span class="iconify" data-icon="mdi:close"></span></button>
+                    <div class="header-actions">
+                        <div class="search-bar modern-search">
+                            <span class="iconify search-icon" data-icon="mdi:magnify"></span>
+                            <input type="text" placeholder="Buscar por Nombre o ID...">
+                            <button class="clear-btn" data-tooltip="Limpiar">
+                                <span class="iconify" data-icon="mdi:close"></span>
+                            </button>
+                        </div>
                     </div>
                 </div>
+
                 <div class="scroll-list"></div>
             </div>
 
             <div class="page" id="actions" style="display: none;">
+                <div class="page-header modern-header">
+                    <div class="section-title">
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:view-grid-plus-outline"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>ACCIONES</h2>
+                            <p>Lista de acciones disponibles</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="sub-section">
                     <div class="page-header">
@@ -273,28 +295,43 @@
             </div>
 
             <div class="page" id="reports" style="display: none;">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:clipboard-alert-outline"></span>
-                        <span>REPORTES ACTIVOS <span id="total-reports">(0)</span></span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:clipboard-alert-outline"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>REPORTES</h2>
+                            <p>Lista de reportes activos <span id="total-reports" class="badge-count">(0)</span></p>
+                        </div>
                     </div>
                 </div>
+
                 <div class="report-list"></div>
             </div>
 
             <div class="page" id="bans" style="display: none;">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:gavel"></span>
-                        <span>LISTA DE BANEADOS <span id="total-bans">(0)</span></span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:gavel"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>BANEADOS</h2>
+                            <p>Lista de baneos activos <span id="total-bans" class="badge-count">(0)</span></p>
+                        </div>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" id="ban-search" placeholder="Buscar por ID, Nombre, Motivo...">
-                        <button class="clear-btn" id="btn-clear-bans">
-                            <span class="iconify" data-icon="mdi:close"></span>
-                        </button>
+                    <div class="header-actions">
+                        <div class="search-bar modern-search">
+                            <span class="iconify search-icon" data-icon="mdi:magnify"></span>
+                            <input type="text" id="ban-search" placeholder="Buscar por ID, Nombre, Motivo...">
+                            <button class="clear-btn" id="btn-clear-bans" data-tooltip="Limpiar">
+                                <span class="iconify" data-icon="mdi:close"></span>
+                            </button>
+                        </div>
                     </div>
                 </div>
+
                 <div class="table-container">
                     <table class="admin-table">
                         <thead>
@@ -314,10 +351,15 @@
             </div>
 
             <div class="page" id="chat" style="display: none;">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:chat-processing-outline"></span>
-                        <span>CHAT DE ADMINISTRADORES</span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:chat-processing-outline"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>CHAT INTERNO</h2>
+                            <p>Canal de comunicación exclusiva del equipo administrativo</p>
+                        </div>
                     </div>
                 </div>
 
@@ -351,69 +393,94 @@
             </div>
 
             <div class="page" id="jobs" style="display: none;">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:briefcase-outline"></span>
-                        <span>LISTA DE TRABAJOS <span id="total-jobs">(0)</span></span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:briefcase-outline"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>TRABAJOS</h2>
+                            <p>Lista de trabajos <span id="total-jobs" class="badge-count">(0)</span></p>
+                        </div>
                     </div>
 
                     <div class="header-actions">
-                        <div class="search-bar">
-                            <input type="text" id="job-search-input" placeholder="Buscar trabajo...">
-                            <button class="clear-btn" id="btn-clear-jobs">
+                        <div class="search-bar modern-search">
+                            <span class="iconify search-icon" data-icon="mdi:magnify"></span>
+                            <input type="text" id="job-search-input" placeholder="Buscar trabajo o jugador...">
+                            <button class="clear-btn" id="btn-clear-jobs" data-tooltip="Limpiar">
                                 <span class="iconify" data-icon="mdi:close"></span>
                             </button>
                         </div>
-
-                        <button id="btn-job-action" class="btn-header-action">
-                            VER RANGOS
+                        <button id="btn-job-action" class="btn-action">
+                            <span class="iconify" data-icon="mdi:format-list-bulleted"></span> RANGOS
                         </button>
                     </div>
                 </div>
 
-                <div class="scroll-list" id="job-list-container">
-                    <div style="padding:15px; color:#888; text-align:center;">Cargando trabajos...</div>
+                <div class="scroll-list modern-list" id="job-list-container">
+                    <div style="padding:30px; color:#888; text-align:center;">
+                        <span class="iconify" data-icon="mdi:loading"
+                            style="font-size: 24px; animation: spin 1s linear infinite;"></span><br><br>Cargando
+                        trabajos...
+                    </div>
                 </div>
             </div>
 
             <div class="page" id="gangs" style="display: none;">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:account-tie-hat-outline"></span>
-                        <span>LISTA DE BANDAS <span id="total-gangs">(0)</span></span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:account-tie-hat-outline"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>BANDAS</h2>
+                            <p>Lista de organizaciones <span id="total-gangs" class="badge-count">(0)</span></p>
+                        </div>
                     </div>
 
                     <div class="header-actions">
-                        <div class="search-bar">
-                            <input type="text" id="gang-search-input" placeholder="Buscar banda...">
-                            <button class="clear-btn" id="btn-clear-gangs">
+                        <div class="search-bar modern-search">
+                            <span class="iconify search-icon" data-icon="mdi:magnify"></span>
+                            <input type="text" id="gang-search-input" placeholder="Buscar banda o jugador...">
+                            <button class="clear-btn" id="btn-clear-gangs" data-tooltip="Limpiar">
                                 <span class="iconify" data-icon="mdi:close"></span>
                             </button>
                         </div>
-
-                        <button id="btn-gang-action" class="btn-header-action">
-                            VER RANGOS
+                        <button id="btn-gang-action" class="btn-action">
+                            <span class="iconify" data-icon="mdi:format-list-bulleted"></span> RANGOS
                         </button>
                     </div>
                 </div>
 
-                <div class="scroll-list" id="gang-list-container">
-                    <div style="padding:15px; color:#888; text-align:center;">Cargando bandas...</div>
+                <div class="scroll-list modern-list" id="gang-list-container">
+                    <div style="padding:30px; color:#888; text-align:center;">
+                        <span class="iconify" data-icon="mdi:loading"
+                            style="font-size: 24px; animation: spin 1s linear infinite;"></span><br><br>Cargando
+                        bandas...
+                    </div>
                 </div>
             </div>
 
             <div class="page" id="vehicles" style="display: none;">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:car-info"></span>
-                        <span>CATÁLOGO DE VEHÍCULOS</span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:car-info"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>CATÁLOGO DE VEHÍCULOS</h2>
+                            <p>Lista de todos los vehículos</p>
+                        </div>
                     </div>
-
-                    <div class="search-bar">
-                        <input type="text" id="veh-search-input" placeholder="Buscar vehículo...">
-                        <button class="clear-btn" id="btn-clear-veh">
-                            <span class="iconify" data-icon="mdi:close"></span>
-                        </button>
+                    <div class="header-actions">
+                        <div class="search-bar modern-search">
+                            <span class="iconify search-icon" data-icon="mdi:magnify"></span>
+                            <input type="text" id="veh-search-input" placeholder="Buscar vehículo...">
+                            <button class="clear-btn" id="n-clear-vehbt" data-tooltip="Limpiar">
+                                <span class="iconify" data-icon="mdi:close"></span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -425,20 +492,27 @@
                         <span>Cargando catálogo...</span>
                     </div>
                 </div>
-
             </div>
 
             <div class="page" id="items" style="display: none;">
-                <div class="page-header">
+                <div class="page-header modern-header">
                     <div class="section-title">
-                        <span class="iconify" data-icon="mdi:package-variant-closed"></span>
-                        <span>GESTOR DE ÍTEMS</span>
+                        <div class="title-icon-wrap">
+                            <span class="iconify" data-icon="mdi:package-variant-closed"></span>
+                        </div>
+                        <div class="title-text">
+                            <h2>GESTOR DE ÍTEMS</h2>
+                            <p>Base de datos global de objetos/ítems</p>
+                        </div>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" id="item-search-input" placeholder="Buscar ítem...">
-                        <button class="clear-btn" id="btn-clear-items">
-                            <span class="iconify" data-icon="mdi:close"></span>
-                        </button>
+                    <div class="header-actions">
+                        <div class="search-bar modern-search">
+                            <span class="iconify search-icon" data-icon="mdi:magnify"></span>
+                            <input type="text" id="item-search-input" placeholder="Buscar ítem...">
+                            <button class="clear-btn" id="btn-clear-items" data-tooltip="Limpiar">
+                                <span class="iconify" data-icon="mdi:close"></span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -473,7 +547,7 @@
                         </div>
                         <div class="stat-info">
                             <h3 id="stat-admins">0</h3>
-                            <p>ADMINS ON</p>
+                            <p>ADMINS</p>
                         </div>
                     </div>
 
@@ -499,7 +573,6 @@
                 </div>
 
                 <div class="status-middle-section">
-
                     <div class="chart-container-box">
                         <div class="chart-header">
                             <h3>
@@ -1965,6 +2038,8 @@
                             <button onclick="playerAction('ped_menu')">MENÚ DE PED</button>
                         </div>
 
+                        <button class="btn-action full-width" onclick="openTrollMenu()">MENÚ TROLL</button>
+
                         <div class="grid-3">
                             <button class="btn-danger" onclick="playerAction('set_job')">ASIGNAR TRABAJO</button>
                             <button class="btn-danger" onclick="playerAction('set_gang')">ASIGNAR BANDA</button>
@@ -2052,7 +2127,8 @@
                         <button class="btn-punish-mod kick" onclick="playerAction('kick')">KICK</button>
                         <button class="btn-punish-mod warn" onclick="playerAction('warn')">WARN</button>
                         <div style="flex-grow: 1;"></div>
-                        <button id="btn-ck-player" class="btn-action btn-danger-dark" style="padding: 0px 50px;">CK</button>
+                        <button id="btn-ck-player" class="btn-action btn-danger-dark"
+                            style="padding: 0px 50px;">CK</button>
                     </div>
                 </div>
             </div>
@@ -2206,6 +2282,54 @@
 
     <div id="puppet-ui-container" style="display: none;">
         <div class="puppet-content" id="puppet-text-content">
+        </div>
+    </div>
+
+    <div id="troll-menu-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content-small"
+            style="width: 500px; background: var(--bg-panel); padding: 20px; border-radius: 10px; border: 1px solid var(--primary); color: white;">
+
+            <h3 style="margin-bottom: 20px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                MENÚ TROLL
+            </h3>
+
+            <p style="color: #ccc; font-size: 13px; margin-bottom: 20px; text-align: center;">
+                Selecciona la acción que quieres ejecutar sobre el jugador:
+                <br><strong id="troll-target-name" style="color: #fff; font-size: 15px;">...</strong>
+            </p>
+
+            <div class="grid-2" style="gap: 10px; margin-bottom: 10px;">
+                <button class="btn-danger" onclick="trollAction('drunk')">EMBORRACHAR</button>
+                <button class="btn-danger" onclick="trollAction('fire')">PRENDER FUEGO</button>
+            </div>
+
+            <div class="grid-2" style="gap: 10px; margin-bottom: 10px;">
+                <button onclick="trollAction('fart')">TIRAR PEDO</button>
+                <button onclick="trollAction('flip')">VOLTEAR COCHE</button>
+            </div>
+
+            <div class="grid-2" style="gap: 10px; margin-bottom: 10px;">
+                <button class="btn-danger" onclick="trollAction('doors')">LOCURA PUERTAS</button>
+                <button class="btn-danger" onclick="trollAction('fake_lag')">FAKE LAG</button>
+            </div>
+
+            <div class="grid-2" style="gap: 10px; margin-bottom: 10px;">
+                <button onclick="trollAction('npc_attack')">ATAQUE NPC</button>
+                <button onclick="trollAction('animal_attack')">ATAQUE ANIMAL</button>
+            </div>
+
+            <div class="grid-2" style="gap: 10px; margin-bottom: 10px;">
+                <button class="btn-danger" onclick="trollAction('clone')">CLONAR JUGADOR</button>
+                <button class="btn-danger" onclick="trollAction('kidnap')">SECUESTRO NPC</button>
+            </div>
+
+            <button class="btn-danger" style="width: 100%; margin-bottom: 20px;" onclick="trollAction('cam_2d')">
+                CÁMARA 2D (GTA CLÁSICO)
+            </button>
+
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeTrollMenu()">CERRAR MENÚ</button>
+            </div>
         </div>
     </div>
 

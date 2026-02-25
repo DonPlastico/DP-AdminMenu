@@ -9,6 +9,7 @@ local isRefreshPending = false -- Variable para el sistema Anti-Crash
 local controllingAdmins = {} -- Almacena quién controla a quién
 local activeWarns = {} -- Tabla de memoria: [source] = true
 local frozenPlayers = {}
+local lastFartSound = ""
 
 -- 1. Leemos la memoria del servidor (KVP)
 local savedWhitelist = GetResourceKvpInt('dp_whitelist_active')
@@ -1524,6 +1525,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getStatusData', function(so
             adminsCount = adminsCount + 1
         end
     end
+
     local myState = AdminsOnDuty[source];
     if myState == nil then
         myState = true
@@ -1533,18 +1535,27 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getStatusData', function(so
     local hours = math.floor(uptimeMs / 3600000)
     local mins = math.floor((uptimeMs % 3600000) / 60000)
 
+    -- 1. Obtenemos los Logs
     MySQL.query('SELECT * FROM dp_logs ORDER BY id DESC LIMIT 50', {}, function(logs)
-        cb({
-            players = players,
-            maxPlayers = maxPlayers,
-            admins = adminsCount,
-            uptime = string.format("%dh %02dm", hours, mins),
-            reportsCount = 0,
-            logs = logs or {},
-            stats = {},
-            myStaffMode = myState,
-            serverStates = ServerStates
-        })
+
+        -- 2. Obtenemos los Stats de las Gráficas (Convirtiendo la fecha a Timestamp para el JS)
+        MySQL.query(
+            'SELECT UNIX_TIMESTAMP(created_at) as date, player_count, admin_count, report_count FROM dp_stats ORDER BY created_at ASC',
+            {}, function(statsData)
+
+                cb({
+                    players = players,
+                    maxPlayers = maxPlayers,
+                    admins = adminsCount,
+                    uptime = string.format("%dh %02dm", hours, mins),
+                    reportsCount = 0,
+                    logs = logs or {},
+                    stats = statsData or {}, -- AQUÍ ESTABA EL ERROR: Antes ponía stats = {}
+                    myStaffMode = myState,
+                    serverStates = ServerStates
+                })
+
+            end)
     end)
 end)
 
@@ -2156,6 +2167,58 @@ RegisterNetEvent('DP-AdminMenu:server:giveVehicleConfirm', function(adminSrc, ve
                     "error")
             end
         end)
+end)
+
+-- ==========================================================================
+-- EVENTOS DEL MENÚ TROLL
+-- ==========================================================================
+
+RegisterNetEvent('DP-AdminMenu:server:trollAction', function(action, targetId)
+    local src = source
+    -- Seguridad: Comprobar que el que pulsa el botón es Admin
+    if not QBCore.Functions.HasPermission(src, 'admin') then
+        return
+    end
+
+    local targetSrc = tonumber(targetId)
+    if not targetSrc or targetSrc <= 0 then
+        return
+    end
+
+    -- Mandamos la orden al cliente de la víctima para que sufra las consecuencias
+    TriggerClientEvent('DP-AdminMenu:client:receiveTroll', targetSrc, action)
+
+    DebugLog("^5[TROLL]^7 Admin ID " .. src .. " ejecutó la acción [" .. action .. "] al jugador ID " .. targetSrc)
+end)
+
+RegisterNetEvent('DP-AdminMenu:server:playTrollSound', function(soundType, coords)
+    if soundType == 'fart' then
+        -- Aquí pones el nombre EXACTO de tus archivos con su formato correcto
+        local fartSounds = {
+            "fart1.wav",
+            "fart2.wav",
+            "fart3.wav",
+            "fart4.mp3",
+            "fart5.wav",
+            "fart6.wav",
+            "fart7.wav",
+            "fart8.mp3"
+        }
+        
+        -- Elegimos uno de la lista al azar
+        local randomFart = fartSounds[math.random(1, #fartSounds)]
+
+        -- Si el que acaba de elegir es igual al que sonó la última vez, que busque otro nuevo
+        while randomFart == lastFartSound do
+            randomFart = fartSounds[math.random(1, #fartSounds)]
+        end
+        
+        -- Guardamos el nuevo sonido elegido como "el último reproducido" para la próxima vez
+        lastFartSound = randomFart
+
+        -- Enviamos a TODOS los clientes las coordenadas y el sonido elegido
+        TriggerClientEvent('DP-AdminMenu:client:play3DSound', -1, coords, randomFart, 15.0)
+    end
 end)
 
 -- EVENTOS DEL SISTEMA QUE DISPARAN REFRESH

@@ -163,16 +163,16 @@ input[type=number]::-webkit-outer-spin-button {
 .tab {
     width: 30px;
     height: 30px;
-    background-color: var(--bg-button);
     border-radius: 4px;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: var(--text-muted);
     font-size: 16px;
     cursor: pointer;
     transition: all 0.5s;
-    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #666;
 }
 
 .tab:hover {
@@ -197,7 +197,6 @@ input[type=number]::-webkit-outer-spin-button {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
     padding-bottom: 8px;
     min-height: 30px;
     flex-shrink: 0;
@@ -506,7 +505,7 @@ input:checked+.slider:before {
    6. MÓDULO: JUGADORES (LISTA)
    ========================================================================== */
 .scroll-list {
-    max-height: 66vh;
+    max-height: 65.3vh;
     overflow-y: auto;
 }
 
@@ -976,7 +975,7 @@ input:checked+.slider:before {
     flex: 1;
     display: block;
     /* Cambiamos de flex a block para que el scroll de tabla funcione bien */
-    height: 66vh;
+    height: 65.3vh;
     overflow-y: auto;
     /* Cambiamos hidden por auto para habilitar el scroll vertical */
     overflow-x: hidden;
@@ -1002,7 +1001,7 @@ input:checked+.slider:before {
 }
 
 .admin-table td {
-    padding: 6px 4px;
+    padding: 4px;
     border-bottom: 1px solid var(--bg-button);
     vertical-align: middle;
     word-wrap: break-word;
@@ -1015,14 +1014,15 @@ input:checked+.slider:before {
 
 .admin-table th:nth-child(1),
 .admin-table td:nth-child(1) {
-    width: 6%;
+    width: 4.5%;
 }
 
 .admin-table th:nth-child(2),
 .admin-table td:nth-child(2),
 .admin-table th:nth-child(5),
 .admin-table td:nth-child(5) {
-    width: 14%;
+    width: 13%;
+    font-size: 9px;
 }
 
 .admin-table th:nth-child(3),
@@ -1043,7 +1043,7 @@ input:checked+.slider:before {
 
 .admin-table th:nth-child(7),
 .admin-table td:nth-child(7) {
-    width: 11%;
+    width: 15%;
 }
 
 .admin-table td:nth-child(1),
@@ -1104,46 +1104,55 @@ input:checked+.slider:before {
 }
 
 .btn-mini {
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    color: white;
-    font-size: 32px;
+    width: 45px;
+    height: 30px;
+    color: rgb(204, 204, 204);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.5s, background-color 0.5s;
-    box-shadow: 0 2px 4px rgb(0 0 0 / 30%);
+    font-size: 20px;
+    cursor: pointer;
+    position: relative;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.08);
+    border-image: initial;
+    background: rgba(30, 30, 30, 0.8);
+    border-radius: 8px;
 }
 
 .btn-mini:hover {
-    transform: scale(1.2);
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.btn-revoke {
-    background-color: var(--success-badge);
+.btn-mini::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: 120%;
+    top: 50%;
+    transform: translateY(-50%) translateX(10px);
+    background: #111;
+    color: #fff;
+    padding: 6px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.5s;
+    pointer-events: none;
+    font-weight: 600;
+    border: 1px solid #444;
+    z-index: 100;
 }
 
-.btn-revoke:hover {
-    background-color: var(--success-dark);
-}
-
-.btn-details {
-    background-color: var(--primary);
-}
-
-.btn-details:hover {
-    background-color: var(--bg-border);
-}
-
-.btn-extend {
-    background-color: var(--warning);
-}
-
-.btn-extend:hover {
-    background-color: var(--warning-dark);
+.btn-mini:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
 }
 
 .blur-content {
@@ -1174,7 +1183,7 @@ input:checked+.slider:before {
 .chat-container {
     display: flex;
     flex-direction: column;
-    height: 67vh;
+    height: 65.3vh;
     background-color: transparent;
     overflow: hidden;
 }
@@ -2555,62 +2564,119 @@ span#live-weather-text {
     justify-content: space-around;
 }
 
-/* ==========================================================================
-   19. ESTILOS ACORDEÓN MEJORADO (JOBS & GANGS)
-   ========================================================================== */
 
-/* Tarjeta Principal */
-.accordion-card {
-    background-color: var(--bg-element);
-    margin-bottom: 8px;
-    border-radius: 6px;
-    border-left: 4px solid var(--primary);
-    /* Quitamos el overflow hidden general para intentar que se vean mejor los popups si es posible, 
-       aunque el accordion-content lo necesita para la animación */
-    transition: all 0.5s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+/* ==========================================================================
+   19. ESTILOS ACORDEÓN MEJORADO (JOBS & GANGS) - MONOCROMÁTICO
+   ========================================================================== */
+/* ----- 1. CABECERAS Y BUSCADOR ----- */
+.modern-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Cabecera */
-.accordion-header {
-    padding: 15px 25px;
-    /* Más padding lateral */
+.modern-header .section-title {
     display: flex;
     align-items: center;
-    cursor: pointer;
+    gap: 15px;
+}
+
+.title-icon-wrap {
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.title-text h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+}
+
+.title-text p {
+    margin: 2px 0 0 0;
+    font-size: 13px;
+    color: #888;
+}
+
+.badge-count {
+    box-shadow: rgb(0 0 0 / 50%) 0px 0px 5px inset;
+    background: rgb(34, 34, 34);
+    color: rgb(170, 170, 170);
+    padding: 2px 10px;
+    border-radius: 6px;
+    margin-left: 5px;
+    font-size: 12px;
+    border: 1px solid rgb(51, 51, 51);
+}
+
+.modern-search {
+    position: relative;
+}
+
+.modern-search .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+}
+
+.modern-search input {
+    padding-left: 35px;
+}
+
+/* ----- 2. ACORDEONES ----- */
+.accordion-card {
     background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
-    transition: background 0.5s;
+    margin-bottom: 8px;
+    border-left: 2px solid #444444;
+    animation: slideInUp 0.5s ease-out forwards;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.accordion-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
     user-select: none;
 }
 
-.accordion-header:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Flecha */
 .accordion-icon {
-    margin-left: auto;
-    font-size: 24px;
-    color: var(--text-muted);
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: #888;
+    transition: transform 0.4s ease;
 }
 
 .accordion-card.expanded .accordion-icon {
     transform: rotate(180deg);
-    color: var(--primary);
+    color: #fff;
 }
 
-/* Contenido Oculto */
 .accordion-content {
     max-height: 0;
     overflow: hidden;
-    /* Necesario para la animación */
     opacity: 0;
-    transition: max-height 0.5s ease-in-out, opacity 0.5s ease;
-    background-color: rgba(15, 15, 15, 0.95);
-    /* Fondo casi negro para contraste */
-    box-shadow: inset 0 10px 20px -10px rgba(0, 0, 0, 0.8);
+    transition: max-height 0.4s ease, opacity 0.4s ease;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(10, 10, 10, 0.4);
 }
 
 .accordion-card.expanded .accordion-content {
@@ -2618,142 +2684,213 @@ span#live-weather-text {
     opacity: 1;
 }
 
-/* Contador */
-.online-count-badge {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #666;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-left: 20px;
+.accordion-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.online-count-badge.active {
-    background-color: rgba(14, 160, 33, 0.15);
-    color: #4cd137;
-    border: 1px solid rgba(14, 160, 33, 0.2);
-    box-shadow: 0 0 10px rgba(14, 160, 33, 0.1);
+.online-count-badge {
+    background: rgba(255, 255, 255, 0.05);
+    color: #888;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid transparent;
 }
 
-/* 1. CONTENEDOR PRINCIPAL */
+.online-count-badge.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+/* ----- 3. FILAS DE JUGADORES ----- */
+.job-player-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    padding: 10px 12px;
+    transition: all 0.2s ease;
+}
+
+.jp-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.jp-names {
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+}
+
+.jp-char-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #eee;
+}
+
+.jp-steam-name {
+    font-size: 12px;
+    color: #888;
+}
+
+.jp-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-left: auto;
+    margin-right: 20px;
+}
+
+.jp-grade {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.jp-grade-num {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+}
+
+.jp-duty {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.jp-duty.on {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.jp-duty.off {
+    background: rgba(255, 255, 255, 0.03);
+    color: #666;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.jp-duty:hover {
+    opacity: 0.8;
+    transform: scale(1.02);
+}
+
+/* ----- 4. MODALES DINÁMICOS DE RANGOS ----- */
 .dynamic-modal {
     width: 370px;
     transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-    /* Efecto elástico suave */
     overflow: hidden;
     padding: 0 !important;
     display: flex;
     flex-direction: column;
     background: transparent;
-    /* Dejamos que los paneles controlen el fondo */
-    border-radius: 6px;
-    /* Borde general del modal */
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* 2. WRAPPER DE LOS DOS PANELES */
 .dual-panel-wrapper {
     display: flex;
     width: 720px;
-    /* Ancho total interno */
     height: 100%;
 }
 
-/* 3. PANEL IZQUIERDO */
 .panel-left {
     width: 370px;
     min-width: 370px;
     display: flex;
     flex-direction: column;
-    background: #1e1e24;
-    /* Fondo del panel */
+    background: #151515;
     z-index: 2;
-    /* Para que la sombra se proyecte sobre el derecho si quisieras */
-
-    /* BORDE SEPARADOR: Inicialmente transparente */
     border-right: 1px solid transparent;
     transition: border-right 0.5s ease;
 }
 
-/* CABECERA IZQUIERDA: Transición de bordes redondos */
 .header-left {
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    /* Inicialmente redondo */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
     transition: border-radius 0.5s ease;
 }
 
-/* 4. PANEL DERECHO */
 .panel-right {
     width: 350px;
     min-width: 350px;
     display: flex;
     flex-direction: column;
-    background: #1b1b20;
+    background: #111;
     opacity: 0;
     transform: translateX(-30px);
     transition: opacity 0.4s ease, transform 0.4s ease;
     pointer-events: none;
 }
 
-/* CABECERA DERECHA */
 .header-right {
-    border-top-right-radius: 6px;
+    border-top-right-radius: 8px;
     border-top-left-radius: 0px;
-    background-color: #0f3443 !important;
-    /* Color distinto para diferenciar */
-    color: #4dd0e1 !important;
+    background-color: #1a1a1a !important;
+    color: #fff !important;
     white-space: nowrap;
-    /* OBLIGATORIO: Prohíbe saltos de línea */
     overflow: hidden;
-    /* Oculta lo que se salga */
     text-overflow: ellipsis;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* El texto "RANGOS DE:" */
 .grade-title-prefix {
-    opacity: 0.7;
+    opacity: 0.5;
     margin-right: 6px;
-    font-size: 14px;
-    /* Tamaño normal */
+    font-size: 12px;
     flex-shrink: 0;
-    /* Este texto nunca se encogerá */
+    text-transform: uppercase;
 }
 
-/* El nombre del trabajo (Ej: CONCESIONARIO...) */
 .grade-title-job {
-    color: #4dd0e1;
-    /* Mismo azul cyan que usas en el tema */
-    font-weight: 800;
-    /* Más gordita */
+    color: #fff;
+    font-weight: 700;
     font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: 0.5px;
 }
 
-/* Ajuste del ancho total */
 .dynamic-modal.expanded {
     width: 720px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    /* Sombra más fuerte al abrirse */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
 }
 
-/* Modificaciones al Panel Izquierdo cuando está expandido */
 .dynamic-modal.expanded .panel-left {
-    /* Aquí creamos la LINEA DE SEPARACIÓN */
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Modificaciones a la Cabecera Izquierda */
 .dynamic-modal.expanded .header-left {
-    /* Quitamos el borde redondo derecho para que pegue con el otro */
     border-top-right-radius: 0px;
 }
 
-/* Modificaciones al Panel Derecho (Aparición) */
 .dynamic-modal.expanded .panel-right {
     opacity: 1;
     transform: translateX(0);
@@ -2761,9 +2898,9 @@ span#live-weather-text {
     transition-delay: 0.1s;
 }
 
-/* ESTILOS DE LISTA (Tus estilos anteriores + pequeños retoques) */
-#job-grades-list-container .accordion-header {
-    padding: 4px 5px;
+#job-grades-list-container .accordion-header,
+#gang-grades-list-container .accordion-header {
+    padding: 8px 10px;
     display: flex;
     align-items: center;
     text-align: left;
@@ -2771,23 +2908,21 @@ span#live-weather-text {
     transition: all 0.2s ease;
     user-select: none;
     margin-bottom: 5px;
-    border-radius: 4px;
+    border-radius: 6px;
     border-left: 3px solid transparent;
+    background: rgba(255, 255, 255, 0.02);
 }
 
-#job-grades-list-container .accordion-header:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+#job-grades-list-container .accordion-header:hover,
+#gang-grades-list-container .accordion-header:hover {
+    background-color: rgba(255, 255, 255, 0.08);
     transform: translateX(3px);
+    border-left: 3px solid #888;
 }
 
 .job-item-row.active {
-    background-color: rgba(255, 255, 255, 0.08) !important;
-    border-left: 3px solid #ffa726 !important;
-}
-
-#gang-grades-list-container .accordion-header:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    transform: translateX(3px);
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-left: 3px solid #fff !important;
 }
 
 /* ==========================================================================
@@ -2817,20 +2952,6 @@ span#live-weather-text {
     align-items: center;
     gap: 20px;
     flex: 1;
-}
-
-.jp-id-badge {
-    background: #222;
-    color: #aaa;
-    font-family: 'Courier New', monospace;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: bold;
-    border: 1px solid #333;
-    min-width: 40px;
-    text-align: center;
-    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
 .jp-names {
@@ -2922,8 +3043,8 @@ span#live-weather-text {
 }
 
 .icon-btn {
-    width: 38px;
-    height: 38px;
+    width: 45px;
+    height: 30px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(30, 30, 30, 0.8);
     color: #ccc;
@@ -2988,172 +3109,137 @@ span#live-weather-text {
 }
 
 /* ==========================================================================
-   22. CATÁLOGO DE VEHÍCULOS (DISEÑO PREMIUM)
+   22. CATÁLOGO DE VEHÍCULOS (REDISEÑO MINIMALISTA / CLEAN UI)
    ========================================================================== */
 
 .vehicle-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 15px;
     padding-right: 8px;
-    max-height: 66vh;
+    max-height: 65.3vh;
     overflow-y: auto;
     align-content: start;
 }
 
-/* 2. LA TARJETA (CARD) */
+/* LA TARJETA PRINCIPAL */
 .veh-card {
-    background: linear-gradient(145deg, rgba(25, 25, 25, 0.95), rgba(15, 15, 15, 0.95));
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(15, 15, 15, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    padding: 0;
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 0;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 8px 16px rgb(0 0 0 / 30%);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    gap: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* 3. CABECERA DE LA TARJETA (TÍTULO) */
+/* CABECERA (Icono + Título + Marca) */
 .veh-header {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 12px 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+}
+
+.veh-icon-wrapper {
+    width: 42px;
+    height: 42px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 24px;
+}
+
+.veh-title-group {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.veh-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.5px;
+}
+
+.veh-brand {
+    font-size: 11px;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+/* LISTA DE DETALLES (Limpia y alineada) */
+.veh-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.veh-detail-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 12px;
 }
 
-.veh-title {
-    font-size: 15px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-/* 4. CUERPO DE DATOS (GRID 2x2) */
-.veh-body {
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.veh-info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-/* Los cuadraditos de datos */
-.veh-info-box {
-    background-color: rgba(0, 0, 0, 0.4);
-    /* Fondo más oscuro */
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    border-radius: 4px;
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    transition: background 0.5s;
-}
-
-.veh-label {
-    font-size: 9px;
-    color: #777;
-    text-transform: uppercase;
+.veh-detail-label {
+    color: #666;
     font-weight: 700;
-    margin-bottom: 3px;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.veh-value {
-    font-size: 13px;
-    color: #e0e0e0;
+.veh-detail-value {
+    color: #ddd;
     font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    text-align: right;
 }
 
-/* Colores específicos */
-.val-price {
-    color: var(--success);
-    text-shadow: 0 0 10px rgba(14, 160, 33, 0.2);
-}
-
-.val-code {
-    color: var(--warning-text);
-    font-family: 'Courier New', monospace;
-    letter-spacing: -0.5px;
-}
-
-.val-brand {
-    color: var(--primary);
-}
-
-.val-cat {
-    color: #aaa;
-    font-style: italic;
-}
-
-.veh-value,
-.veh-title,
-.veh-info-box {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    cursor: text;
-}
-
+/* BOTONES DE ACCIÓN */
 .veh-actions {
     display: flex;
-    gap: 8px;
-    padding: 12px 15px;
-    background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 5px;
 }
 
-/* Ajuste para que ambos botones ocupen el mismo espacio */
-.veh-actions .btn-spawn,
-.veh-actions .btn-give,
-.veh-actions .btn-spawn {
+.btn-veh {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 6px;
-    padding: 8px;
-    border-radius: 4px;
+    padding: 8px 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #aaa;
     font-size: 11px;
     font-weight: 700;
-    text-transform: uppercase;
+    letter-spacing: 0.5px;
     cursor: pointer;
-    transition: 0.2s;
-    border: none;
-    color: white;
-    background-color: var(--primary);
+    transition: all 0.2s ease;
 }
 
-.btn-spawn:hover,
-.btn-give:hover {
-    filter: brightness(1.2);
+.btn-veh:hover {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
     transform: translateY(-1px);
-}
-
-.scroll-list,
-.vehicle-grid,
-#item-list-container,
-.chat-messages {
-    padding-right: 10px;
-    padding-left: 5px;
-    box-sizing: border-box;
-    width: 100%;
 }
 
 /* ==========================================================================
@@ -3441,20 +3527,6 @@ input:checked+.slider:before {
     color: #777;
 }
 
-.btn-action {
-    font-weight: 900;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn-action:hover {
-    background: transparent;
-    color: #666;
-}
-
 /* Switch Pequeño */
 .switch.small {
     width: 34px;
@@ -3483,11 +3555,10 @@ input:checked+.slider:before {
     background: var(--bg-card);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    padding: 20px;
+    padding: 10px;
     display: flex;
-    align-items: center;
-    gap: 15px;
     transition: transform 0.5s;
+    justify-content: space-evenly;
 }
 
 .stat-card:hover {
@@ -3497,7 +3568,8 @@ input:checked+.slider:before {
 
 .stat-info h3 {
     margin: 0;
-    font-size: 20px;
+    font-size: 15px;
+    margin-right: 5px;
     font-weight: 700;
     color: #fff;
 }
@@ -3516,7 +3588,7 @@ input:checked+.slider:before {
     flex-direction: column;
     min-height: 0px;
     overflow: hidden;
-    max-height: 329px;
+    max-height: 374px;
     margin-bottom: 0px;
     border-bottom: none;
     border-radius: 8px 8px 0px 0px;
@@ -4336,7 +4408,8 @@ input:checked+.slider:before {
 
 /* Ajuste de tamaño de los botones */
 .pd-actions-list button,
-#actions button {
+#actions button,
+.modal-content-small button {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #666;
@@ -4353,7 +4426,8 @@ input:checked+.slider:before {
 }
 
 .pd-actions-list button:hover,
-#actions button:hover {
+#actions button:hover,
+.modal-content-small button:hover {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #666;
@@ -4361,7 +4435,10 @@ input:checked+.slider:before {
 
 /* Asegurar que los botones de ancho completo respeten la altura */
 .pd-actions-list .full-width,
-.pd-actions-list .btn-danger {
+.pd-actions-list .btn-danger,
+#actions .full-width,
+#actions .btn-danger,
+.modal-content-small .btn-danger {
     width: 100%;
     display: block;
     background: #fff;
@@ -4370,7 +4447,10 @@ input:checked+.slider:before {
 }
 
 .pd-actions-list .full-width:hover,
-.pd-actions-list .btn-danger:hover {
+.pd-actions-list .btn-danger:hover,
+#actions .full-width:hover,
+#actions .btn-danger:hover,
+.modal-content-small .btn-danger:hover {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #666;
@@ -5591,11 +5671,13 @@ input:checked+.slider:before {
 }
 
 .key-badge {
-    background: #fff;
-    color: #000;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-weight: 900;
+    box-shadow: rgb(0 0 0 / 50%) 0px 0px 5px inset;
+    background: rgb(34, 34, 34);
+    color: rgb(170, 170, 170);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    border: 1px solid rgb(51, 51, 51);
 }
 
 /* Barra de Progreso */

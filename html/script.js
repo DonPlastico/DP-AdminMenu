@@ -763,6 +763,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (data.type === 'hidePuppetUI') {
             const container = document.getElementById('puppet-ui-container');
             if (container) container.style.display = 'none';
+
+        } else if (data.type === 'playAudio') {
+            // Mini sistema de audio dinámico (PEDOS Y TROLLEOS)
+            let audio = new Audio(`sounds/${data.file}`);
+            audio.volume = data.volume || 0.5;
+            audio.play().catch(e => console.log("Error al reproducir audio:", e));
         }
     });
 
@@ -853,6 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isVisible('scale-modal')) { closeScaleModal(); return; }
             if (isVisible('screenshot-modal')) { closeScreenshotModal(); return; }
             if (isVisible('dimension-modal')) { closeDimensionModal(); return; }
+            if (isVisible('troll-menu-modal')) { closeTrollMenu(); return; }
 
             // --- B. CERRAR HUD DE ENTIDADES (DEV TOOL) ---
             if (document.getElementById('entity-info-hud') && document.getElementById('entity-info-hud').style.display !== 'none') {
@@ -893,7 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPlayerList(list) {
         const totalPlayersCounter = document.getElementById('total-players');
         if (totalPlayersCounter) {
-            totalPlayersCounter.innerText = `(${list ? list.length : 0})`;
+            totalPlayersCounter.innerText = `${list ? list.length : 0}`;
         }
 
         playerListContainer.innerHTML = '';
@@ -988,7 +995,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.querySelector('.report-list');
 
         const totalReportsCounter = document.getElementById('total-reports');
-        if (totalReportsCounter) totalReportsCounter.innerText = `(${list ? list.length : 0})`;
+        if (totalReportsCounter) totalReportsCounter.innerText = `${list ? list.length : 0}`;
 
         container.innerHTML = '';
 
@@ -1117,7 +1124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderBans(list) {
 
         const totalBansCounter = document.getElementById('total-bans');
-        if (totalBansCounter) totalBansCounter.innerText = `(${list ? list.length : 0})`;
+        if (totalBansCounter) totalBansCounter.innerText = `${list ? list.length : 0}`;
 
         if (!banListBody) return;
         banListBody.innerHTML = '';
@@ -1140,8 +1147,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${expireText}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-mini btn-revoke" onclick="revokeBan(${ban.id}, '${ban.name}')" title="Perdonar"><span class="iconify" data-icon="mdi:lock-open-check"></span></button>
-                        <button class="btn-mini btn-extend" onclick="openExtendModal(${ban.id}, ${ban.expire})" title="Editar Tiempo"><span class="iconify" data-icon="mdi:clock-edit-outline"></span></button>
+                        <button class="btn-mini btn-revoke" onclick="revokeBan(${ban.id}, '${ban.name}')" data-tooltip="Desbanear"><span class="iconify" data-icon="mdi:lock-open-check"></span></button>
+                        <button class="btn-mini btn-extend" onclick="openExtendModal(${ban.id}, ${ban.expire})" data-tooltip="Extender Tiempo"><span class="iconify" data-icon="mdi:clock-edit-outline"></span></button>
                     </div>
                 </td>
             `;
@@ -1929,97 +1936,87 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderJobList(list, keepState = false) {
         if (!jobListContainer) return;
 
-        // 1. MEMORIA: Guardamos qué trabajos están abiertos antes de borrar nada
         let openJobs = new Set();
         if (keepState) {
-            const currentOpenCards = jobListContainer.querySelectorAll('.accordion-card.expanded');
-            currentOpenCards.forEach(card => {
-                // Buscamos el ID técnico (ej: 'police') dentro del badge
+            jobListContainer.querySelectorAll('.accordion-card.expanded').forEach(card => {
                 const idBadge = card.querySelector('.id-badge');
                 if (idBadge) openJobs.add(idBadge.innerText);
             });
         }
 
-        // 2. LIMPIEZA Y ORDEN
         jobListContainer.innerHTML = '';
-        if (totalJobsCounter) totalJobsCounter.innerText = `(${list ? list.length : 0})`;
+        if (totalJobsCounter) totalJobsCounter.innerText = `${list ? list.length : 0}`;
 
         if (!list || list.length === 0) {
-            jobListContainer.innerHTML = '<div style="padding:15px; color:#888; text-align:center;">No se encontraron trabajos.</div>';
+            jobListContainer.innerHTML = '<div style="padding:30px; color:#888; text-align:center;">No se encontraron trabajos.</div>';
             return;
         }
 
-        // Ordenar alfabéticamente A-Z
         list.sort((a, b) => a.label.localeCompare(b.label));
 
-        // 3. RENDERIZADO
         list.forEach(job => {
             const card = document.createElement('div');
-            // Si este trabajo estaba en nuestra memoria de "abiertos", le añadimos la clase 'expanded' directamente
             const isExpanded = keepState && openJobs.has(job.name);
             card.className = isExpanded ? 'accordion-card expanded' : 'accordion-card';
 
             const playerCount = job.players ? job.players.length : 0;
             const countClass = playerCount > 0 ? 'online-count-badge active' : 'online-count-badge';
-            const countText = playerCount > 0 ? `${playerCount} conectados` : '0 conectados';
 
-            // HTML (Idéntico al anterior)
             let html = `
-                <div class="accordion-header" onclick="toggleJobAccordion(this)">
-                    <span class="id-badge" style="text-transform:none; width:115px; text-align:center; background:#18075A;">${job.name}</span> 
-                    <span style="font-weight:bold; color:var(--text-main); margin-left:10px;">${job.label}</span>
-                    <span class="${countClass}">${countText}</span>
-                    <span class="iconify accordion-icon" data-icon="mdi:chevron-down"></span>
+            <div class="accordion-header" onclick="toggleJobAccordion(this)">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="id-badge" style="min-width: 110px;">${job.name}</span> 
+                    <span class="accordion-label">${job.label}</span>
                 </div>
-                <div class="accordion-content">
-            `;
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="${countClass}">${playerCount} conectados</span>
+                    <span class="iconify accordion-icon" data-icon="mdi:chevron-down" style="font-size: 20px;"></span>
+                </div>
+            </div>
+            <div class="accordion-content">
+        `;
 
             if (playerCount === 0) {
-                html += `<div style="padding:20px; font-size:12px; color:#666; text-align:center; font-style:italic;">
-                            <span class="iconify" data-icon="mdi:sleep" style="font-size:20px; vertical-align:middle;"></span> 
-                            Nadie trabajando aquí ahora mismo.
-                         </div>`;
+                html += `<div style="padding:20px; font-size:13px; color:#666; text-align:center; font-style:italic;">Nadie trabajando aquí ahora mismo.</div>`;
             } else {
                 job.players.forEach(p => {
                     const dutyClass = p.onduty ? 'jp-duty on' : 'jp-duty off';
                     const dutyIcon = p.onduty ? 'mdi:clock-check-outline' : 'mdi:clock-remove-outline';
                     const dutyText = p.onduty ? 'EN SERVICIO' : 'FUERA SERVICIO';
-                    const dutyTooltip = p.onduty ? 'Click para sacar de servicio' : 'Click para poner en servicio';
 
                     html += `
-                        <div class="job-player-row">
-                            <div class="jp-info">
-                                <span class="jp-id-badge">${p.source}</span>
-                                <div class="jp-names">
-                                    <div class="jp-char-name">${p.charName}</div>
-                                    <div class="jp-steam-name">(${p.name})</div>
-                                </div>
-                                <div class="jp-meta">
-                                    <div class="jp-grade">
-                                        <span class="iconify" data-icon="mdi:police-badge-outline"></span>
-                                        ${p.gradeLabel} <span class="jp-grade-num">${p.gradeLevel}</span>
-                                    </div>
-                                    <div class="${dutyClass}" onclick="toggleDutyPlayer(${p.source})" title="${dutyTooltip}">
-                                        <span class="iconify" data-icon="${dutyIcon}"></span> ${dutyText}
-                                    </div>
-                                </div>
+                    <div class="job-player-row">
+                        <div class="jp-info">
+                            <span class="id-badge">${p.source}</span>
+                            <div class="jp-names">
+                                <div class="jp-char-name">${p.charName}</div>
+                                <div class="jp-steam-name">(${p.name})</div>
                             </div>
-                            <div class="icon-actions">
-                                <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}', charName: '${escapeHtml(p.charName)}' })" data-tooltip="Detalles del Jugador">
-                                    <span class="iconify" data-icon="mdi:account-details"></span>
+                            <div class="jp-meta">
+                                <div class="jp-grade">
+                                    <span class="iconify" data-icon="mdi:police-badge-outline"></span>
+                                    ${p.gradeLabel} <span class="jp-grade-num">${p.gradeLevel}</span>
                                 </div>
-                                <div class="icon-btn warn" onclick="openJobRankModal('${p.source}', '${p.name}', '${job.name}')" data-tooltip="Cambiar Rango">
-                                    <span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span>
-                                </div>
-                                <div class="icon-btn danger" onclick="openJobManageModal('${p.source}', '${p.name}')" data-tooltip="Despedir / Cambiar Trabajo">
-                                    <span class="iconify" data-icon="mdi:briefcase-remove-outline"></span>
+                                <div class="${dutyClass}" onclick="toggleDutyPlayer(${p.source})" title="Click para cambiar">
+                                    <span class="iconify" data-icon="${dutyIcon}"></span> ${dutyText}
                                 </div>
                             </div>
                         </div>
-                    `;
+                        <div class="icon-actions">
+                            <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}', charName: '${escapeHtml(p.charName)}' })" data-tooltip="Detalles">
+                                <span class="iconify" data-icon="mdi:account-details"></span>
+                            </div>
+                            <div class="icon-btn" onclick="openJobRankModal('${p.source}', '${p.name}', '${job.name}')" data-tooltip="Cambiar Rango">
+                                <span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span>
+                            </div>
+                            <div class="icon-btn" onclick="openJobManageModal('${p.source}', '${p.name}')" data-tooltip="Despedir">
+                                <span class="iconify" data-icon="mdi:briefcase-remove-outline"></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 });
             }
-
             html += `</div>`;
             card.innerHTML = html;
             jobListContainer.appendChild(card);
@@ -2077,9 +2074,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         gangListContainer.innerHTML = '';
-        if (totalGangsCounter) totalGangsCounter.innerText = `(${list ? list.length : 0})`;
+        if (totalGangsCounter) totalGangsCounter.innerText = `${list ? list.length : 0}`;
         if (!list || list.length === 0) {
-            gangListContainer.innerHTML = '<div style="padding:15px; color:#888; text-align:center;">No se encontraron bandas activas.</div>';
+            gangListContainer.innerHTML = '<div style="padding:30px; color:#888; text-align:center;">No se encontraron bandas activas.</div>';
             return;
         }
         list.sort((a, b) => a.label.localeCompare(b.label));
@@ -2091,40 +2088,51 @@ document.addEventListener('DOMContentLoaded', () => {
             const countClass = playerCount > 0 ? 'online-count-badge active' : 'online-count-badge';
 
             card.innerHTML = `
-            <div class="accordion-header" onclick="toggleJobAccordion(this)">
-                <span class="id-badge" style="text-transform:none; width:115px; text-align:center; background:#5a1a1a;">${gang.name}</span> 
-                <span style="font-weight:bold; color:var(--text-main); margin-left:10px;">${gang.label}</span>
-                <span class="${countClass}">${playerCount} conectados</span>
-                <span class="iconify accordion-icon" data-icon="mdi:chevron-down"></span>
+        <div class="accordion-header" onclick="toggleJobAccordion(this)">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span class="id-badge" style="min-width: 110px;">${gang.name}</span> 
+                <span class="accordion-label">${gang.label}</span>
             </div>
-            <div class="accordion-content">
-                ${playerCount === 0 ? '<div style="padding:20px; color:#666; text-align:center; font-style:italic;">Nadie conectado.</div>' : ''}
-            </div>`;
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span class="${countClass}">${playerCount} conectados</span>
+                <span class="iconify accordion-icon" data-icon="mdi:chevron-down" style="font-size: 20px;"></span>
+            </div>
+        </div>
+        <div class="accordion-content">
+            ${playerCount === 0 ? '<div style="padding:20px; font-size:13px; color:#666; text-align:center; font-style:italic;">Nadie conectado.</div>' : ''}
+        </div>`;
 
             const content = card.querySelector('.accordion-content');
             if (gang.players) {
                 gang.players.forEach(p => {
                     const row = document.createElement('div');
                     row.className = 'job-player-row';
+
                     row.innerHTML = `
-                    <div class="jp-info">
-                        <span class="jp-id-badge">${p.source}</span>
-                        <div class="jp-names">
-                            <div class="jp-char-name">${p.charName}</div>
-                            <div class="jp-steam-name">(${p.name})</div>
-                        </div>
-                        <div class="jp-meta">
-                            <div class="jp-grade" style="background:rgba(255, 50, 50, 0.1); border-color:rgba(255,50,50,0.2);">
-                                <span class="iconify" data-icon="mdi:skull-crossbones-outline"></span>
-                                ${p.gradeLabel} <span class="jp-grade-num" style="color:#ff6b6b;">${p.gradeLevel}</span>
-                            </div>
+                <div class="jp-info">
+                    <span class="id-badge">${p.source}</span>
+                    <div class="jp-names">
+                        <div class="jp-char-name">${p.charName}</div>
+                        <div class="jp-steam-name">(${p.name})</div>
+                    </div>
+                    <div class="jp-meta">
+                        <div class="jp-grade">
+                            <span class="iconify" data-icon="mdi:skull-crossbones-outline"></span>
+                            ${p.gradeLabel} <span class="jp-grade-num">${p.gradeLevel}</span>
                         </div>
                     </div>
-                    <div class="icon-actions">
-                        <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}' })"><span class="iconify" data-icon="mdi:account-details"></span></div>
-                        <div class="icon-btn warn" onclick="openGangRankModal('${p.source}', '${escapeHtml(p.name)}', '${gang.name}')"><span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span></div>
-                        <div class="icon-btn danger" onclick="openGangManageModal('${p.source}', '${escapeHtml(p.name)}')"><span class="iconify" data-icon="mdi:account-cancel-outline"></span></div>
-                    </div>`;
+                </div>
+                <div class="icon-actions">
+                    <div class="icon-btn" onclick="openPlayerDetails({ id: '${p.source}', name: '${escapeHtml(p.name)}', charName: '${escapeHtml(p.charName)}' })" data-tooltip="Detalles">
+                        <span class="iconify" data-icon="mdi:account-details"></span>
+                    </div>
+                    <div class="icon-btn" onclick="openGangRankModal('${p.source}', '${escapeHtml(p.name)}', '${gang.name}')" data-tooltip="Cambiar Rango">
+                        <span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span>
+                    </div>
+                    <div class="icon-btn" onclick="openGangManageModal('${p.source}', '${escapeHtml(p.name)}')" data-tooltip="Expulsar">
+                        <span class="iconify" data-icon="mdi:account-cancel-outline"></span>
+                    </div>
+                </div>`;
                     content.appendChild(row);
                 });
             }
@@ -2743,44 +2751,58 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'veh-card';
 
             const price = veh.price ? `$${veh.price.toLocaleString()}` : 'N/A';
-            const brand = veh.brand || 'Desconocida';
+            const brand = veh.brand || 'Desc.';
             const category = veh.category || 'Sin Cat';
             const name = veh.name || veh.model;
 
-            // HTML ESTRUCTURADO
+            // LÓGICA DE ICONOS DINÁMICOS
+            const catLower = category.toLowerCase();
+            const modLower = veh.model.toLowerCase();
+            let dynIcon = 'mdi:car'; // Icono por defecto
+
+            if (modLower.includes('police') || modLower.includes('cop') || modLower.includes('sheriff') || modLower.includes('fib')) dynIcon = 'mdi:car-emergency';
+            else if (modLower.includes('ambulance') || modLower.includes('ems') || modLower.includes('medic')) dynIcon = 'mdi:ambulance';
+            else if (modLower.includes('taxi') || modLower.includes('cab')) dynIcon = 'mdi:taxi';
+            else if (catLower === 'emergency') dynIcon = 'mdi:car-emergency';
+            else if (['motorcycles', 'motorcycle'].includes(catLower) || modLower.includes('moto')) dynIcon = 'mdi:motorbike';
+            else if (['cycles', 'bicycles', 'bicycle'].includes(catLower) || modLower.includes('bmx')) dynIcon = 'mdi:bicycle';
+            else if (['helicopters', 'helicopter'].includes(catLower)) dynIcon = 'mdi:helicopter';
+            else if (['planes', 'plane'].includes(catLower)) dynIcon = 'mdi:airplane';
+            else if (['boats', 'boat'].includes(catLower)) dynIcon = 'mdi:sail-boat';
+            else if (['commercial', 'industrial', 'trucks', 'utility'].includes(catLower)) dynIcon = 'mdi:truck';
+
+            // HTML ESTRUCTURADO (Rediseño limpio)
             card.innerHTML = `
                 <div class="veh-header">
-                    <div class="veh-title" title="${name}">${name}</div>
-                    <span class="iconify" data-icon="mdi:car-sports" style="color:#555; font-size:18px;"></span>
+                    <div class="veh-icon-wrapper">
+                        <span class="iconify" data-icon="${dynIcon}"></span>
+                    </div>
+                    <div class="veh-title-group">
+                        <div class="veh-name" title="${name}">${name}</div>
+                        <div class="veh-brand">${brand}</div>
+                    </div>
                 </div>
                 
-                <div class="veh-body">
-                    <div class="veh-info-grid">
-                        <div class="veh-info-box">
-                            <span class="veh-label">MARCA</span>
-                            <span class="veh-value val-brand">${brand}</span>
-                        </div>
-                        <div class="veh-info-box">
-                            <span class="veh-label">CATEGORÍA</span>
-                            <span class="veh-value val-cat">${category}</span>
-                        </div>
-                        <div class="veh-info-box">
-                            <span class="veh-label">PRECIO</span>
-                            <span class="veh-value val-price">${price}</span>
-                        </div>
-                        <div class="veh-info-box">
-                            <span class="veh-label">CÓDIGO</span>
-                            <span class="veh-value val-code">${veh.model}</span>
-                        </div>
+                <div class="veh-details">
+                    <div class="veh-detail-row">
+                        <span class="veh-detail-label">CÓDIGO</span>
+                        <span class="veh-detail-value" style="font-family: monospace; color: #aaa;">${veh.model}</span>
+                    </div>
+                    <div class="veh-detail-row">
+                        <span class="veh-detail-label">CATEGORÍA</span>
+                        <span class="veh-detail-value" style="color: #999;">${category}</span>
+                    </div>
+                    <div class="veh-detail-row">
+                        <span class="veh-detail-label">PRECIO</span>
+                        <span class="veh-detail-value" style="color: #fff;">${price}</span>
                     </div>
                 </div>
 
                 <div class="veh-actions">
-                    <button class="btn-spawn" onclick="spawnVehicle('${veh.model}')" title="Spawnear para mí">
-                        <span class="iconify" data-icon="mdi:key-variant"></span> SPAWNEAR
+                    <button class="btn-veh" onclick="spawnVehicle('${veh.model}')">
+                        <span class="iconify" data-icon="mdi:car-key"></span> SPAWN
                     </button>
-                    
-                    <button class="btn-give" onclick="window.openGiveVehicleModal('${veh.model}', '${veh.name}')" title="Dar a jugador">
+                    <button class="btn-veh" onclick="window.openGiveVehicleModal('${veh.model}', '${veh.name}')">
                         <span class="iconify" data-icon="mdi:gift-outline"></span> DAR
                     </button>
                 </div>
@@ -2918,75 +2940,241 @@ document.addEventListener('DOMContentLoaded', () => {
             const label = item.label || item.name;
             const code = item.name;
             const weight = item.weight ? item.weight : 0;
-            // Recortar descripción solo si es EXTREMADAMENTE larga (+100 caracteres), si no, dejarla entera
+
+            // Recortar descripción solo si es extremadamente larga
             let desc = item.description || "Sin descripción";
             if (desc.length > 150) desc = desc.substring(0, 150) + "...";
 
-            // ... dentro del bucle nextBatch.forEach ...
+            // ==========================================
+            // LÓGICA DINÁMICA DE ICONOS BLINDADA (MDI STRICT)
+            // ==========================================
+            const itemNameLower = (item.name || '').toLowerCase();
+            let dynIcon = 'mdi:cube-outline'; // Icono por defecto (Caja)
+            let typeLabel = 'OBJETO COMÚN';
 
-            // 1. DEFINIR COLUMNAS DINÁMICAS
-            // Si tiene munición (es arma) usamos 3 columnas. Si no, 2 columnas.
-            const gridStyle = item.ammoType
-                ? 'grid-template-columns: 1fr 1fr 1fr;'
-                : 'grid-template-columns: 1fr 1fr;';
+            // 1. MUNICIÓN (Balas)
+            if (itemNameLower.endsWith('_ammo') || itemNameLower.includes('ammo_') || itemNameLower === 'ammo' || itemNameLower.includes('municion')) {
+                dynIcon = 'mdi:ammunition';
+                typeLabel = 'MUNICIÓN';
+            }
+            // 2. TINTES DE ARMA (Sprays y Camuflajes)
+            else if (itemNameLower.includes('weapontint') || itemNameLower.includes('tint') || itemNameLower.includes('camo_attachment') || itemNameLower.includes('finish_attachment') || itemNameLower.includes('luxury') || itemNameLower.includes('etching')) {
+                dynIcon = 'mdi:spray';
+                typeLabel = 'TINTE DE ARMA';
+            }
+            // 3. ACCESORIOS DE ARMAS (Excluye cosas como "cooler_attachment" o "bench")
+            else if (
+                itemNameLower.includes('clip') || itemNameLower.includes('mag') || itemNameLower.includes('drum_attachment') ||
+                itemNameLower.includes('scope') || itemNameLower.includes('sight') ||
+                itemNameLower.includes('suppressor') || itemNameLower.includes('silencer') ||
+                itemNameLower.includes('flashlight') || itemNameLower.includes('laser') ||
+                itemNameLower.includes('grip') || itemNameLower.includes('barrel_attachment')
+            ) {
+                typeLabel = 'ACCESORIO DE ARMA';
+                dynIcon = 'mdi:puzzle-outline'; // Icono base si no detecta cuál
 
-            // 2. PREPARAR HTML DE MUNICIÓN (Si existe)
+                if (itemNameLower.includes('clip') || itemNameLower.includes('mag') || itemNameLower.includes('drum')) {
+                    dynIcon = 'mdi:archive-outline'; // Cargador (Caja de archivo)
+                    typeLabel = 'CARGADOR';
+                } else if (itemNameLower.includes('scope') || itemNameLower.includes('sight')) {
+                    dynIcon = 'mdi:crosshairs'; // Mira telescópica
+                    typeLabel = 'MIRA / VISOR';
+                } else if (itemNameLower.includes('suppressor') || itemNameLower.includes('silencer')) {
+                    dynIcon = 'mdi:volume-off'; // Silenciador (Volumen apagado)
+                    typeLabel = 'SILENCIADOR';
+                } else if (itemNameLower.includes('flashlight')) {
+                    dynIcon = 'mdi:flashlight'; // Linterna
+                    typeLabel = 'LINTERNA';
+                } else if (itemNameLower.includes('laser')) {
+                    dynIcon = 'mdi:laser-pointer'; // Láser
+                    typeLabel = 'LÁSER';
+                } else if (itemNameLower.includes('barrel')) {
+                    dynIcon = 'mdi:pipe'; // Cañón (Tubo)
+                    typeLabel = 'CAÑÓN';
+                } else if (itemNameLower.includes('grip')) {
+                    dynIcon = 'mdi:hand-back-right-outline'; // Empuñadura
+                    typeLabel = 'EMPUÑADURA';
+                }
+            }
+            // 4. ARMAS DE FUEGO Y CUERPO A CUERPO
+            else if (item.type === 'weapon' || itemNameLower.startsWith('weapon_')) {
+                typeLabel = 'PISTOLA / ARMA CORTA';
+                dynIcon = 'mdi:pistol'; // Por defecto para pistolas y revólveres (revolver, doubleaction, navyrevolver...)
+
+                // Pistola Taser
+                if (itemNameLower.includes('stun') || itemNameLower.includes('taser')) {
+                    dynIcon = 'mdi:lightning-bolt';
+                    typeLabel = 'TASER / ELÉCTRICA';
+                }
+                // Pistola de Bengalas
+                else if (itemNameLower.includes('flaregun')) {
+                    dynIcon = 'mdi:flare';
+                    typeLabel = 'PISTOLA BENGALAS';
+                }
+                // Arma Experimental (Up-n-Atomizer / Raypistol)
+                else if (itemNameLower.includes('raypistol')) {
+                    dynIcon = 'mdi:blaster'; // Icono de pistola láser/espacial
+                    typeLabel = 'ARMA EXPERIMENTAL';
+                }
+                // Francotiradores
+                else if (itemNameLower.includes('sniper') || itemNameLower.includes('marksman')) {
+                    dynIcon = 'mdi:crosshairs-gps';
+                    typeLabel = 'FRANCOTIRADOR';
+                }
+                // Escopetas
+                else if (itemNameLower.includes('shotgun') || itemNameLower.includes('musket') || itemNameLower.includes('pump') || itemNameLower.includes('sweeper') || itemNameLower.includes('escopeta')) {
+                    dynIcon = 'mdi:flare';
+                    typeLabel = 'ESCOPETA';
+                }
+                // Rifles de Asalto / Carabinas
+                else if (itemNameLower.includes('rifle') || itemNameLower.includes('carbine') || itemNameLower.includes('carabina') || itemNameLower.includes('bullpup') || itemNameLower.includes('ak47')) {
+                    dynIcon = 'mdi:target-account';
+                    typeLabel = 'RIFLE / CARABINA';
+                }
+                // Subfusiles
+                else if (itemNameLower.includes('smg') || itemNameLower.includes('pdw') || itemNameLower.includes('gusenberg') || itemNameLower.includes('machinepistol') || itemNameLower.includes('subfusil')) {
+                    dynIcon = 'mdi:flash-outline';
+                    typeLabel = 'SUBFUSIL';
+                }
+                // Ametralladoras Ligeras / Pesadas (LMG, Combat MG, Minigun) - ¡Sin cohetes!
+                else if (itemNameLower.includes('mg') || itemNameLower.includes('minigun')) {
+                    dynIcon = 'mdi:bullseye';
+                    typeLabel = 'AMETRALLADORA';
+                }
+                // Lanzacohetes / Armas de Destrucción Masiva
+                else if (itemNameLower.includes('rpg') || itemNameLower.includes('launcher') || itemNameLower.includes('railgun')) {
+                    dynIcon = 'mdi:rocket-launch';
+                    typeLabel = 'LANZACOHETES';
+                }
+                // Explosivos
+                else if (itemNameLower.includes('grenade') || itemNameLower.includes('bomb') || itemNameLower.includes('sticky') || itemNameLower.includes('molotov') || itemNameLower.includes('proxmine') || itemNameLower === 'weapon_flare') {
+                    dynIcon = 'mdi:bomb';
+                    typeLabel = 'EXPLOSIVO';
+                }
+                // --- ARMAS RARAS Y TROLLS ---
+                else if (itemNameLower.includes('briefcase')) {
+                    dynIcon = 'mdi:briefcase';
+                    typeLabel = 'MALETÍN';
+                }
+                else if (itemNameLower.includes('garbagebag')) {
+                    dynIcon = 'mdi:trash-can-outline';
+                    typeLabel = 'BOLSA DE BASURA';
+                }
+                else if (itemNameLower.includes('handcuffs')) {
+                    dynIcon = 'mdi:handcuffs';
+                    typeLabel = 'GRILLETES';
+                }
+                else if (itemNameLower.includes('bread') || itemNameLower.includes('baguette') || itemNameLower.includes('candycane')) {
+                    dynIcon = 'mdi:food-apple';
+                    typeLabel = 'COMIDA (ARMA)';
+                }
+                // --- CUERPO A CUERPO / ARMAS BLANCAS ---
+                else if (
+                    itemNameLower.includes('knife') || itemNameLower.includes('machete') ||
+                    itemNameLower.includes('dagger') || itemNameLower.includes('hatchet') ||
+                    itemNameLower.includes('knuckle') || itemNameLower.includes('bottle') ||
+                    itemNameLower.includes('poolcue') || itemNameLower.includes('wrench') ||
+                    itemNameLower.includes('hammer') || itemNameLower.includes('crowbar') ||
+                    itemNameLower.includes('golfclub') || itemNameLower.includes('nightstick') ||
+                    itemNameLower.includes('switchblade') || itemNameLower.includes('battleaxe') ||
+                    itemNameLower === 'weapon_bat' || itemNameLower.endsWith('_bat')
+                ) {
+                    dynIcon = 'mdi:knife-military';
+                    typeLabel = 'CUERPO A CUERPO';
+                }
+            }
+            // 5. DINERO Y CRYPTO (Alta prioridad)
+            else if (itemNameLower === 'cash' || itemNameLower === 'money' || itemNameLower.includes('money')) {
+                dynIcon = 'mdi:cash-multiple';
+                typeLabel = itemNameLower.includes('black') ? 'DINERO SUCIO' : 'DINERO';
+            }
+            else if (itemNameLower.includes('crypto') || itemNameLower.includes('bitcoin') || itemNameLower.includes('qbit')) {
+                dynIcon = 'mdi:bitcoin';
+                typeLabel = 'CRIPTODIVISA';
+            }
+            // 6. RESTO DE COSAS
+            else if (itemNameLower.includes('phone') || itemNameLower.includes('radio') || itemNameLower.includes('gps')) {
+                dynIcon = 'mdi:cellphone';
+                typeLabel = 'ELECTRÓNICA';
+            }
+            else if (itemNameLower.includes('water') || itemNameLower.includes('drink') || itemNameLower.includes('coffee') || itemNameLower.includes('cola') || itemNameLower.includes('beer') || itemNameLower.includes('vodka')) {
+                dynIcon = 'mdi:cup'; // Icono básico 100% garantizado en MDI
+                typeLabel = 'BEBIDA';
+            }
+            else if (itemNameLower.includes('burger') || itemNameLower.includes('food') || itemNameLower.includes('bread') || itemNameLower.includes('sandwich') || itemNameLower.includes('donut') || itemNameLower.includes('taco')) {
+                dynIcon = 'mdi:food-apple';
+                typeLabel = 'COMIDA';
+            }
+            else if (itemNameLower.includes('medkit') || itemNameLower.includes('bandage') || itemNameLower.includes('pill') || itemNameLower.includes('heal') || itemNameLower.includes('firstaid')) {
+                dynIcon = 'mdi:medical-bag';
+                typeLabel = 'MÉDICO';
+            }
+            else if (itemNameLower.includes('repair') || itemNameLower.includes('fixkit') || itemNameLower.includes('toolbox') || itemNameLower.includes('kit') || itemNameLower.includes('lockpick')) {
+                dynIcon = 'mdi:toolbox';
+                typeLabel = 'HERRAMIENTA';
+            }
+            else if (itemNameLower.includes('card') || itemNameLower.includes('id_') || itemNameLower.includes('license')) {
+                dynIcon = 'mdi:card-account-details';
+                typeLabel = 'DOCUMENTO';
+            }
+            else if (itemNameLower.includes('weed') || itemNameLower.includes('coke') || itemNameLower.includes('meth') || itemNameLower.includes('drug') || itemNameLower.includes('joint')) {
+                dynIcon = 'mdi:cannabis';
+                typeLabel = 'ILEGAL';
+            }
+
+            // Preparar HTML de munición si es un arma
             let ammoHtml = '';
             if (item.ammoType) {
                 let cleanAmmo = item.ammoType.replace('AMMO_', '');
-                // Cajita central con estilo anaranjado
                 ammoHtml = `
-                <div class="veh-info-box" style="border-color: rgba(255, 165, 0, 0.3); background: rgba(255, 165, 0, 0.05);">
-                    <span class="veh-label" style="color: #ffb74d;">MUNICIÓN</span>
-                    <span class="veh-value" style="color: #fff; font-size: 11px;">${cleanAmmo}</span>
+                <div class="veh-detail-row">
+                    <span class="veh-detail-label" style="color: #ffb74d;">MUNICIÓN</span>
+                    <span class="veh-detail-value" style="color: #fff;">${cleanAmmo}</span>
                 </div>`;
             }
 
-            // HTML ESTRUCTURADO
+            // HTML ESTRUCTURADO (Estilo Limpio)
             card.innerHTML = `
                 <div class="veh-header">
-                    <div class="veh-title" title="${label}">${label}</div>
-                    <span class="iconify" data-icon="${item.type === 'weapon' ? 'mdi:pistol' : 'mdi:cube-outline'}" style="color:#555; font-size:18px;"></span>
+                    <div class="veh-icon-wrapper">
+                        <span class="iconify" data-icon="${dynIcon}"></span>
+                    </div>
+                    <div class="veh-title-group">
+                        <div class="veh-name" title="${label}">${label}</div>
+                        <div class="veh-brand">${typeLabel}</div>
+                    </div>
                 </div>
                 
-                <div class="veh-body" style="display: flex; flex-direction: column; flex: 1; height: 100%;">
+                <div class="veh-details" style="flex: 1;">
+                    <div class="veh-detail-row">
+                        <span class="veh-detail-label">CÓDIGO</span>
+                        <span class="veh-detail-value" style="font-family: monospace; color: #aaa;">${code}</span>
+                    </div>
+                    <div class="veh-detail-row">
+                        <span class="veh-detail-label">PESO</span>
+                        <span class="veh-detail-value" style="color: #999;">${formatWeight(weight)}</span>
+                    </div>
                     
-                    <div class="veh-info-grid" style="${gridStyle} gap: 5px;">
-                        
-                        <div class="veh-info-box">
-                            <span class="veh-label">PESO</span>
-                            <span class="veh-value val-brand">${formatWeight(weight)}</span>
-                        </div>
-                        
-                        ${ammoHtml}
+                    ${ammoHtml}
 
-                        <div class="veh-info-box">
-                            <span class="veh-label">CÓDIGO</span>
-                            <span class="veh-value val-code" style="font-size:11px;">${code}</span>
-                        </div>
-                        
-                        <div class="veh-info-box" style="grid-column: 1 / -1; height: 80px; overflow: hidden; display:block; padding: 8px;">
-                            <span class="veh-label">DESCRIPCIÓN</span>
-                            <span class="veh-value" title="${item.description}" style="white-space: normal; line-height: 1.4; font-size: 11px; color: #ccc; display: block;">
-                                ${desc}
-                            </span>
-                        </div>
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.05);">
+                        <span class="veh-detail-label" style="display:block; margin-bottom:4px;">DESCRIPCIÓN</span>
+                        <span class="veh-detail-value" title="${item.description}" style="white-space: normal; line-height: 1.4; font-size: 11px; color: #888; text-align: left; display: block;">
+                            ${desc}
+                        </span>
                     </div>
                 </div>
 
-                <div class="veh-actions" style="margin-top: auto; padding-top: 10px;">
-                    <button class="btn-spawn" onclick="spawnItem('${code}')" title="Darmelo a mí">
+                <div class="veh-actions">
+                    <button class="btn-veh" onclick="spawnItem('${code}')" title="Dármelo a mí">
                         <span class="iconify" data-icon="mdi:download"></span> SACAR
                     </button>
-                    
-                    <button class="btn-give" onclick="openGiveItemModal('${code}', '${label}', '${item.type}', '${item.ammoType || ''}')" title="Dar a otro jugador">
+                    <button class="btn-veh" onclick="openGiveItemModal('${code}', '${label}', '${item.type}', '${item.ammoType || ''}')" title="Dar a otro jugador">
                         <span class="iconify" data-icon="mdi:gift-outline"></span> DAR
                     </button>
                 </div>
             `;
             fragment.appendChild(card);
-
-            // ... fin del bucle ...
         });
 
         itemListContainer.appendChild(fragment);
@@ -3838,6 +4026,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
     document.addEventListener('keydown', function (event) {
         const menuContainer = document.getElementById('admin-menu');
+        const detailsModal = document.getElementById('player-details-modal');
 
         // 1. Si el menú está cerrado, no hacemos nada
         if (!menuContainer || menuContainer.style.display === 'none') return;
@@ -3846,20 +4035,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeTag = document.activeElement.tagName;
         if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
 
-        // 3. Detectar tecla J
+       // 3. Detectar tecla J
         if (event.key.toLowerCase() === 'j') {
 
             // Invertimos el estado
             cursorModeActive = !cursorModeActive;
 
-            // LÓGICA DE OPACIDAD
-            if (cursorModeActive) {
-                // MODO JUEGO: Hacemos el menú casi transparente (25%)
-                menuContainer.style.opacity = '0.5';
-            } else {
-                // MODO MENÚ: Lo devolvemos al 100%
-                menuContainer.style.opacity = '1.0';
-            }
+            // Agrupamos todos los cambios para que se apliquen en el MISMO fotograma visual a la vez
+            requestAnimationFrame(() => {
+                const opacidad = cursorModeActive ? '0.2' : '1.0';
+                const puntero = cursorModeActive ? 'none' : 'auto';
+
+                // Menú principal
+                menuContainer.style.setProperty('opacity', opacidad, 'important');
+                menuContainer.style.setProperty('pointer-events', puntero, 'important');
+
+                // Detalles del Jugador (Se aplicará exactamente a la vez)
+                if (detailsModal) {
+                    detailsModal.style.setProperty('opacity', opacidad, 'important');
+                    detailsModal.style.setProperty('pointer-events', puntero, 'important');
+                }
+            });
 
             // Avisar a Lua (Esto sigue igual)
             fetch(`https://${GetParentResourceName()}/toggleCursorMode`, {
@@ -5287,7 +5483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ===========================================
-                // 4. RENDERIZADO DE VEHÍCULOS (TU CÓDIGO)
+                // 4. RENDERIZADO DE VEHÍCULOS
                 // ===========================================
                 const vehList = document.getElementById('pd-vehicles-list');
                 const vehs = fullData.vehicles || [];
@@ -5318,14 +5514,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             const gpsBtnStyle = hasCoords ? '' : 'opacity: 0.3; cursor: not-allowed;';
                             const gpsAction = hasCoords ? `onclick="setGPS(${cx}, ${cy})"` : '';
 
-                            let iconKey = 'unknown';
-                            if (['compacts', 'sedans', 'suvs', 'coupes', 'muscle', 'sports', 'classics', 'super', 'vans', 'utility'].includes(v.category)) iconKey = 'car';
-                            else if (['motorcycles', 'cycles'].includes(v.category)) iconKey = 'bike';
-                            else if (['helicopters'].includes(v.category)) iconKey = 'heli';
-                            else if (['planes'].includes(v.category)) iconKey = 'plane';
-                            else if (['boats'].includes(v.category)) iconKey = 'boat';
-                            else if (['commercial', 'industrial', 'service', 'military', 'offroad'].includes(v.category)) iconKey = 'truck';
-                            const finalIcon = vehIcons[iconKey] || vehIcons['car'];
+                            // NUEVA LÓGICA DE ICONOS DINÁMICOS
+                            const catLower = (v.category || '').toLowerCase();
+                            const modLower = (v.model || v.name || '').toLowerCase();
+                            let dynIcon = 'mdi:car'; // Por defecto
+
+                            if (modLower.includes('police') || modLower.includes('cop') || modLower.includes('sheriff') || modLower.includes('fib')) dynIcon = 'mdi:car-emergency';
+                            else if (modLower.includes('ambulance') || modLower.includes('ems') || modLower.includes('medic')) dynIcon = 'mdi:ambulance';
+                            else if (modLower.includes('taxi') || modLower.includes('cab')) dynIcon = 'mdi:taxi';
+                            else if (catLower === 'emergency') dynIcon = 'mdi:car-emergency';
+                            else if (['motorcycles', 'motorcycle'].includes(catLower) || modLower.includes('moto')) dynIcon = 'mdi:motorbike';
+                            else if (['cycles', 'bicycles', 'bicycle'].includes(catLower) || modLower.includes('bmx')) dynIcon = 'mdi:bicycle';
+                            else if (['helicopters', 'helicopter'].includes(catLower)) dynIcon = 'mdi:helicopter';
+                            else if (['planes', 'plane'].includes(catLower)) dynIcon = 'mdi:airplane';
+                            else if (['boats', 'boat'].includes(catLower)) dynIcon = 'mdi:sail-boat';
+                            else if (['commercial', 'industrial', 'trucks', 'utility'].includes(catLower)) dynIcon = 'mdi:truck';
 
                             const isOut = !v.garage || v.garage === 'Out' || v.state === 0;
                             const rowClass = isOut ? 'row-active' : 'row-inactive';
@@ -5336,7 +5539,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             item.className = `asset-item-row ${rowClass}`;
                             item.innerHTML = `
                             <div class="asset-icon-box">
-                                <span class="iconify" data-icon="${finalIcon}"></span>
+                                <span class="iconify" data-icon="${dynIcon}"></span>
                             </div>
                             <div class="asset-info">
                                 <div class="asset-title">${v.label || v.name}</div>
@@ -5348,7 +5551,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="btn-gps-modern" style="${gpsBtnStyle}" ${gpsAction} title="${hasCoords ? 'Marcar GPS' : 'Ubicación desconocida'}">
                                 <span class="iconify" data-icon="mdi:crosshairs-gps"></span>
                             </button>
-                        `;
+                            `;
                             vehList.appendChild(item);
                         });
                     }
@@ -5712,6 +5915,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetId: currentDetailsId
             })
         });
+    };
+
+    // ==========================================================================
+    // MENÚ TROLL - LÓGICA
+    // ==========================================================================
+    window.openTrollMenu = function () {
+        if (!currentDetailsId) return;
+        const modal = document.getElementById('troll-menu-modal');
+        const nameSpan = document.getElementById('troll-target-name');
+
+        // Ponemos el nombre del jugador al que vamos a trollear
+        if (nameSpan && currentPlayerDataGlobal) {
+            nameSpan.innerText = currentPlayerDataGlobal.name || "Desconocido";
+        }
+
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    };
+
+    window.closeTrollMenu = function () {
+        const modal = document.getElementById('troll-menu-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    window.trollAction = function (actionType) {
+        if (!currentDetailsId) return;
+
+        // Enviamos la petición al cliente
+        fetch(`https://${GetParentResourceName()}/trollAction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: actionType,
+                targetId: currentDetailsId
+            })
+        }).catch(err => console.error("Error ejecutando acción troll:", err));
     };
 
     // ==========================================================================

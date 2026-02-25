@@ -10,7 +10,7 @@ Config.Debug = false
 -- =========================================
 Config.Commands = {
     Admin = "dpadmin",
-    Report = "dpreports",
+    Report = "report",
     -- Comando de emergencia (Solo consola)
     EmergencyWhitelist = "togglewhitelist_emergency"
 }
