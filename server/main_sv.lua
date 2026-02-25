@@ -1536,27 +1536,26 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getStatusData', function(so
     local mins = math.floor((uptimeMs % 3600000) / 60000)
 
     -- 1. Obtenemos los Logs
-    MySQL.query('SELECT * FROM dp_logs ORDER BY id DESC LIMIT 50', {}, function(logs)
-
-        -- 2. Obtenemos los Stats de las Gráficas (Convirtiendo la fecha a Timestamp para el JS)
-        MySQL.query(
-            'SELECT UNIX_TIMESTAMP(created_at) as date, player_count, admin_count, report_count FROM dp_stats ORDER BY created_at ASC',
-            {}, function(statsData)
-
-                cb({
-                    players = players,
-                    maxPlayers = maxPlayers,
-                    admins = adminsCount,
-                    uptime = string.format("%dh %02dm", hours, mins),
-                    reportsCount = 0,
-                    logs = logs or {},
-                    stats = statsData or {}, -- AQUÍ ESTABA EL ERROR: Antes ponía stats = {}
-                    myStaffMode = myState,
-                    serverStates = ServerStates
-                })
-
+    MySQL.scalar('SELECT COUNT(*) FROM dp_reports WHERE status IN (?, ?)', {'open', 'assigned'},
+        function(currentReports)
+            MySQL.query('SELECT * FROM dp_logs ORDER BY id DESC LIMIT 50', {}, function(logs)
+                MySQL.query(
+                    'SELECT UNIX_TIMESTAMP(created_at) as date, player_count, admin_count, report_count FROM dp_stats ORDER BY created_at ASC',
+                    {}, function(statsData)
+                        cb({
+                            players = players,
+                            maxPlayers = maxPlayers,
+                            admins = adminsCount,
+                            uptime = string.format("%dh %02dm", hours, mins),
+                            reportsCount = currentReports or 0, -- <--- MODIFICADO: Ahora usa el conteo real de la DB
+                            logs = logs or {},
+                            stats = statsData or {},
+                            myStaffMode = myState,
+                            serverStates = ServerStates
+                        })
+                    end)
             end)
-    end)
+        end)
 end)
 
 AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
@@ -2194,17 +2193,9 @@ end)
 RegisterNetEvent('DP-AdminMenu:server:playTrollSound', function(soundType, coords)
     if soundType == 'fart' then
         -- Aquí pones el nombre EXACTO de tus archivos con su formato correcto
-        local fartSounds = {
-            "fart1.wav",
-            "fart2.wav",
-            "fart3.wav",
-            "fart4.mp3",
-            "fart5.wav",
-            "fart6.wav",
-            "fart7.wav",
-            "fart8.mp3"
-        }
-        
+        local fartSounds = {"fart1.wav", "fart2.wav", "fart3.wav", "fart4.mp3", "fart5.wav", "fart6.wav", "fart7.wav",
+                            "fart8.mp3"}
+
         -- Elegimos uno de la lista al azar
         local randomFart = fartSounds[math.random(1, #fartSounds)]
 
@@ -2212,7 +2203,7 @@ RegisterNetEvent('DP-AdminMenu:server:playTrollSound', function(soundType, coord
         while randomFart == lastFartSound do
             randomFart = fartSounds[math.random(1, #fartSounds)]
         end
-        
+
         -- Guardamos el nuevo sonido elegido como "el último reproducido" para la próxima vez
         lastFartSound = randomFart
 

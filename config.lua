@@ -780,49 +780,49 @@ Config.GotoLocations = {
     }, {
         name = "4 Integrity Way, Apt 30",
         coords = vector3(-35.31, -580.41, 88.71),
-        icon = "mdi:apartment",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/GTAOApartmentHi1.png",
         description = "Apartamento High-End en el centro. Ubicación privilegiada frente al ayuntamiento. Interiores modernos con acabados en mármol y madera noble. Ideal para profesionales que trabajan en el distrito financiero y buscan un oasis de calma en el caos urbano."
     }, {
-        name = "Dell Perro Heights, Apt 7",
+        name = "Del Perro Heights, Apt 7",
         coords = vector3(-1477.14, -538.74, 55.52),
-        icon = "mdi:apartment",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/GTAOApartmentHi2.png",
         description = "Residencia de lujo cerca de la costa. A pocos minutos del muelle y la playa. Este apartamento combina la vida urbana con la brisa marina. Perfecto para quienes disfrutan del estilo de vida relajado de la costa oeste sin renunciar a las comodidades premium."
     }, {
-        name = "Dell Perro Heights, Apt 4",
+        name = "Del Perro Heights, Apt 4",
         coords = vector3(-1468.14, -541.81, 73.44),
-        icon = "mdi:apartment",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/HLApartment1.png",
         description = "Apartamento exclusivo con vistas al océano. Situado en una planta alta de Dell Perro, ofrece privacidad y seguridad. El diseño interior es contemporáneo, con amplios ventanales que permiten disfrutar de los atardeceres sobre el Pacífico."
     }, {
         name = "Richard Majestic, Apt 2",
         coords = vector3(-915.81, -379.43, 113.67),
-        icon = "mdi:apartment",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/HLApartment2.png",
         description = "Vivienda en el distrito del cine. Frente a los estudios de Richards Majestic. Un apartamento con carácter, rodeado de la historia de Hollywood y el glamour decadente de la industria cinematográfica. Excelente ubicación central."
     }, {
         name = "Tinsel Towers, Apt 42",
         coords = vector3(-614.86, 40.67, 97.60),
-        icon = "mdi:apartment",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/HLApartment3.png",
         description = "Torre residencial icónica en West Vinewood. Recientemente renovada, ofrece apartamentos espaciosos con fácil acceso a la vida nocturna del Boulevard. Una dirección prestigiosa para jóvenes profesionales y aspirantes a estrellas."
     }, {
         name = "Eclipse Towers, Apt 3",
         coords = vector3(-773.40, 341.76, 211.39),
-        icon = "mdi:apartment",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/HLApartment4.png",
         description = "El edificio residencial más codiciado de Los Santos. Vivir en Eclipse Towers es sinónimo de éxito. Este apartamento ofrece vistas inigualables de la ciudad y las colinas. Vecinos de alto perfil y seguridad de primer nivel."
     }, {
         name = "4 Integrity Way, Apt 28",
         coords = vector3(-18.07, -583.67, 79.46),
-        icon = "mdi:apartment",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/HLApartment5.png",
         description = "Alternativa residencial en Integrity Way. Un piso ligeramente más compacto pero con las mismas calidades de lujo. Su posición estratégica cerca de Arcadius y Maze Bank lo hace perfecto para ejecutivos con poco tiempo que perder."
     }, {
-        name = "Apartamento High End (Custom)",
+        name = "Apartamento High End",
         coords = vector3(-609.56, 51.28, -183.98),
-        icon = "mdi:home-plus",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/HLApartment6.png",
         description = "Interior residencial personalizado. Un espacio único que rompe con el diseño estándar de los promotores inmobiliarios. Muebles de diseño, distribución abierta y acabados exclusivos para quien busca diferenciarse del resto de millonarios."
     }, {
@@ -888,19 +888,19 @@ Config.GotoLocations = {
     }, {
         name = "Eclipse Penthouse Suite 1",
         coords = vector3(-787.78, 334.92, 215.83),
-        icon = "mdi:star-four-points",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/ExecApartment1.png",
         description = "Penthouse 'Monochrome'. Diseño interior en blanco y negro de alto contraste. Frialdad elegante para mentes calculadoras. Incluye bar privado y sala de cine. La máxima expresión de sofisticación moderna en Eclipse Towers."
     }, {
         name = "Eclipse Penthouse Suite 2",
         coords = vector3(-773.22, 322.82, 194.88),
-        icon = "mdi:star-four-points",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/ExecApartment2.png",
         description = "Penthouse 'Vibrant'. Decoración atrevida con colores vivos y arte pop. Un espacio lleno de energía diseñado para fiestas y entretenimiento. Rompe con la monotonía del lujo tradicional. Perfecto para personalidades extrovertidas."
     }, {
         name = "Eclipse Penthouse Suite 3",
         coords = vector3(-787.78, 334.92, 186.11),
-        icon = "mdi:star-four-points",
+        icon = "mdi:office-building",
         img = "img/Ubicaciones/ExecApartment3.png",
         description = "Penthouse 'Sharp'. Estilo industrial refinado con toques de madera oscura y metal. Ambiente serio y masculino, ideal para reuniones de negocios de alto nivel en la privacidad del hogar. Elegancia atemporal."
     }, {

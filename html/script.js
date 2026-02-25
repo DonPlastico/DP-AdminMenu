@@ -238,6 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- ABRIR MENÚ ---
         if (data.type === 'open') {
+            if (data.adminName) {
+                document.getElementById("admin-user-name").innerText = data.adminName;
+            } else {
+                document.getElementById("admin-user-name").innerText = "Administrador";
+            }
             mainAdminPanel.style.display = 'flex';
 
             // ==========================================================
@@ -595,7 +600,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- 1. HEALTH (Gestión especial para muertos) ---
             // Solo pasamos texto si está muerto/herido para que salga ROJO
             // Si está vivo, pasamos 'null' o nada para que salga BLANCO
-            let healthStatus = null;
             if (s.health <= 0) {
                 // Dependiendo de tu lógica de muerte, a veces health llega negativo o 0
                 // Si quieres detectar muerte real necesitas enviar isDead desde server, 
@@ -860,6 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isVisible('screenshot-modal')) { closeScreenshotModal(); return; }
             if (isVisible('dimension-modal')) { closeDimensionModal(); return; }
             if (isVisible('troll-menu-modal')) { closeTrollMenu(); return; }
+            if (isVisible('confirm-sanction-modal')) { closeConfirmSanctionModal(); return; }
 
             // --- B. CERRAR HUD DE ENTIDADES (DEV TOOL) ---
             if (document.getElementById('entity-info-hud') && document.getElementById('entity-info-hud').style.display !== 'none') {
@@ -945,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.selectReportType = (type) => {
         currentReportType = type;
 
-        // Actualizar visualmente los botones
+        // Actualizar visualmente los botones (Clases originales)
         document.querySelectorAll('.radio-btn').forEach(btn => btn.classList.remove('active'));
         const activeBtn = document.querySelector(`.radio-btn[data-type="${type}"]`);
         if (activeBtn) activeBtn.classList.add('active');
@@ -1453,11 +1458,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.close-modal-btn').addEventListener('click', closeImageModal);
     imageModal.addEventListener('click', (e) => { if (e.target === imageModal) closeImageModal(); });
 
-    // Confirmación Modal
+    // Confirmación Modal corregida para evitar desenfoque
     let onConfirm = null;
     window.showConfirmationModal = (msg, callback) => {
-        document.getElementById('modal-message').innerHTML = msg; onConfirm = callback;
-        document.getElementById('confirm-modal').style.display = 'flex';
+        const modal = document.getElementById('confirm-modal');
+        const container = modal.querySelector('.troll-custom-container');
+
+        // 1. Inyectamos contenido
+        document.getElementById('modal-message').innerHTML = msg;
+        onConfirm = callback;
+
+        // 2. Preparamos el contenedor quitando la animación previa si existiera
+        container.style.animation = 'none';
+
+        // 3. Mostramos el overlay
+        modal.style.display = 'flex';
+
+        // 4. TRUCO DE RENDERIZADO: Forzamos un reflow
+        // Esto obliga al navegador a dibujar el modal en su sitio ANTES de animarlo
+        void modal.offsetWidth;
+
+        // 5. Animación de opacidad (NUNCA se ve borrosa)
+        container.style.animation = 'fadeIn 0.2s ease-out forwards';
     };
     window.closeConfirmation = () => { document.getElementById('confirm-modal').style.display = 'none'; onConfirm = null; };
     document.getElementById('btn-confirm-action').addEventListener('click', () => { if (onConfirm) onConfirm(); closeConfirmation(); });
@@ -1471,14 +1493,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openExtendModal = (id, expire) => {
         extendBanId = id; extendOriginalExpire = parseInt(expire);
-        if (extendOriginalExpire === 0) { document.getElementById('ext-current-date').innerHTML = '<span style="color:#ff4444">PERMANENTE</span>'; extPerm.checked = true; }
+        if (extendOriginalExpire === 0) { document.getElementById('ext-current-date').innerHTML = '<span style="color:#ffffff">PERMANENTE</span>'; extPerm.checked = true; }
         else { document.getElementById('ext-current-date').textContent = new Date(extendOriginalExpire * 1000).toLocaleString('es-ES', dateOptions); extPerm.checked = false; }
         extVal.value = ''; recalcNewDate(); extModal.style.display = 'flex';
     };
     window.closeExtendModal = () => { extModal.style.display = 'none'; extendBanId = null; };
 
     function recalcNewDate() {
-        if (extPerm.checked) { extDateDisp.innerHTML = '<span style="color:#ff4444; font-weight:bold;">PERMANENTE</span>'; extVal.disabled = true; extUnit.disabled = true; return; }
+        if (extPerm.checked) { extDateDisp.innerHTML = '<span style="color:#ffffff; font-weight:bold;">PERMANENTE</span>'; extVal.disabled = true; extUnit.disabled = true; return; }
         extVal.disabled = false; extUnit.disabled = false;
         let base = (extendOriginalExpire === 0 || extendOriginalExpire < Date.now() / 1000) ? Math.floor(Date.now() / 1000) : extendOriginalExpire;
         const add = (parseInt(extVal.value) || 0) * parseInt(extUnit.value);
@@ -1568,6 +1590,66 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`https://${GetParentResourceName()}/sendAnnouncement`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, duration: totalDuration }) });
         closeAnnounceModal();
     });
+
+    // ==========================================================================
+    // LÓGICA SELECT DESPLEGABLE Y SWITCH PARA EL SANCTION MODAL
+    // ==========================================================================
+    const banTimeTrigger = document.getElementById('ban-time-trigger');
+    const banTimeUnit = document.getElementById('ban-time-unit');
+    const banTimeVal = document.getElementById('ban-time-val');
+    const banPermCheck = document.getElementById('ban-perm-check');
+
+    if (banTimeTrigger) {
+        const banTimeWrapper = banTimeTrigger.closest('.custom-select-wrapper');
+
+        // 1. Abrir/Cerrar al hacer click (bloqueado si es permanente)
+        banTimeTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Si el checkbox de permanente está marcado, no hacemos nada
+            if (banPermCheck && banPermCheck.checked) return;
+
+            banTimeWrapper.classList.toggle('open');
+        });
+
+        // 2. Seleccionar una opción
+        banTimeWrapper.querySelectorAll('.custom-option').forEach(opt => {
+            opt.addEventListener('click', function (e) {
+                e.stopPropagation();
+                banTimeWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                banTimeTrigger.querySelector('span').textContent = this.textContent;
+
+                if (banTimeUnit) banTimeUnit.value = this.getAttribute('data-value');
+                banTimeWrapper.classList.remove('open');
+            });
+        });
+
+        // 3. Cerrar si se hace click fuera
+        window.addEventListener('click', (e) => {
+            if (!banTimeWrapper.contains(e.target)) {
+                banTimeWrapper.classList.remove('open');
+            }
+        });
+
+        // 4. Lógica del interruptor PERMANENTE
+        if (banPermCheck) {
+            banPermCheck.addEventListener('change', (e) => {
+                const isPerm = e.target.checked;
+
+                // Si es permanente, bloqueamos y atenuamos el input y el selector
+                if (isPerm) {
+                    banTimeVal.disabled = true;
+                    banTimeVal.style.opacity = '0.4';
+                    banTimeWrapper.style.opacity = '0.4';
+                    banTimeWrapper.classList.remove('open'); // Cerramos por si estaba abierto
+                } else {
+                    banTimeVal.disabled = false;
+                    banTimeVal.style.opacity = '1';
+                    banTimeWrapper.style.opacity = '1';
+                }
+            });
+        }
+    }
 
     // ==========================================================================
     // 12. MODAL: CLIMA Y TIEMPO (CORREGIDO)
@@ -2009,7 +2091,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="icon-btn" onclick="openJobRankModal('${p.source}', '${p.name}', '${job.name}')" data-tooltip="Cambiar Rango">
                                 <span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span>
                             </div>
-                            <div class="icon-btn" onclick="openJobManageModal('${p.source}', '${p.name}')" data-tooltip="Despedir">
+                            <div class="icon-btn" onclick="openJobManageModal('${p.source}', '${p.name}')" data-tooltip="Cambiar Trabajo">
                                 <span class="iconify" data-icon="mdi:briefcase-remove-outline"></span>
                             </div>
                         </div>
@@ -2129,7 +2211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="icon-btn" onclick="openGangRankModal('${p.source}', '${escapeHtml(p.name)}', '${gang.name}')" data-tooltip="Cambiar Rango">
                         <span class="iconify" data-icon="mdi:arrow-up-bold-hexagon-outline"></span>
                     </div>
-                    <div class="icon-btn" onclick="openGangManageModal('${p.source}', '${escapeHtml(p.name)}')" data-tooltip="Expulsar">
+                    <div class="icon-btn" onclick="openGangManageModal('${p.source}', '${escapeHtml(p.name)}')" data-tooltip="Cambiar Banda">
                         <span class="iconify" data-icon="mdi:account-cancel-outline"></span>
                     </div>
                 </div>`;
@@ -2288,23 +2370,37 @@ document.addEventListener('DOMContentLoaded', () => {
         grInput.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             if (!grPreview) return;
+
+            // Si borras el número o está vacío
             if (isNaN(val)) {
-                grPreview.innerText = "Escribe un número...";
+                grPreview.innerHTML = "Escribe un número...";
                 grPreview.style.color = "#888";
                 return;
             }
+
             const gangData = allGangs.find(g => g.name === selectedGangName);
-            let gradeName = "Desconocido";
+            let rankExists = false;
+            let gradeName = "";
+
             if (gangData && gangData.grades) {
-                if (gangData.grades[val]) gradeName = gangData.grades[val].name;
-                else if (gangData.grades[val.toString()]) gradeName = gangData.grades[val.toString()].name;
-                else {
-                    gradeName = "❌ Rango no existe";
-                    grPreview.style.color = "var(--danger)";
+                if (gangData.grades[val]) {
+                    gradeName = gangData.grades[val].name;
+                    rankExists = true;
+                } else if (gangData.grades[val.toString()]) {
+                    gradeName = gangData.grades[val.toString()].name;
+                    rankExists = true;
                 }
-                if (gradeName !== "❌ Rango no existe") grPreview.style.color = "var(--success)";
             }
-            grPreview.innerText = gradeName;
+
+            // Si el rango existe, mostramos el nombre en blanco
+            if (rankExists) {
+                grPreview.innerHTML = gradeName;
+                grPreview.style.color = "white";
+            } else {
+                // Si no existe, inyectamos el icono de Iconify en rojo oscuro y el texto en gris
+                grPreview.innerHTML = `<span class="iconify" data-icon="mdi:close-circle-outline" style="font-size: 16px; margin-right: 4px; color: #888; vertical-align: text-bottom;"></span>Rango no existe`;
+                grPreview.style.color = "#888";
+            }
         });
     }
 
@@ -3637,7 +3733,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         reports: {
             label: 'Reportes Activos',
-            color: '#ff4444', // Rojo
+            color: '#ffffff', // Rojo
             bg: 'rgba(255, 68, 68, 0.15)',
             title: 'VOLUMEN DE REPORTES',
             icon: 'mdi:bug'
@@ -3837,7 +3933,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // B. DEFINIR MENSAJE SEGÚN ACTIVAR O DESACTIVAR
             // Usamos HTML para que se vea bonito y claro en el modal
             const msg = isActive
-                ? `<span style="color:#ff4444; font-weight:bold; font-size:18px;">⚠️ ¿ACTIVAR WHITELIST GLOBAL?</span><br><br>
+                ? `<span style="color:#ffffff; font-weight:bold; font-size:18px;">⚠️ ¿ACTIVAR WHITELIST GLOBAL?</span><br><br>
                    <ul style="text-align:left; font-size:14px; color:#ccc; margin-left:15px; line-height: 1.6;">
                         <li>Se <b>expulsará</b> a todos los jugadores sin permisos.</li>
                         <li>El servidor quedará <b>bloqueado</b> para usuarios normales.</li>
@@ -4035,7 +4131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeTag = document.activeElement.tagName;
         if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
 
-       // 3. Detectar tecla J
+        // 3. Detectar tecla J
         if (event.key.toLowerCase() === 'j') {
 
             // Invertimos el estado
@@ -4441,7 +4537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshMapBlips();
     }
 
-    // [MODIFICADO] Genera botones con COLORES ESPECÍFICOS
+    // Genera botones con GRADIENTES PREMIUM DINÁMICOS
     function renderFilterList() {
         const container = document.getElementById('filters-list');
         if (!container) return;
@@ -4451,23 +4547,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             const isActive = activeFilters[catName];
 
-            // Obtenemos el color de la categoría o el default
+            // Obtenemos el color de la categoría o el default (Ej: "#ff0000")
             const catColor = CATEGORY_COLORS[catName] || DEFAULT_COLOR;
 
             item.className = isActive ? 'filter-item active' : 'filter-item';
 
-            // ESTILOS DINÁMICOS SEGÚN ESTADO
+            // ESTILOS DINÁMICOS SEGÚN ESTADO (Estilo Premium)
             if (isActive) {
-                // Si está activo: Fondo con color transparente y borde sólido
-                item.style.background = `${catColor}33`; // Añadimos transparencia hex (33 = ~20%)
-                item.style.borderLeft = `4px solid ${catColor}`; // Borde lateral del color
+                // Gradiente: Empieza con el color de la categoría al 10% de opacidad ("1A") y termina transparente
+                item.style.background = `linear-gradient(90deg, ${catColor}1A 0%, transparent 100%)`;
+
+                // He puesto que el borde izquierdo también coja el color de la categoría. 
+                // (Si lo quieres estrictamente gris oscuro siempre, cámbialo por "2px solid #444444")
+                item.style.borderLeft = `2px solid ${catColor}`;
+
                 item.style.color = "#fff";
-                item.style.textShadow = `0 0 10px ${catColor}`; // Brillito
+                item.style.fontWeight = "bold";
+                item.style.cursor = "pointer";
+
+                // El text-shadow coge el color de la cat con un 50% de opacidad ("80")
+                item.style.textShadow = `0 0 5px ${catColor}80`;
             } else {
-                // Si está inactivo: Gris apagado
+                // Si está inactivo: Gris apagado con el borde gris oscuro por defecto
                 item.style.background = "rgba(0,0,0,0.4)";
-                item.style.borderLeft = "4px solid transparent";
+                item.style.borderLeft = "2px solid #444444";
                 item.style.color = "#666";
+                item.style.fontWeight = "normal";
+                item.style.textShadow = "none";
+                item.style.cursor = "pointer";
             }
 
             const count = cachedLocations[catName].length;
@@ -4522,7 +4629,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RESTO DE FUNCIONES (IGUAL QUE ANTES) ---
+    // --- RESTO DE FUNCIONES ---
 
     window.toggleFilterPanel = function () {
         const panel = document.getElementById('map-filters-panel');
@@ -4852,28 +4959,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let originalScale = 90;
 
     window.previewScale = (val) => {
-        val = parseInt(val);
+    val = parseInt(val);
+    if (isNaN(val)) return;
 
-        // Si no es un número (está vacío), no hacemos nada o ponemos 90
-        if (isNaN(val)) return;
+    // BLOQUEO DE SEGURIDAD
+    if (val < 70) val = 70;
+    if (val > 117) val = 117;
 
-        // BLOQUEO DE SEGURIDAD: Forzamos que el valor esté entre 70 y 117
-        if (val < 70) val = 70;
-        if (val > 117) val = 117;
+    currentScale = val;
 
-        currentScale = val;
+    const slider = document.getElementById('scale-slider');
+    const numberInput = document.getElementById('scale-number');
 
-        // Actualizamos ambos inputs para que muestren el valor corregido
-        document.getElementById('scale-slider').value = val;
-        document.getElementById('scale-number').value = val;
+    slider.value = val;
+    numberInput.value = val;
 
-        const menu = document.getElementById('admin-menu');
-        if (menu) {
-            // Aplicamos la escala con el origen corregido (center center)
-            menu.style.transformOrigin = 'center center';
-            menu.style.transform = `scale(${val / 100})`;
-        }
-    };
+    const percentage = ((val - 70) / 47) * 100;
+    slider.style.background = `linear-gradient(90deg, var(--primary) ${percentage}%, rgba(0,0,0,0.6) ${percentage}%)`;
+
+    const menu = document.getElementById('admin-menu');
+    if (menu) {
+        // CAMBIA ESTA LÍNEA DE 'center center' A 'top left'
+        menu.style.transformOrigin = 'top left'; 
+        menu.style.transform = `scale(${val / 100})`;
+    }
+};
 
     window.openScaleModal = () => {
         originalScale = currentScale;
@@ -5044,7 +5154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Si hay texto especial, lo ponemos en rojo brillante y negrita
             if (overrideText) {
-                txt.style.color = "#ff4444";
+                txt.style.color = "#ffffff";
                 txt.style.fontWeight = "bold";
                 txt.style.fontSize = "9px"; // Un pelín más pequeño para que quepa el texto largo
             } else {
@@ -5931,6 +6041,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (modal) {
+            modal.classList.remove('troll-closing'); // Aseguramos que no tenga la clase de salida
             modal.style.display = 'flex';
         }
     };
@@ -5938,7 +6049,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.closeTrollMenu = function () {
         const modal = document.getElementById('troll-menu-modal');
         if (modal) {
-            modal.style.display = 'none';
+            // Añadimos la clase para que inicie la animación de salida
+            modal.classList.add('troll-closing');
+
+            // Esperamos 200ms (lo que dura la animación zoomOut en CSS) antes de ocultarlo
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modal.classList.remove('troll-closing');
+            }, 200);
         }
     };
 
@@ -6023,32 +6141,38 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ==========================================================================
-    // LÓGICA MULTIUSO: DIMENSIONES Y DINERO (MODAL DINÁMICO)
+    // LÓGICA MULTIUSO: DIMENSIONES Y DINERO (MODAL DINÁMICO PREMIUM)
     // ==========================================================================
     const dimModal = document.getElementById('dimension-modal');
     const dimInput = document.getElementById('dim-input');
     let selectedDimTarget = null;
     let currentMoneyAction = null; // Variable para saber si es Dinero o Dimensión
 
-    // ABRIR EL MODAL (Ahora acepta un segundo parámetro opcional 'action')
+    // ABRIR EL MODAL
     window.openDimensionModal = (targetId, action = null) => {
         selectedDimTarget = targetId;
-        currentMoneyAction = action; // Si es null, es modo Dimensión
+        currentMoneyAction = action;
 
-        const title = dimModal.querySelector('h3');
-        const desc = dimModal.querySelector('p');
-        const label = dimModal.querySelector('label');
+        // Seleccionamos los elementos del nuevo diseño Premium por ID
+        const title = document.getElementById('dim-modal-title');
+        const desc = document.getElementById('dim-modal-desc');
+        const label = document.getElementById('dim-modal-label');
         const btn = document.getElementById('btn-set-dimension');
 
+        // Elementos visuales dinámicos
+        const icon = document.getElementById('dim-modal-icon');
+        const iconBg = document.getElementById('dim-icon-bg');
+        const inputIcon = document.getElementById('dim-input-icon');
+
         if (action) {
-            // --- MODO DINERO ---
+            // --- MODO DINERO / CRIPTO ---
             const config = {
-                add_cash: { t: "DAR EFECTIVO", d: "Añade dinero físico a la billetera.", l: "CANTIDAD EN $", b: "ENTREGAR DINERO EFECTIVO" },
-                remove_cash: { t: "QUITAR EFECTIVO", d: "Retira dinero de la billetera.", l: "CANTIDAD EN $", b: "QUITAR DINERO EFECTIVO" },
-                add_bank: { t: "DAR BANCO", d: "Añade fondos a la cuenta bancaria.", l: "CANTIDAD EN $", b: "ENTREGAR DINERO EN BANCO" },
-                remove_bank: { t: "QUITAR BANCO", d: "Retira fondos de la cuenta bancaria.", l: "CANTIDAD EN $", b: "QUITAR DINERO EN BANCO" },
-                add_crypto: { t: "DAR CRIPTO", d: "Añade criptomonedas al balance.", l: "CANTIDAD DE CRIPTOS", b: "ENTREGAR CRIPTOS" },
-                remove_crypto: { t: "QUITAR CRIPTO", d: "Retira criptomonedas del balance.", l: "CANTIDAD DE CRIPTOS", b: "QUITAR CRIPTOS" }
+                add_cash: { t: "DAR EFECTIVO", d: "Añade dinero físico a la billetera.", l: "CANTIDAD EN $", b: "ENTREGAR DINERO", i: "mdi:cash-multiple", c: "rgba(14, 160, 33, 0.1)", bc: "rgba(14, 160, 33, 0.3)", ic: "#0ea021" },
+                remove_cash: { t: "QUITAR EFECTIVO", d: "Retira dinero de la billetera.", l: "CANTIDAD EN $", b: "QUITAR DINERO", i: "mdi:cash-remove", c: "rgba(255, 68, 68, 0.1)", bc: "rgba(255, 68, 68, 0.3)", ic: "#ffffff" },
+                add_bank: { t: "DAR BANCO", d: "Añade fondos a la cuenta bancaria.", l: "CANTIDAD EN $", b: "INGRESAR AL BANCO", i: "mdi:bank", c: "rgba(0, 136, 255, 0.1)", bc: "rgba(0, 136, 255, 0.3)", ic: "#0088ff" },
+                remove_bank: { t: "QUITAR BANCO", d: "Retira fondos de la cuenta bancaria.", l: "CANTIDAD EN $", b: "RESTAR DEL BANCO", i: "mdi:bank-minus", c: "rgba(255, 68, 68, 0.1)", bc: "rgba(255, 68, 68, 0.3)", ic: "#ffffff" },
+                add_crypto: { t: "DAR CRIPTO", d: "Añade criptomonedas al balance.", l: "CANTIDAD DE CRIPTOS", b: "ENTREGAR CRIPTOS", i: "mdi:bitcoin", c: "rgba(214, 129, 0, 0.1)", bc: "rgba(214, 129, 0, 0.3)", ic: "#d68100" },
+                remove_crypto: { t: "QUITAR CRIPTO", d: "Retira criptomonedas del balance.", l: "CANTIDAD DE CRIPTOS", b: "QUITAR CRIPTOS", i: "mdi:currency-btc", c: "rgba(255, 68, 68, 0.1)", bc: "rgba(255, 68, 68, 0.3)", ic: "#ffffff" }
             };
             const c = config[action];
             title.innerText = c.t;
@@ -6056,7 +6180,15 @@ document.addEventListener('DOMContentLoaded', () => {
             label.innerText = c.l;
             btn.innerText = c.b;
             dimInput.value = "";
-            dimInput.placeholder = "Cantidad...";
+            dimInput.placeholder = "0";
+
+            // Aplicar estilos e iconos según la acción
+            icon.setAttribute('data-icon', c.i);
+            inputIcon.setAttribute('data-icon', 'mdi:currency-usd');
+            iconBg.style.background = c.c;
+            iconBg.style.borderColor = c.bc;
+            icon.style.color = c.ic;
+
         } else {
             // --- MODO DIMENSIÓN (Default) ---
             title.innerText = "VIAJE DIMENSIONAL";
@@ -6064,6 +6196,13 @@ document.addEventListener('DOMContentLoaded', () => {
             label.innerText = "NÚMERO DE DIMENSIÓN";
             btn.innerText = "MANDAR A LA DIMENSIÓN";
             dimInput.value = "0";
+
+            // Restaurar iconos y colores a modo neutro/blanco
+            icon.setAttribute('data-icon', 'mdi:earth');
+            inputIcon.setAttribute('data-icon', 'mdi:rotate-3d');
+            iconBg.style.background = 'rgba(255, 255, 255, 0.05)';
+            iconBg.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            icon.style.color = '#fff';
         }
 
         if (dimModal) dimModal.style.display = 'flex';
@@ -6079,7 +6218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // EL BOTÓN DE CONFIRMACIÓN (Dual)
     const btnDim = document.getElementById('btn-set-dimension');
     if (btnDim) {
-        btnDim.onclick = () => { // Usamos .onclick para evitar duplicar eventos
+        btnDim.onclick = () => {
             if (!selectedDimTarget) return;
             let val = parseInt(dimInput.value);
 
@@ -6174,7 +6313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title.innerText = "ENVIAR ADVERTENCIA (WARN)";
             durationGroup.style.display = 'none';
         } else if (type === 'ban') {
-            title.innerText = "BANEAR JUGADOR";
+            title.innerText = "BANEAR JUGADOR (BAN)";
             durationGroup.style.display = 'block';
         }
     }
@@ -6217,7 +6356,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // HTML PREMIUM PARA CK
                 msgEl.innerHTML = `
-                    <div class="confirm-summary-box" style="border-color: #ff0000;">
+                    <div class="confirm-summary-box">
                         <div class="confirm-row">
                             <span class="c-label">JUGADOR</span>
                             <span class="c-value">${currentPlayerDataGlobal.name}</span>
@@ -6236,14 +6375,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="iconify danger-icon" data-icon="mdi:alert-decagram"></span>
                         <div class="danger-text">
                             <b>⚠️ ADVERTENCIA IRREVERSIBLE</b><br>
-                            Se generará un <u>Backup Completo</u> y se borrarán:<br>
-                            • Personaje y Cuentas Bancarias.<br>
+                            Se generará un <u><strong>Backup Completo</strong></u> en el archivo <strong>ck_backups.json</strong> y se borrarán:<br>
+                            • Personaje, Cuentas Bancarias.<br>
                             • Vehículos, Casas y sus inventarios.<br>
+                            • Básicamente todo lo que tenga que ver con el jugador seleccionado.<br>
                         </div>
                     </div>
                 `;
 
                 closeSanctionModal();
+
+                const modalContainer = document.querySelector('.sanction-modal-container');
+                if (modalContainer) {
+                    modalContainer.classList.remove('is-standard');
+                    modalContainer.classList.add('is-ck');
+                }
+
                 document.getElementById('confirm-sanction-modal').style.display = 'flex';
             });
         }
@@ -6328,6 +6475,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 pendingSanction.reason = reason;
                 closeSanctionModal();
+
+                const modalContainer = document.querySelector('.sanction-modal-container');
+                if (modalContainer) {
+                    modalContainer.classList.remove('is-ck');
+                    modalContainer.classList.add('is-standard');
+                }
+
                 document.getElementById('confirm-sanction-modal').style.display = 'flex';
             });
         }

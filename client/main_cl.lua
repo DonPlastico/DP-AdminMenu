@@ -858,6 +858,7 @@ local function toggleMenu(state)
                                         type = "open",
                                         debugMode = Config.Debug,
                                         playerCount = #players,
+                                        adminName = GetPlayerName(PlayerId()),
                                         players = players,
                                         reports = reports,
                                         bans = bans,
@@ -2907,9 +2908,10 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
     elseif action == 'kidnap' then
         -- Notificación para el jugador afectado (instantánea)
         QBCore.Functions.Notify('¡HAN MANDADO SECUESTRADORES A POR TI, ESTATE ATENTO!', 'error', 10000)
-        
+
         -- Aviso para la administración (Se manda por log al servidor usando el ID del jugador)
-        TriggerServerEvent('qb-log:server:CreateLog', 'admin', 'Secuestro NPC', 'red', "Se han mandado secuestradores al jugador con ID: " .. GetPlayerServerId(PlayerId()))
+        TriggerServerEvent('qb-log:server:CreateLog', 'admin', 'Secuestro NPC', 'red',
+            "Se han mandado secuestradores al jugador con ID: " .. GetPlayerServerId(PlayerId()))
 
         -- SECUESTRO CINEMÁTICO V4.9 (Probabilidades y Notificaciones)
         CreateThread(function()
@@ -2933,7 +2935,8 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
                 finalSpawn = nodeCoords
             else
                 -- Si no hay carretera, spawneamos en la tierra pero calculamos la altura real
-                local foundGround, groundZ = GetGroundZFor_3dCoord(spawnCoords.x, spawnCoords.y, spawnCoords.z + 100.0, false)
+                local foundGround, groundZ = GetGroundZFor_3dCoord(spawnCoords.x, spawnCoords.y, spawnCoords.z + 100.0,
+                    false)
                 if foundGround then
                     finalSpawn = vector3(spawnCoords.x, spawnCoords.y, groundZ)
                 end
@@ -2942,8 +2945,10 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
             -- 3. Spawneamos la furgoneta
             local hashVeh = GetHashKey("burrito3")
             RequestModel(hashVeh)
-            while not HasModelLoaded(hashVeh) do Wait(0) end
-            
+            while not HasModelLoaded(hashVeh) do
+                Wait(0)
+            end
+
             local van = CreateVehicle(hashVeh, finalSpawn.x, finalSpawn.y, finalSpawn.z, 0.0, true, false)
             SetVehicleColours(van, 0, 0)
             SetEntityAsMissionEntity(van, true, true)
@@ -2956,7 +2961,9 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
             -- 4. Spawneamos a los secuestradores con Subfusiles
             local hashPed = GetHashKey("g_m_m_chicold_01")
             RequestModel(hashPed)
-            while not HasModelLoaded(hashPed) do Wait(0) end
+            while not HasModelLoaded(hashPed) do
+                Wait(0)
+            end
 
             local driver = CreatePedInsideVehicle(van, 4, hashPed, -1, true, false)
             local passenger = CreatePedInsideVehicle(van, 4, hashPed, 0, true, false)
@@ -2990,7 +2997,9 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
             -- 7. Congelamos al jugador: Manos arriba asustado
             ClearPedTasksImmediately(myPed)
             RequestAnimDict("random@mugging3")
-            while not HasAnimDictLoaded("random@mugging3") do Wait(0) end
+            while not HasAnimDictLoaded("random@mugging3") do
+                Wait(0)
+            end
             TaskPlayAnim(myPed, "random@mugging3", "handsup_standing_base", 8.0, -8.0, -1, 49, 0, false, false, false)
             FreezeEntityPosition(myPed, true)
 
@@ -3000,7 +3009,8 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
 
             -- Esperamos a que lleguen a tu lado
             local timeoutRun = GetGameTimer() + 12000
-            while #(GetEntityCoords(driver) - GetEntityCoords(myPed)) > 3.0 and #(GetEntityCoords(passenger) - GetEntityCoords(myPed)) > 3.0 and GetGameTimer() < timeoutRun do
+            while #(GetEntityCoords(driver) - GetEntityCoords(myPed)) > 3.0 and
+                #(GetEntityCoords(passenger) - GetEntityCoords(myPed)) > 3.0 and GetGameTimer() < timeoutRun do
                 Wait(100)
             end
 
@@ -3009,9 +3019,9 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
             TaskAimGunAtEntity(passenger, myPed, 2000, false)
             Wait(1500)
 
-           -- 10. EL PASEO A LA FURGONETA (Caminata real restaurada)
+            -- 10. EL PASEO A LA FURGONETA (Caminata real restaurada)
             FreezeEntityPosition(myPed, false)
-            
+
             -- Damos las llaves al jugador ANTES de caminar para que QBCore no bloquee la puerta
             local plate = GetVehicleNumberPlateText(van)
             TriggerEvent("vehiclekeys:client:SetOwner", plate)
@@ -3033,16 +3043,17 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
                 EnableControlAction(0, 249, true)
 
                 local dist = #(GetEntityCoords(myPed) - GetEntityCoords(van))
-                
+
                 -- Mientras camina de lejos, fuerza manos arriba
                 if dist > 3.5 and not isEntering then
                     if not IsEntityPlayingAnim(myPed, "random@mugging3", "handsup_standing_base", 3) then
-                        TaskPlayAnim(myPed, "random@mugging3", "handsup_standing_base", 8.0, -8.0, -1, 49, 0, false, false, false)
+                        TaskPlayAnim(myPed, "random@mugging3", "handsup_standing_base", 8.0, -8.0, -1, 49, 0, false,
+                            false, false)
                     end
                 elseif dist <= 3.5 and not isEntering then
                     -- Llegó a la furgoneta: Cortamos manos arriba y le mandamos subir
                     isEntering = true
-                    ClearPedTasksImmediately(myPed) 
+                    ClearPedTasksImmediately(myPed)
                     Wait(200) -- Pausa ultracorta para que GTA asimile que tiene las manos libres
                     TaskEnterVehicle(myPed, van, -1, 1, 1.0, 1, 0) -- Sube atrás
                 end
@@ -3050,20 +3061,21 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
                 -- NPCs te apuntan con el arma mientras caminas
                 TaskAimGunAtEntity(driver, myPed, 100, false)
                 TaskAimGunAtEntity(passenger, myPed, 100, false)
-                
+
                 Wait(0)
             end
 
             -- 11. EL JUGADOR SE SUBE, LOS NPCs CORREN
             ClearPedTasks(driver)
             ClearPedTasks(passenger)
-            
+
             TaskEnterVehicle(driver, van, -1, -1, 2.0, 1, 0)
             TaskEnterVehicle(passenger, van, -1, 0, 2.0, 1, 0)
 
             -- Bucle: Esperamos a que TODOS estén dentro
             local timeoutEnter = GetGameTimer() + 15000
-            while (not IsPedInVehicle(myPed, van, false) or not IsPedInVehicle(driver, van, false) or not IsPedInVehicle(passenger, van, false)) and GetGameTimer() < timeoutEnter do
+            while (not IsPedInVehicle(myPed, van, false) or not IsPedInVehicle(driver, van, false) or
+                not IsPedInVehicle(passenger, van, false)) and GetGameTimer() < timeoutEnter do
                 DisableAllControlActions(0)
                 EnableControlAction(0, 1, true)
                 EnableControlAction(0, 2, true)
@@ -3072,9 +3084,15 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
             end
 
             -- Sistema de seguridad: Si alguien no pudo subir, lo teletransportamos dentro
-            if not IsPedInVehicle(myPed, van, false) then SetPedIntoVehicle(myPed, van, 1) end
-            if not IsPedInVehicle(driver, van, false) then SetPedIntoVehicle(driver, van, -1) end
-            if not IsPedInVehicle(passenger, van, false) then SetPedIntoVehicle(passenger, van, 0) end
+            if not IsPedInVehicle(myPed, van, false) then
+                SetPedIntoVehicle(myPed, van, 1)
+            end
+            if not IsPedInVehicle(driver, van, false) then
+                SetPedIntoVehicle(driver, van, -1)
+            end
+            if not IsPedInVehicle(passenger, van, false) then
+                SetPedIntoVehicle(passenger, van, 0)
+            end
 
             -- 11. HUIDA Y PANTALLAZO NEGRO
             SetVehicleDoorShut(van, 2, false)
@@ -3103,9 +3121,9 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
             -- Sistema de "bolsa" para trucar las probabilidades
             -- El 3 y el 10 están repetidos 2 veces (15% de que toque cada uno), el resto 1 sola vez.
             local probabilityPool = {1, 2, 3, 3, 4, 5, 6, 7, 8, 9, 10, 10}
-            
+
             local randIndex = probabilityPool[math.random(1, #probabilityPool)]
-            
+
             while randIndex == lastKidnapLoc do
                 randIndex = probabilityPool[math.random(1, #probabilityPool)]
                 Wait(0)
@@ -3126,58 +3144,62 @@ RegisterNetEvent('DP-AdminMenu:client:receiveTroll', function(action)
 
             -- Preparamos el estilo de caminar de borracho
             RequestAnimSet("move_m@drunk@verydrunk")
-            while not HasAnimSetLoaded("move_m@drunk@verydrunk") do Wait(0) end
+            while not HasAnimSetLoaded("move_m@drunk@verydrunk") do
+                Wait(0)
+            end
             SetPedMovementClipset(myPed, "move_m@drunk@verydrunk", true)
 
             -- EFECTOS DE DROGA/GOLPE Y TIRADO EN EL SUELO
             SetTimecycleModifier("Dont_taze_me_bro")
             ShakeGameplayCam("FAMILY5_DRUG_TRIP_SHAKE", 1.0)
-            
+
             -- Lo tiramos al suelo. Ragdoll dura 5 segundos en total.
             SetPedToRagdoll(myPed, 5000, 5000, 0, 0, 0, 0)
 
             Wait(1000)
             DoScreenFadeIn(4000)
-            
+
             -- MUY IMPORTANTE: Esperamos a que se levante del todo y se estabilice ANTES de pedir la animación.
             -- 4000 (fade in) + 2500 (levantarse) = 6.5 segundos.
-            Wait(6500) 
+            Wait(6500)
 
             -- EL EVENTO TROLL
             if randIndex == 3 or randIndex == 10 then
                 -- Limpiamos cualquier tarea remanente para que los brazos queden libres
                 ClearPedTasksImmediately(myPed)
-                Wait(250) 
-                
+                Wait(250)
+
                 -- Usamos la animación genérica de rascarse el trasero (100% compatible con jugadores)
                 local dict = "amb@world_human_bum_wash@male@high@idle_a"
                 local anim = "idle_a"
-                
+
                 RequestAnimDict(dict)
                 local timeout = GetGameTimer() + 2000
-                while not HasAnimDictLoaded(dict) and GetGameTimer() < timeout do 
-                    Wait(0) 
+                while not HasAnimDictLoaded(dict) and GetGameTimer() < timeout do
+                    Wait(0)
                 end
-                
+
                 if HasAnimDictLoaded(dict) then
                     -- Flag 49: El tren superior hace la animación, el tren inferior sigue borracho
                     TaskPlayAnim(myPed, dict, anim, 8.0, -8.0, 5000, 49, 0, false, false, false)
                 end
-                
+
                 -- Disparamos la notificación
-                QBCore.Functions.Notify('Sientes un fuerte escozor en el culo, tendrias los pantalones con corrida/lefa de los secuestradores por la parte exterior de ellos... ¡TE HAN VIOLADO!', 'error', 50000)
+                QBCore.Functions.Notify(
+                    'Sientes un fuerte escozor en el culo, tendrias los pantalones con corrida/lefa de los secuestradores por la parte exterior de ellos... ¡TE HAN VIOLADO!',
+                    'error', 50000)
             end
 
             -- Esperamos EXACTAMENTE 10 segundos adicionales de desorientación
             Wait(10000)
 
             -- FIX MAREO INFINITO Y LIMPIEZA 100% FORZADA
-            myPed = PlayerPedId() 
-            ClearPedTasksImmediately(myPed) 
-            ClearTimecycleModifier() 
-            StopGameplayCamShaking(true) 
-            ResetPedMovementClipset(myPed, 0.0) 
-            RemoveAnimSet("move_m@drunk@verydrunk") 
+            myPed = PlayerPedId()
+            ClearPedTasksImmediately(myPed)
+            ClearTimecycleModifier()
+            StopGameplayCamShaking(true)
+            ResetPedMovementClipset(myPed, 0.0)
+            RemoveAnimSet("move_m@drunk@verydrunk")
         end)
     end
 end)

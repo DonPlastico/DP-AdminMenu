@@ -11,9 +11,7 @@
     --success: #0ea021;
     --success-dark: #0b801a;
     --success-badge: #1e7e34;
-    --warning: #d68100;
-    --warning-dark: #a36200;
-    --warning-text: #ffbb33;
+    --warning-text: rgb(187, 187, 187);
     --danger: #ff4444;
     --danger-bg: #5a1a1a;
     --danger-hover: #7a2a2a;
@@ -298,7 +296,7 @@ input[type=number]::-webkit-outer-spin-button {
 button {
     position: relative;
     padding: 10px;
-    border-radius: 4px;
+    /* border-radius: 4px; */
     cursor: pointer;
     font-weight: 500;
     text-transform: uppercase;
@@ -389,11 +387,7 @@ button {
 }
 
 input:checked+.slider {
-    background-color: var(--warning);
-}
-
-input:focus+.slider {
-    box-shadow: 0 0 1px var(--warning);
+    border-color: rgb(255, 255, 255);
 }
 
 input:checked+.slider:before {
@@ -456,7 +450,6 @@ input:checked+.slider:before {
     left: 0;
     right: 0;
     border: 1px solid var(--bg-border);
-    border-top: 0;
     background: var(--bg-panel);
     transition: all 0.5s;
     opacity: 0;
@@ -464,7 +457,7 @@ input:checked+.slider:before {
     pointer-events: none;
     text-align: left;
     z-index: 100;
-    border-radius: 0 0 3px 3px;
+    border-radius: 3px;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
     max-height: 205px;
     overflow-y: auto;
@@ -640,17 +633,21 @@ input:checked+.slider:before {
     border-radius: 4px;
     font-size: 10px;
     font-weight: 700;
-    color: #fff;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .badge.assigned {
-    background-color: var(--success-badge);
+    color: rgb(0, 0, 0) !important;
+    cursor: not-allowed !important;
+    background: rgb(255, 255, 255) !important;
+    border-color: rgb(255, 255, 255) !important;
 }
 
 .badge.unassigned {
-    background-color: var(--warning-dark);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
 }
 
 .badge.type {
@@ -720,252 +717,32 @@ input:checked+.slider:before {
 
 /* Botones de acción del reporte */
 .rc-footer button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+    padding: 8px 0;
     flex: 1;
-    /* Todos los botones ocupan lo mismo */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 900;
     cursor: pointer;
-    transition: 0.2s;
-    border: none;
-    color: white;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    min-height: 32px;
 }
 
-.btn-assign {
-    background-color: var(--primary);
-}
-
-.btn-assign:hover {
-    filter: brightness(1.2);
-    transform: translateY(-1px);
-}
-
-.btn-info {
-    background-color: #2c3e50;
-}
-
-.btn-info:hover {
-    background-color: #34495e;
-    transform: translateY(-1px);
-}
-
-.btn-delete {
-    background-color: rgba(255, 68, 68, 0.15);
-    color: #ff6b6b !important;
-    border: 1px solid rgba(255, 68, 68, 0.3) !important;
-}
-
+.btn-assign:hover,
+.btn-info:hover,
 .btn-delete:hover {
-    background-color: rgba(255, 68, 68, 0.3);
-    color: #fff !important;
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .btn-disabled {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #666 !important;
+    background: #fff !important;
+    color: #000 !important;
+    border-color: #fff !important;
     cursor: not-allowed !important;
-}
-
-.report-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.85);
-    /* Fondo oscuro para enfocar */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 5000;
-    /* Por encima de todo */
-    animation: fadeIn 0.3s ease;
-}
-
-.report-box {
-    width: 600px;
-    background: #1e1e1e;
-    border-radius: 8px;
-    border: 1px solid #333;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    position: relative;
-    overflow: hidden;
-    animation: slideInBottom 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-}
-
-.report-header {
-    background: linear-gradient(90deg, var(--bg-border), var(--primary));
-    color: white;
-    padding: 20px;
-    font-size: 18px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    text-align: center;
-}
-
-.report-body {
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.input-group label {
-    display: block;
-    color: #aaa;
-    font-size: 12px;
-    font-weight: bold;
-    margin-bottom: 8px;
-    letter-spacing: 0.5px;
-}
-
-.input-group input,
-.input-group textarea {
-    width: 100%;
-    background: #111;
-    border: 1px solid #333;
-    color: #fff;
-    padding: 12px;
-    border-radius: 4px 4px 0 0;
-    font-family: inherit;
-    resize: none;
-    /* Evitar que deformen el textarea */
-    transition: 0.2s;
-}
-
-.input-group input:focus,
-.input-group textarea:focus {
-    border-color: var(--primary);
-    outline: none;
-    background: #151515;
-}
-
-.report-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-}
-
-.radio-group {
-    display: flex;
-    gap: 10px;
-    background: #111;
-    padding: 5px;
-    border-radius: 4px;
-}
-
-.radio-btn {
-    padding: 8px 15px;
-    border-radius: 4px;
-    color: #666;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: bold;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.radio-btn:hover {
-    color: #fff;
-}
-
-.radio-btn.active {
-    background: var(--primary);
-    color: white;
-    box-shadow: 0 2px 10px rgba(0, 123, 255, 0.3);
-}
-
-.send-btn {
-    background: var(--success);
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.send-btn:hover {
-    background: var(--success-dark);
-    transform: translateY(-2px);
-}
-
-.close-report {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    color: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    font-size: 20px;
-    transition: 0.2s;
-}
-
-.close-report:hover {
-    color: white;
-    transform: rotate(90deg);
-}
-
-.report-body .attachments-preview {
-    border-radius: 0 0 5px 5px;
-    border-bottom: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-#report-attachments-area .att-item {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    border-radius: 5px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.3);
-    flex-shrink: 0;
-}
-
-#report-attachments-area .att-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-#report-attachments-area .att-item img:hover {
-    opacity: 0.8;
-}
-
-/* Botón X para borrar */
-#report-attachments-area .att-remove {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: #ff4444;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    font-size: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-#report-attachments-area .att-remove:hover {
-    background: #cc0000;
 }
 
 /* ==========================================================================
@@ -1084,16 +861,15 @@ input:checked+.slider:before {
 }
 
 .ban-perm {
-    color: var(--danger);
+    color: rgb(189 189 189);
     font-weight: bold;
-    background-color: rgba(255, 68, 68, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
     padding: 2px 6px;
     border-radius: 4px;
-    font-size: 10px;
 }
 
 .ban-temp {
-    color: var(--warning-text);
+    color: rgb(100, 100, 100);
     font-weight: bold;
 }
 
@@ -1689,15 +1465,10 @@ input:checked+.slider:before {
 }
 
 /* CLASE PARA ENTRAR */
-#global-announce-bar.show-announce {
-    display: flex !important;
-    animation: bounceInTop 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
-}
-
-/* CLASE PARA SALIR */
+#global-announce-bar.show-announce,
 #global-announce-bar.hide-announce {
     display: flex !important;
-    animation: bounceOutTop 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
+    animation: bounceInTop 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
 }
 
 .announce-label {
@@ -1745,17 +1516,6 @@ input:checked+.slider:before {
     line-height: 1;
     will-change: transform;
     /* Mejora de rendimiento visual */
-}
-
-/* 🚀 FIX: ESTA ES LA ANIMACIÓN QUE MUEVE EL TEXTO */
-@keyframes marquee-scroll {
-    0% {
-        transform: translateX(var(--start-x));
-    }
-
-    100% {
-        transform: translateX(var(--end-x));
-    }
 }
 
 /* Campos para crear anuncio (en Modal) */
@@ -1918,10 +1678,6 @@ input:checked+.slider:before {
     padding: 10px;
 }
 
-.time-section {
-    margin-bottom: 10px;
-}
-
 .add-time-box {
     flex: 2;
 }
@@ -2058,9 +1814,9 @@ input:checked+.slider:before {
 }
 
 .weather-option.active {
-    background-color: rgba(0, 123, 255, 0.15);
+    background-color: rgba(123, 123, 123, 0.15);
     border: 1px solid var(--primary);
-    box-shadow: 0 0 15px rgba(0, 123, 255, 0.1);
+    box-shadow: 0 0 15px rgb(123 123 123 / 10%);
 }
 
 .weather-option .iconify {
@@ -2123,58 +1879,13 @@ input:checked+.slider:before {
     font-weight: 500;
 }
 
-.switch-info .iconify {
-    font-size: 18px;
-    color: var(--primary);
-}
-
-.switch-control {
-    position: relative;
-    display: inline-block;
-    width: 34px;
-    height: 18px;
-}
-
-.switch-control input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.switch-control .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #444;
-    transition: 0.5s;
-    border-radius: 34px;
-}
-
-.switch-control .slider:before {
-    position: absolute;
-    content: "";
-    height: 12px;
-    width: 12px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: 0.5s;
-    border-radius: 50%;
-}
-
-.switch-control input:checked+.slider {
-    background-color: var(--primary);
-}
-
-.switch-control input:checked+.slider:before {
-    transform: translateX(16px);
+.switch-control input:checked+.slider:before,
+.switch.small input:checked+.slider:before {
+    transform: translateX(14px);
 }
 
 .live-game-clock {
-    margin-top: 15px;
+    margin-bottom: 10px;
     font-size: 13px;
     color: var(--text-secondary);
     background-color: rgba(0, 0, 0, 0.2);
@@ -2309,13 +2020,21 @@ span#live-weather-text {
 .picker-tabs {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    margin-top: 15px;
-    margin-bottom: 15px;
+    gap: 15px;
     background: rgba(255, 255, 255, 0.05);
     padding: 5px;
-    border-radius: 6px;
+    border-radius: 4px;
     width: 100%;
+}
+
+.IroBox,
+.IroSlider {
+    width: 435px !important;
+    border-radius: 8px !important;
+}
+
+.IroSliderGradient {
+    border-radius: 8px !important;
 }
 
 .tab-btn {
@@ -2511,16 +2230,10 @@ span#live-weather-text {
     cursor: pointer;
 }
 
-#image-modal.closing {
-    animation: fadeOut 0.5s forwards;
-}
-
-#image-modal.closing img {
-    animation: zoomOut 0.5s forwards;
-}
-
+#image-modal.closing,
+#image-modal.closing img,
 .modal-content.closing {
-    animation: zoomOut 0.5s forwards;
+    animation: fadeOut 0.5s forwards;
 }
 
 .entity-data-grid {
@@ -2642,7 +2355,6 @@ span#live-weather-text {
     background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
     margin-bottom: 8px;
     border-left: 2px solid #444444;
-    animation: slideInUp 0.5s ease-out forwards;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -3386,25 +3098,6 @@ span#live-weather-text {
     border-radius: 2px;
 }
 
-/* --- ESTADOS ACTIVOS (CHECKED) --- */
-
-/* Carril naranja cuando activo */
-input:checked+.slider {
-    background-color: rgba(214, 129, 0, 0.2);
-    /* Naranja transparente */
-    border-color: var(--warning);
-}
-
-/* Bolita naranja brillante cuando activo */
-input:checked+.slider:before {
-    transform: translateX(18px);
-    /* Mover a la derecha */
-    background-color: var(--warning);
-    /* Naranja fuerte */
-    box-shadow: 0 0 8px var(--warning);
-    /* Resplandor */
-}
-
 /* =========================================
    PÁGINA DE ESTADO (STATUS / GRÁFICA / DASHBOARD)
    ========================================= */
@@ -3538,10 +3231,6 @@ input:checked+.slider:before {
     width: 14px;
     left: 2px;
     bottom: 2px;
-}
-
-.switch.small input:checked+.slider:before {
-    transform: translateX(16px);
 }
 
 .status-dashboard {
@@ -3959,11 +3648,6 @@ input:checked+.slider:before {
     flex: 1;
 }
 
-.panel-actions {
-    display: flex;
-    gap: 10px;
-}
-
 .action-btn {
     flex: 1;
     padding: 12px;
@@ -4072,31 +3756,23 @@ input:checked+.slider:before {
     padding-right: 5px;
 }
 
-/* Estilo del Item de Filtro */
+/* Base de los ítems del filtro */
 .filter-item {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 10px;
-    border-radius: 6px;
-    color: #888;
-    cursor: pointer;
-    border: 1px solid transparent;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    transition: all 0.2s;
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    border-radius: 0 4px 4px 0;
+    transition: all 0.3s ease;
+    /* Para que el translateX al pasar el ratón sea suave */
 }
 
-/* Cuando está activo (seleccionado) */
-.filter-item.active {
-    background: rgba(46, 204, 113, 0.15);
-    border-color: rgba(46, 204, 113, 0.4);
-    color: #fff;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
-}
-
+/* Efecto Hover Premium */
 .filter-item:hover {
-    transform: translateX(2px);
+    transform: translateX(4px);
+    /* Un poco más de desplazamiento para que se note bien */
+    background: rgba(255, 255, 255, 0.05) !important;
+    /* Brillo general al pasar el ratón */
 }
 
 /* Scrollbar fina para la lista */
@@ -4131,7 +3807,7 @@ input:checked+.slider:before {
 #admin-menu {
     z-index: 100 !important;
     position: relative;
-    /* Necesario para que z-index funcione */
+    transform-origin: top left !important;
 }
 
 /* El modal de detalles se queda por debajo (z-index menor) */
@@ -4655,7 +4331,9 @@ input:checked+.slider:before {
     display: flex;
     gap: 6px;
     margin-top: 3px;
-    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-end;
 }
 
 /* Estilo Base del Badge */
@@ -4687,17 +4365,13 @@ input:checked+.slider:before {
 }
 
 /* Estilo Garaje SI (Verde) */
-.badge-garage-yes {
-    background: rgba(46, 204, 113, 0.1);
-    color: #2ecc71;
-    border-color: rgba(46, 204, 113, 0.3);
-}
-
-/* Estilo Garaje NO (Rojo) */
+.badge-garage-yes,
 .badge-garage-no {
-    background: rgba(231, 76, 60, 0.1);
-    color: #e74c3c;
-    border-color: rgba(231, 76, 60, 0.3);
+    background: #111;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    border-color: #444;
+    letter-spacing: 1px;
 }
 
 .badge-house {
@@ -4924,27 +4598,6 @@ input:checked+.slider:before {
     gap: 10px;
 }
 
-.btn-copy {
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-    text-transform: uppercase;
-}
-
-.btn-copy:hover {
-    filter: brightness(1.2);
-    transform: translateY(-1px);
-}
-
 .btn-close {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -4980,9 +4633,9 @@ input:checked+.slider:before {
     left: 0;
     width: 100%;
     height: 3px;
-    background: #00ffcc;
+    background: #8a8a8a;
     /* Color Cian Neón */
-    box-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+    box-shadow: 0 0 10px #8a8a8a, 0 0 20px #8a8a8a;
     z-index: 10;
     opacity: 0;
     /* Oculta hasta que arranque la animación */
@@ -5699,113 +5352,6 @@ input:checked+.slider:before {
 }
 
 /* =========================================
-   ESTILOS PREMIUM PARA MODAL CONFIRMACIÓN
-   ========================================= */
-.confirm-summary-box {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 15px;
-    margin: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.confirm-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding-bottom: 8px;
-}
-
-.confirm-row:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.c-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    color: #888;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-}
-
-.c-value {
-    font-size: 13px;
-    color: #fff;
-    font-weight: 500;
-    text-align: right;
-}
-
-.c-value.reason-text {
-    color: #ddd;
-    font-style: italic;
-    max-width: 250px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Badges de Acción */
-.c-badge {
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-}
-
-.c-badge.ck {
-    background: #ff0000;
-    color: #fff;
-    box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
-}
-
-.c-badge.ban {
-    background: #ff4444;
-    color: #fff;
-}
-
-.c-badge.kick {
-    background: #ffbb00;
-    color: #000;
-}
-
-.c-badge.warn {
-    background: #00ccff;
-    color: #000;
-}
-
-/* Caja de Alerta Roja (Para CK) */
-.danger-alert-box {
-    background: rgba(255, 0, 0, 0.1);
-    border-left: 3px solid #ff0000;
-    padding: 10px;
-    margin-top: 5px;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-}
-
-.danger-icon {
-    font-size: 20px;
-    color: #ff0000;
-}
-
-.danger-text {
-    font-size: 11px;
-    color: #ffcccc;
-    line-height: 1.4;
-}
-
-.danger-text b {
-    color: #fff;
-}
-
-/* =========================================
    LISTA MULTI-PERSONAJE (ESTILO MODERNO)
    ========================================= */
 .pd-horizontal-scroll-list {
@@ -5955,7 +5501,6 @@ input:checked+.slider:before {
     z-index: 9999;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
     display: none;
-    /* Se activa por JS */
     color: #fff;
     font-family: 'Roboto', sans-serif;
     animation: slideUpFade 0.4s ease;
@@ -5993,6 +5538,592 @@ input:checked+.slider:before {
     font-weight: bold;
     font-family: monospace;
 }
+
+/* ==========================================================================
+   MENÚ TROLL
+   ========================================================================== */
+.troll-custom-container {
+    width: 550px;
+    background: var(--bg-panel);
+    border-radius: 6px;
+    box-shadow: 0 10px 40px rgba(68, 68, 68, 0.15);
+    /* Sombra con toque rojizo */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(68, 68, 68, 0.3);
+    /* Borde rojo sutil */
+    /* Estas propiedades fuerzan el renderizado nítido */
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.troll-custom-container .pd-main-content {
+    padding: 20px;
+}
+
+/* Clase para la animación al cerrar */
+.troll-closing .troll-custom-container {
+    animation: zoomOut 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* ==========================================================================
+   MODAL CONFIRMACIÓN SANCIONES
+   ========================================================================== */
+
+/* Contenedor principal heredando tu fondo corporativo */
+.sanction-modal-container {
+    width: 550px !important;
+    /* Un poco más ancho para acomodar bien la Info Card */
+    background: var(--bg-panel);
+    border: 1px solid rgba(68, 68, 68, 0.3);
+    box-shadow: 0 10px 40px rgba(68, 68, 68, 0.15);
+    transition: all 0.3s ease;
+}
+
+.confirm-summary-box {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.confirm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 8px;
+}
+
+.confirm-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.c-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.c-value {
+    font-size: 13px;
+    color: #fff;
+    font-weight: 500;
+    text-align: right;
+}
+
+.c-value.reason-text {
+    color: #ddd;
+    font-style: italic;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badges de Acción */
+.c-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.05);
+    color: #aaa;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Caja de Alerta Roja (Para CK) */
+.danger-alert-box {
+    background: #222;
+    border-left: 3px solid var(--bg-border);
+    padding: 10px;
+    margin-top: 5px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.danger-icon {
+    font-size: 20px;
+    color: #666;
+}
+
+.danger-text b {
+    color: white;
+    font-weight: bolder;
+}
+
+.danger-text {
+    font-size: 11px;
+    color: grey;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   MODAL DE INGRESO DE DATOS (FORMULARIO SANCIONES)
+   ========================================================================== */
+.sanction-input-modal-container {
+    width: 700px !important;
+    background: var(--bg-panel);
+    border: 1px solid rgba(68, 68, 68, 0.3);
+    box-shadow: 0 10px 40px rgba(68, 68, 68, 0.15);
+    transition: all 0.3s ease;
+}
+
+/* Cajas contenedoras de Inputs */
+.input-premium-group {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #aaa;
+}
+
+.input-header label {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.input-header .iconify {
+    font-size: 16px;
+    color: #888;
+}
+
+/* Estilos de los inputs de texto/selects */
+.premium-textarea,
+.premium-input,
+.premium-select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.premium-textarea:focus,
+.premium-input:focus,
+.premium-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.premium-textarea {
+    resize: none;
+}
+
+.premium-select {
+    cursor: pointer;
+    appearance: none;
+    /* Oculta la flecha por defecto del SO */
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 1em;
+    padding-right: 30px;
+}
+
+.premium-select option {
+    background: #111;
+    color: #fff;
+}
+
+/* ==========================================================================
+   MODAL MULTIUSO (DIMENSIONES Y DINERO)
+   ========================================================================== */
+.dim-modal-container {
+    width: 550px !important;
+    background: var(--bg-panel);
+    border: 1px solid rgba(68, 68, 68, 0.3);
+    box-shadow: 0 10px 40px rgba(68, 68, 68, 0.15);
+    transition: all 0.3s ease;
+}
+
+/* Ocultar las flechas nativas del input numérico para un look más limpio */
+#dim-input::-webkit-outer-spin-button,
+#dim-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#dim-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* ==========================================================================
+   PANEL FLOTANTE: MODO EDICIÓN (DRAG CONTROLS)
+   ========================================================================== */
+.premium-drag-panel {
+    background: rgba(15, 15, 15, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+}
+
+.drag-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 8px;
+    margin-bottom: 2px;
+}
+
+.drag-panel-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* Botón de Guardar (Verde Premium) */
+.btn-success-premium {
+    background: rgba(14, 160, 33, 0.1);
+    color: #0ea021;
+    border: 1px solid rgba(14, 160, 33, 0.3);
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-success-premium:hover {
+    background: rgba(14, 160, 33, 0.2);
+    border-color: rgba(14, 160, 33, 0.6);
+    box-shadow: 0 0 10px rgba(14, 160, 33, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Botón de Cancelar (Rojo Premium) */
+.btn-cancel-premium {
+    background: rgba(255, 68, 68, 0.1);
+    color: #ff4444;
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel-premium:hover {
+    background: rgba(255, 68, 68, 0.2);
+    border-color: rgba(255, 68, 68, 0.6);
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.2);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   MODAL DE REPORTES (SISTEMA DE ASISTENCIA PREMIUM)
+   ========================================================================== */
+.report-modal-container {
+    width: 650px !important;
+    background: var(--bg-panel);
+    border: 1px solid rgba(68, 68, 68, 0.3);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+/* Área de Adjuntos (Imágenes pegadas) */
+.attachments-preview {
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    border-bottom: none;
+}
+
+#report-attachments-area .att-item {
+    position: relative;
+    width: 65px;
+    height: 65px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+
+#report-attachments-area .att-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#report-attachments-area .att-item img:hover {
+    opacity: 0.7;
+}
+
+#report-attachments-area .att-remove {
+    position: absolute !important;
+    top: -6px !important;
+    right: -6px !important;
+    background: #ff4444 !important;
+    color: white !important;
+    border: 1px solid #aa0000 !important;
+    border-radius: 50% !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    font-size: 10px !important;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.8) !important;
+    transition: 0.2s;
+    z-index: 5;
+}
+
+#report-attachments-area .att-remove:hover {
+    background: #cc0000 !important;
+    transform: scale(1.1);
+}
+
+.report-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    /* Adaptado al fondo oscuro */
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Borde sutil Premium */
+}
+
+.radio-btn {
+    padding: 8px 15px;
+    border-radius: 4px;
+    color: #666;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.radio-btn:hover {
+    color: #fff;
+}
+
+.radio-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
+}
+
+.report-footer button.send-btn {
+    background: #fff;
+    color: #000;
+    border: 1px solid #fff;
+    padding: 5px 10px;
+    border-radius: 2px;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2) !important;
+    flex: none !important;
+    min-height: unset !important;
+    height: fit-content !important;
+    align-self: center !important;
+    text-transform: uppercase !important;
+}
+
+.report-footer button.send-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+}
+
+/* ==========================================================================
+   MODAL DE ESCALA (EXTRACCIÓN DE ESTILOS EN LÍNEA)
+   ========================================================================== */
+.scale-header {
+    border-radius: 5px 5px 0 0;
+    background: rgba(20, 20, 20, 0.1) !important;
+    border-bottom: 1px solid rgba(20, 20, 20, 0.2) !important;
+}
+
+.scale-avatar {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.scale-avatar .iconify {
+    color: #fff;
+}
+
+.scale-badge {
+    color: #d1d1d1 !important;
+    border-color: rgba(100, 100, 100, 0.3) !important;
+}
+
+.scale-slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+    padding-bottom: 5px;
+}
+
+.scale-number-input {
+    width: 70px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.scale-btn-wrapper {
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.scale-btn-save {
+    justify-content: center;
+    height: 100%;
+    font-size: 13px;
+}
+
+.premium-slider-wapo {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    /* Fondo base oscuro */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* El botón deslizable (Thumb) */
+.premium-slider-wapo::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid var(--primary);
+    /* Anillo del color de tu menú */
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--primary), 0 0 20px rgba(255, 255, 255, 0.2);
+    /* Resplandor */
+    transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    /* Efecto rebote */
+}
+
+.premium-slider-wapo::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid var(--primary);
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--primary), 0 0 20px rgba(255, 255, 255, 0.2);
+    transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+/* Efecto al pasar el ratón o arrastrar (Se hace más grande y brilla más) */
+.premium-slider-wapo::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 15px var(--primary), 0 0 30px rgba(255, 255, 255, 0.5);
+}
+
+.premium-slider-wapo::-moz-range-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 15px var(--primary), 0 0 30px rgba(255, 255, 255, 0.5);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -6309,5 +6440,15 @@ input:checked+.slider:before {
     100% {
         bottom: 30px;
         opacity: 1;
+    }
+}
+
+@keyframes marquee-scroll {
+    0% {
+        transform: translateX(var(--start-x));
+    }
+
+    100% {
+        transform: translateX(var(--end-x));
     }
 }
