@@ -1,7 +1,7 @@
 <p align="center">
 <h1 align="center">🛡️ [FiveM] ¡EL PANEL DE ADMINISTRACIÓN DEFINITIVO! | DP-AdminMenu 🛡️</h1>
 
-<img width="960" height="auto" align="center" alt="DP-AdminMenu Logo" src="https://i.imgur.com/TU_LOGO_AQUI.png" />
+<img width="960" height="auto" align="center" alt="DP-AdminMenu" src="Images (Can Remove it if u want)/Miniaturas YT.png" />
 
 </p>
 
@@ -96,56 +96,20 @@ Este script está diseñado para funcionar nativamente con el entorno QB.
 <h2 align="center"> 🖼️ Vistas Previas</h2>
 Explora el poder y el diseño de las distintas secciones del panel.
 
-<details>
 <p align="center">
-<summary><h2 align="center">Dashboard de Estado y Logs</h2></summary>
-<img width="600" height="auto" alt="Dashboard Preview 1" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_1.png" />
-<img width="600" height="auto" alt="Dashboard Preview 2" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_2.png" />
+<summary><h2 align="center">Lista de jugadores activos</h2></summary>
+<img width="600" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home.png" />
+<img width="600" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home disable.png" />
 </p>
-</details>
-
-<details>
-<p align="center">
-<summary><h2 align="center">Gestión de Jugadores y Sanciones</h2></summary>
-<img width="600" height="auto" alt="Players Preview 1" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_3.png" />
-<img width="600" height="auto" alt="Players Preview 2" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_4.png" />
-</p>
-</details>
-
-<details>
-<p align="center">
-<summary><h2 align="center">Vehículos, Ítems y Acciones Generales</h2></summary>
-<img width="600" height="auto" alt="Vehicles Preview 1" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_5.png" />
-<img width="600" height="auto" alt="Actions Preview 2" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_6.png" />
-</p>
-</details>
-
-<details>
-<p align="center">
-<summary><h2 align="center">Chat Staff y Reportes</h2></summary>
-<img width="600" height="auto" alt="Chat Preview 1" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_7.png" />
-<img width="600" height="auto" alt="Reports Preview 2" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_8.png" />
-</p>
-</details>
-
-<details>
-<p align="center">
-<summary><h2 align="center">Gestor de Trabajos y Bandas</h2></summary>
-<img width="600" height="auto" alt="Jobs Preview 1" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_9.png" />
-<img width="600" height="auto" alt="Gangs Preview 2" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="URL_IMAGEN_10.png" />
-</p>
-</details>
 <br><br>
 
 <h2 align="center"> 🎥 Video Demostrativo</h2>
-<details>
 <p align="center">
 <summary><h2 align="center">Ver Funcionamiento</h2></summary>
 <a href="https://youtu.be/TU_ENLACE_DE_YOUTUBE">
-<img width="959" height="auto" alt="Video Demostrativo DP-AdminMenu" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="https://i.imgur.com/TU_MINIATURA.png" />
+<img width="959" height="auto" alt="Video Demostrativo DP-AdminMenu" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/Miniaturas YT.png" />
 </a>
 </p>
-</details>
 <br><br>
 
 <h2 align="center"> 🔮 Posibles Mejoras Futuras</h2>

@@ -1544,9 +1544,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. TRUCO DE RENDERIZADO: Forzamos un reflow
         // Esto obliga al navegador a dibujar el modal en su sitio ANTES de animarlo
         void modal.offsetWidth;
-
-        // 5. Animación de opacidad (NUNCA se ve borrosa)
-        container.style.animation = 'fadeIn 0.2s ease-out forwards';
     };
     window.closeConfirmation = () => { document.getElementById('confirm-modal').style.display = 'none'; onConfirm = null; };
     document.getElementById('btn-confirm-action').addEventListener('click', () => { if (onConfirm) onConfirm(); closeConfirmation(); });

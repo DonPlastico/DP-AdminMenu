@@ -3364,7 +3364,7 @@ span#live-weather-text {
     width: 85vw;
     height: 85vh;
     background: #111;
-    border-radius: 12px;
+    border-radius: 4px;
     overflow: hidden;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -6163,17 +6163,14 @@ span#live-weather-text {
 
 @keyframes pulse-green {
     0% {
-        /* Blanco puro con 70% de opacidad (equivalente a tu 0.7 verde) */
         box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
     }
 
     70% {
-        /* Expansión a 4px y desvanecimiento total (transparencia 0) */
         box-shadow: 0 0 0 4px rgba(255, 255, 255, 0);
     }
 
     100% {
-        /* Reset de la animación */
         box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
     }
 }
@@ -6218,13 +6215,11 @@ span#live-weather-text {
     from {
         opacity: 0;
         transform: translateX(-50%) translateY(100px);
-        /* Empieza abajo */
     }
 
     to {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
-        /* Termina en su sitio */
     }
 }
 
@@ -6236,18 +6231,15 @@ span#live-weather-text {
 
     60% {
         top: 25px;
-        /* Baja más de la cuenta (Overshoot) */
         opacity: 1;
     }
 
     80% {
         top: -10px;
-        /* Rebote hacia arriba */
     }
 
     100% {
         top: 2px;
-        /* Posición final */
         opacity: 1;
     }
 }
@@ -6260,13 +6252,11 @@ span#live-weather-text {
 
     30% {
         top: 30px;
-        /* Baja un poco para coger impulso (Anticipación) */
         opacity: 1;
     }
 
     100% {
         top: -200px;
-        /* Sale disparado hacia arriba */
         opacity: 0;
     }
 }
@@ -6274,7 +6264,6 @@ span#live-weather-text {
 @keyframes slideOutFromMenu {
     from {
         opacity: 0;
-        /* Quitamos el translateX para que no pelee con el JS */
         transform: scale(0.95);
     }
 
@@ -6296,7 +6285,6 @@ span#live-weather-text {
     }
 }
 
-/* Animación simple para el texto de carga */
 @keyframes blink {
 
     0%,
@@ -6309,7 +6297,6 @@ span#live-weather-text {
     }
 }
 
-/* KEYFRAMES */
 @keyframes printReveal {
     0% {
         clip-path: inset(0 0 100% 0);
