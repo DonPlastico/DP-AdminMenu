@@ -157,11 +157,11 @@ Explora el poder y el diseño de las distintas secciones del panel.
 <br><br>
 
 <summary><h2>OTROS</h2></summary>
-<img width="350" height="auto" src="Images (Can Remove it if u want)/announce.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/announce.png" />
 <img width="959" height="auto" src="Images (Can Remove it if u want)/actions modal tactic map.png" />
-<img width="350" height="auto" src="Images (Can Remove it if u want)/entity.png" />
-<img width="350" height="auto" src="Images (Can Remove it if u want)/superspeed, superjump, tags, noclip.png" />
-<img width="350" height="auto" src="Images (Can Remove it if u want)/report modal.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/entity.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/superspeed, superjump, tags, noclip.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/report modal.png" />
 <br><br>
 
 <h2 align="center"> 🎥 Video Demostrativo</h2>
