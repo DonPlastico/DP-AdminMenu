@@ -97,25 +97,78 @@ Este script está diseñado para funcionar nativamente con el entorno QB.
 Explora el poder y el diseño de las distintas secciones del panel.
 
 <summary><h2>Lista de jugadores activos</h2></summary>
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home.png" />
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home disable.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/home.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/home disable.png" />
 <br><br>
 
-<summary><h2>Lista de jugadores activos</h2></summary>
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions 1" />
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions 2.png" />
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions clima modal.png" />
-<img width="800" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal tactic map.png" />
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal vehicle color picker.png" />
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal vehicle color.png" />
-<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal vehicle upgrade.png" />
+<summary><h2>Lista de acciones disponibles</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/actions 1.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/actions 2.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/actions clima modal.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/actions modal vehicle upgrade.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/actions modal vehicle color.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/actions modal vehicle color picker.png" />
+<br><br>
+
+<summary><h2>Lista de reportes activos</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/reports.png" />
+<br><br>
+
+<summary><h2>Lista de baneos activos</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/bans.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/bans extend modal.png" />
+<br><br>
+
+<summary><h2>Chat interno</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/chat.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/chat modal icons.png" />
+<br><br>
+
+<summary><h2>Lista de trabajos</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/jobs.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/jobs modal change job.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/jobs modal change ranks.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/jobs modal rank 1.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/jobs modal rank 2.png" />
+<br><br>
+
+<summary><h2>Lista de organizaciones</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/gangs.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/gangs modal change gang.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/gangs modal change ranks.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/gangs modal rank 1.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/gangs modal rank 2.png" />
+<br><br>
+
+<summary><h2>Catálogo de vehículos</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/vehicles.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/vehicles modal gift.png" />
+<br><br>
+
+<summary><h2>Gestor de ítems</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/items.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/items modal give.png" />
+<br><br>
+
+<summary><h2>Panel de gestiones</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/status.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/status scale.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/status move.png" />
+<br><br>
+
+<summary><h2>OTROS</h2></summary>
+<img width="350" height="auto" src="Images (Can Remove it if u want)/announce.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/actions modal tactic map.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/entity.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/superspeed, superjump, tags, noclip.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/report modal.png" />
 <br><br>
 
 <h2 align="center"> 🎥 Video Demostrativo</h2>
 <p align="center">
 <summary><h2 align="center">Ver Funcionamiento</h2></summary>
 <a href="https://youtu.be/TU_ENLACE_DE_YOUTUBE">
-<img width="959" height="auto" alt="Video Demostrativo DP-AdminMenu" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/Miniaturas YT.png" />
+<img width="959" height="auto" alt="Video Demostrativo DP-AdminMenu" src="Images (Can Remove it if u want)/Miniaturas YT.png" />
 </a>
 </p>
 <br><br>
