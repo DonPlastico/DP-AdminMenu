@@ -59,8 +59,7 @@ const actionStates = {
 };
 
 // Configuración Externa
-const imgbbApiKey = "3171000eda16cef09aa593f4cc1ede01";
-// const imgbbApiKey = "PONE_AQUI_TU_API_KEY_DE_IMGBB";
+const imgbbApiKey = "PONE_AQUI_TU_API_KEY_DE_IMGBB";
 
 // Formateo de Fechas (Español)
 const dateOptions = {
