@@ -1,64 +1,126 @@
 [
     {
+        "meta": {
+            "date": "2026-02-26 15:31:44",
+            "citizenid": "NAR73215",
+            "license": "license:5215556ff8c0ac23ae90b4f18dca4333a90f91aa",
+            "admin": "DonMaderos"
+        },
         "data": {
-            "player_houses": [],
             "player_mails": [],
-            "player_vehicles": [],
-            "players": [
-                {
-                    "gang": "{\"isboss\":false,\"name\":\"crips\",\"label\":\"Marabunta Grande\",\"grade\":{\"name\":\"Soldado Tatuado\",\"level\":2,\"isboss\":false}}",
-                    "money": "{\"crypto\":0,\"black_money\":0,\"bank\":5150,\"cash\":500}",
-                    "license": "license:5215556ff8c0ac23ae90b4f18dca4333a90f91aa",
-                    "skills": "{\"Strength\":{\"icon\":\"fas fa-dumbbell\",\"Current\":0,\"Stat\":\"MP0_STRENGTH\",\"RemoveAmount\":-0.25},\"Lung Capacity\":{\"icon\":\"fas fa-heartbeat\",\"Current\":0,\"Stat\":\"MP0_LUNG_CAPACITY\",\"RemoveAmount\":-0.25},\"Stamina\":{\"icon\":\"fas fa-walking\",\"Current\":0,\"Stat\":\"MP0_STAMINA\",\"RemoveAmount\":-0.25},\"Shooting\":{\"icon\":\"fas fa-bullseye\",\"Current\":0,\"Stat\":\"MP0_SHOOTING_ABILITY\",\"RemoveAmount\":-0.25},\"Driving\":{\"icon\":\"fas fa-car-side\",\"Current\":0,\"Stat\":\"MP0_DRIVING_ABILITY\",\"RemoveAmount\":-0.25},\"Wheelie\":{\"icon\":\"fas fa-wheelchair\",\"Current\":0,\"Stat\":\"MP0_WHEELIE_ABILITY\",\"RemoveAmount\":-0.25}}",
-                    "luckywheel_spins": "0",
-                    "job": "{\"payment\":75,\"isboss\":false,\"grade\":{\"payment\":75,\"name\":\"Taxista Licenciado\",\"level\":1,\"isboss\":false},\"onduty\":true,\"name\":\"taxi\",\"label\":\"Downtown Cab Co.\",\"type\":\"none\"}",
-                    "name": "ShyBat8421",
-                    "last_updated": 1771492494000.0,
-                    "charinfo": "{\"gender\":\"female\",\"lastname\":\"Rojas\",\"cid\":5,\"account\":\"US09QBCore1657239183\",\"firstname\":\"Valeria\",\"birthdate\":\"1998-09-28\",\"phone\":\"1255095968\",\"nationality\":\"co\"}",
-                    "citizenid": "FYM93459",
-                    "metadata": "{\"callsign\":\"NO CALLSIGN\",\"bloodtype\":\"AB-\",\"inside\":{\"apartment\":[]},\"phone\":[],\"armor\":0,\"walletid\":\"QB-88406072\",\"licences\":{\"business\":false,\"weapon\":false,\"driver\":true},\"injail\":0,\"inlaststand\":false,\"ishandcuffed\":false,\"jailitems\":[],\"tracker\":false,\"phonedata\":{\"InstalledApps\":[],\"SerialNumber\":28890343},\"hunger\":68.79999999999999,\"rep\":[],\"isdead\":false,\"playtime\":3230,\"thirst\":76.0,\"status\":[],\"stress\":0,\"fingerprint\":\"lM893R98luH8805\",\"criminalrecord\":{\"hasRecord\":false}}",
-                    "position": "{\"x\":278.5318603515625,\"y\":-1065.5736083984376,\"z\":29.4146728515625}",
-                    "cid": 5,
-                    "id": 7185,
-                    "inventory": "[{\"amount\":1,\"slot\":1,\"type\":\"item\",\"created\":1771326977,\"info\":{\"quality\":100},\"name\":\"phone\"},{\"amount\":1,\"slot\":2,\"type\":\"item\",\"created\":1771326977,\"info\":{\"birthdate\":\"1998-09-28\",\"firstname\":\"Valeria\",\"quality\":100,\"lastname\":\"Rojas\",\"type\":\"Class C Driver License\"},\"name\":\"driver_license\"},{\"amount\":1,\"slot\":3,\"type\":\"item\",\"created\":1771326977,\"info\":{\"birthdate\":\"1998-09-28\",\"nationality\":\"co\",\"firstname\":\"Valeria\",\"gender\":\"female\",\"quality\":100,\"lastname\":\"Rojas\",\"citizenid\":\"FYM93459\"},\"name\":\"id_card\"},{\"amount\":500,\"slot\":4,\"type\":\"item\",\"created\":1771491057,\"info\":{\"quality\":100},\"name\":\"cash\"}]"
-                }
-            ],
-            "player_outfits": [],
             "player_contacts": [],
             "playerskins": [
                 {
-                    "model": "-1667301416",
-                    "skin": "{\"eye_opening\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"shoes\":{\"defaultItem\":1,\"defaultTexture\":0,\"texture\":0,\"item\":1},\"facemix\":{\"skinMix\":0,\"defaultSkinMix\":0.0,\"defaultShapeMix\":0.0,\"shapeMix\":0},\"face2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"cheek_2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"jaw_bone_width\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"blush\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"glass\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"jaw_bone_back_lenght\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"decals\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"pants\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"eye_color\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"accessory\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_bone_lowering\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"torso2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"bag\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_hole\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"lipstick\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"face\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"cheek_1\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"bracelet\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"nose_4\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"mask\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"ear\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"arms\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_3\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"t-shirt\":{\"defaultItem\":1,\"defaultTexture\":0,\"texture\":0,\"item\":1},\"makeup\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"hair\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_bone_width\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_bone_lenght\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"cheek_3\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"hat\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"neck_thikness\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_1\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"eyebrows\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"watch\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"eyebrown_high\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"vest\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_5\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"ageing\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"nose_0\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"lips_thickness\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"moles\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"eyebrown_forward\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"beard\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1}}",
-                    "active": 1,
-                    "id": 56,
-                    "citizenid": "FYM93459"
+                    "skin": "{\"lipstick\":{\"texture\":1,\"defaultTexture\":1,\"defaultItem\":-1,\"item\":-1},\"glass\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"decals\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"lips_thickness\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"pants\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"chimp_bone_lowering\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"cheek_2\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"cheek_1\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"moles\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":-1,\"item\":-1},\"hair\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"nose_1\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"accessory\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"jaw_bone_width\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"eye_opening\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"ageing\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":-1,\"item\":-1},\"hat\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":-1,\"item\":-1},\"nose_5\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"nose_4\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"neck_thikness\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"ear\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":-1,\"item\":-1},\"jaw_bone_back_lenght\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"makeup\":{\"texture\":1,\"defaultTexture\":1,\"defaultItem\":-1,\"item\":-1},\"nose_2\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"chimp_bone_width\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"watch\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":-1,\"item\":-1},\"shoes\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":1,\"item\":1},\"nose_3\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"eyebrown_forward\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"face\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"eyebrown_high\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"arms\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"face2\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"blush\":{\"texture\":1,\"defaultTexture\":1,\"defaultItem\":-1,\"item\":-1},\"t-shirt\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":1,\"item\":1},\"torso2\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"chimp_hole\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"bag\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"mask\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"beard\":{\"texture\":1,\"defaultTexture\":1,\"defaultItem\":-1,\"item\":-1},\"eye_color\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":-1,\"item\":-1},\"cheek_3\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"nose_0\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"bracelet\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":-1,\"item\":-1},\"chimp_bone_lenght\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"vest\":{\"texture\":0,\"defaultTexture\":0,\"defaultItem\":0,\"item\":0},\"eyebrows\":{\"texture\":1,\"defaultTexture\":1,\"defaultItem\":-1,\"item\":-1},\"facemix\":{\"shapeMix\":0,\"skinMix\":0,\"defaultSkinMix\":0.0,\"defaultShapeMix\":0.0}}",
+                    "citizenid": "NAR73215",
+                    "model": "808859815",
+                    "id": 59,
+                    "active": 1
                 }
             ],
-            "trunkitems": [],
             "stashitems": [],
-            "player_peds": [
+            "gloveboxitems": [],
+            "bank_accounts": [],
+            "player_houses": [],
+            "player_vehicles": [],
+            "player_outfits": [],
+            "trunkitems": [],
+            "players": [
                 {
-                    "citizenid": "FYM93459",
-                    "peds": "[]"
+                    "charinfo": "{\"phone\":\"2007285472\",\"account\":\"US03QBCore7296710159\",\"cid\":3,\"birthdate\":\"1995-08-24\",\"gender\":\"female\",\"nationality\":\"ua\",\"firstname\":\"Valeriana\",\"lastname\":\"Kuznetzova\"}",
+                    "metadata": "{\"thirst\":92.0,\"inside\":{\"apartment\":[]},\"licences\":{\"weapon\":false,\"driver\":true,\"business\":false},\"armor\":0,\"status\":[],\"stress\":0,\"rep\":[],\"injail\":0,\"fingerprint\":\"kv217U78CXL7908\",\"walletid\":\"QB-76338377\",\"playtime\":6110,\"vehicleKeys\":{\"86RSF615\":true,\"27KYZ303\":true,\"44XQJ626\":true},\"bloodtype\":\"A-\",\"jailitems\":[],\"callsign\":\"NO CALLSIGN\",\"hunger\":89.6,\"inlaststand\":false,\"tracker\":false,\"phone\":[],\"criminalrecord\":{\"hasRecord\":false},\"isdead\":false,\"phonedata\":{\"SerialNumber\":33365465,\"InstalledApps\":[]},\"ishandcuffed\":false}",
+                    "luckywheel_spins": "0",
+                    "gang": "{\"isboss\":false,\"grade\":{\"isboss\":false,\"level\":0,\"name\":\"Civil\"},\"label\":\"Sin Banda\",\"name\":\"none\"}",
+                    "skills": "{\"Shooting\":{\"RemoveAmount\":-0.25,\"icon\":\"fas fa-bullseye\",\"Stat\":\"MP0_SHOOTING_ABILITY\",\"Current\":0},\"Stamina\":{\"RemoveAmount\":-0.25,\"icon\":\"fas fa-walking\",\"Stat\":\"MP0_STAMINA\",\"Current\":0},\"Lung Capacity\":{\"RemoveAmount\":-0.25,\"icon\":\"fas fa-heartbeat\",\"Stat\":\"MP0_LUNG_CAPACITY\",\"Current\":0},\"Wheelie\":{\"RemoveAmount\":-0.25,\"icon\":\"fas fa-wheelchair\",\"Stat\":\"MP0_WHEELIE_ABILITY\",\"Current\":0},\"Driving\":{\"RemoveAmount\":-0.25,\"icon\":\"fas fa-car-side\",\"Stat\":\"MP0_DRIVING_ABILITY\",\"Current\":0},\"Strength\":{\"RemoveAmount\":-0.25,\"icon\":\"fas fa-dumbbell\",\"Stat\":\"MP0_STRENGTH\",\"Current\":0}}",
+                    "position": "{\"x\":19.38461685180664,\"y\":-923.5780029296875,\"z\":123.06591796875}",
+                    "license": "license:5215556ff8c0ac23ae90b4f18dca4333a90f91aa",
+                    "job": "{\"isboss\":false,\"label\":\"Ciudadano\",\"name\":\"unemployed\",\"onduty\":true,\"type\":\"none\",\"grade\":{\"payment\":10,\"level\":0,\"isboss\":false,\"name\":\"Desempleado\"}}",
+                    "citizenid": "NAR73215",
+                    "money": "{\"black_money\":0,\"cash\":0,\"crypto\":0,\"bank\":500}",
+                    "name": "DonMaderos",
+                    "id": 7211,
+                    "cid": 3,
+                    "last_updated": 1772116304000.0,
+                    "inventory": "[]"
                 }
             ],
             "apartments": [
                 {
-                    "label": "Fantastic Plaza 1679",
-                    "type": "apartment5",
+                    "citizenid": "NAR73215",
+                    "name": "apartment35334",
+                    "id": 16,
+                    "type": "apartment3",
+                    "label": "Integrity Way 5334"
+                }
+            ],
+            "player_peds": [
+                {
+                    "peds": "[{\"model\":\"asdasd\",\"name\":\"asdadsa\"}]",
+                    "citizenid": "NAR73215"
+                }
+            ]
+        }
+    },
+    {
+        "data": {
+            "player_mails": [],
+            "player_contacts": [],
+            "playerskins": [
+                {
+                    "skin": "{\"eye_opening\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"shoes\":{\"defaultItem\":1,\"defaultTexture\":0,\"texture\":0,\"item\":1},\"facemix\":{\"skinMix\":0,\"defaultSkinMix\":0.0,\"defaultShapeMix\":0.0,\"shapeMix\":0},\"face2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"cheek_2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"jaw_bone_width\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"blush\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"glass\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"jaw_bone_back_lenght\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"decals\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"pants\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"eye_color\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"accessory\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_bone_lowering\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"torso2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"bag\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_hole\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"lipstick\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"face\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"cheek_1\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_2\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"bracelet\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"nose_4\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"mask\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"ear\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"arms\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_3\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"t-shirt\":{\"defaultItem\":1,\"defaultTexture\":0,\"texture\":0,\"item\":1},\"makeup\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"hair\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_bone_width\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"chimp_bone_lenght\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"cheek_3\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"hat\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"neck_thikness\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_1\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"eyebrows\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1},\"watch\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"eyebrown_high\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"vest\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"nose_5\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"ageing\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"nose_0\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"lips_thickness\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"moles\":{\"defaultItem\":-1,\"defaultTexture\":0,\"texture\":0,\"item\":-1},\"eyebrown_forward\":{\"defaultItem\":0,\"defaultTexture\":0,\"texture\":0,\"item\":0},\"beard\":{\"defaultItem\":-1,\"defaultTexture\":1,\"texture\":1,\"item\":-1}}",
                     "citizenid": "FYM93459",
+                    "model": "-1667301416",
+                    "id": 56,
+                    "active": 1
+                }
+            ],
+            "apartments": [
+                {
+                    "citizenid": "FYM93459",
+                    "name": "apartment51679",
                     "id": 15,
-                    "name": "apartment51679"
+                    "type": "apartment5",
+                    "label": "Fantastic Plaza 1679"
                 }
             ],
             "gloveboxitems": [],
-            "bank_accounts": []
+            "bank_accounts": [],
+            "player_outfits": [],
+            "player_vehicles": [],
+            "stashitems": [],
+            "trunkitems": [],
+            "players": [
+                {
+                    "charinfo": "{\"gender\":\"female\",\"lastname\":\"Rojas\",\"cid\":5,\"account\":\"US09QBCore1657239183\",\"firstname\":\"Valeria\",\"birthdate\":\"1998-09-28\",\"phone\":\"1255095968\",\"nationality\":\"co\"}",
+                    "skills": "{\"Strength\":{\"icon\":\"fas fa-dumbbell\",\"Current\":0,\"Stat\":\"MP0_STRENGTH\",\"RemoveAmount\":-0.25},\"Lung Capacity\":{\"icon\":\"fas fa-heartbeat\",\"Current\":0,\"Stat\":\"MP0_LUNG_CAPACITY\",\"RemoveAmount\":-0.25},\"Stamina\":{\"icon\":\"fas fa-walking\",\"Current\":0,\"Stat\":\"MP0_STAMINA\",\"RemoveAmount\":-0.25},\"Shooting\":{\"icon\":\"fas fa-bullseye\",\"Current\":0,\"Stat\":\"MP0_SHOOTING_ABILITY\",\"RemoveAmount\":-0.25},\"Driving\":{\"icon\":\"fas fa-car-side\",\"Current\":0,\"Stat\":\"MP0_DRIVING_ABILITY\",\"RemoveAmount\":-0.25},\"Wheelie\":{\"icon\":\"fas fa-wheelchair\",\"Current\":0,\"Stat\":\"MP0_WHEELIE_ABILITY\",\"RemoveAmount\":-0.25}}",
+                    "last_updated": 1771492494000.0,
+                    "gang": "{\"isboss\":false,\"name\":\"crips\",\"label\":\"Marabunta Grande\",\"grade\":{\"name\":\"Soldado Tatuado\",\"level\":2,\"isboss\":false}}",
+                    "metadata": "{\"callsign\":\"NO CALLSIGN\",\"bloodtype\":\"AB-\",\"inside\":{\"apartment\":[]},\"phone\":[],\"armor\":0,\"walletid\":\"QB-88406072\",\"licences\":{\"business\":false,\"weapon\":false,\"driver\":true},\"injail\":0,\"inlaststand\":false,\"ishandcuffed\":false,\"jailitems\":[],\"tracker\":false,\"phonedata\":{\"InstalledApps\":[],\"SerialNumber\":28890343},\"hunger\":68.79999999999999,\"rep\":[],\"isdead\":false,\"playtime\":3230,\"thirst\":76.0,\"status\":[],\"stress\":0,\"fingerprint\":\"lM893R98luH8805\",\"criminalrecord\":{\"hasRecord\":false}}",
+                    "position": "{\"x\":278.5318603515625,\"y\":-1065.5736083984376,\"z\":29.4146728515625}",
+                    "license": "license:5215556ff8c0ac23ae90b4f18dca4333a90f91aa",
+                    "job": "{\"payment\":75,\"isboss\":false,\"grade\":{\"payment\":75,\"name\":\"Taxista Licenciado\",\"level\":1,\"isboss\":false},\"onduty\":true,\"name\":\"taxi\",\"label\":\"Downtown Cab Co.\",\"type\":\"none\"}",
+                    "citizenid": "FYM93459",
+                    "money": "{\"crypto\":0,\"black_money\":0,\"bank\":5150,\"cash\":500}",
+                    "luckywheel_spins": "0",
+                    "id": 7185,
+                    "cid": 5,
+                    "name": "ShyBat8421",
+                    "inventory": "[{\"amount\":1,\"slot\":1,\"type\":\"item\",\"created\":1771326977,\"info\":{\"quality\":100},\"name\":\"phone\"},{\"amount\":1,\"slot\":2,\"type\":\"item\",\"created\":1771326977,\"info\":{\"birthdate\":\"1998-09-28\",\"firstname\":\"Valeria\",\"quality\":100,\"lastname\":\"Rojas\",\"type\":\"Class C Driver License\"},\"name\":\"driver_license\"},{\"amount\":1,\"slot\":3,\"type\":\"item\",\"created\":1771326977,\"info\":{\"birthdate\":\"1998-09-28\",\"nationality\":\"co\",\"firstname\":\"Valeria\",\"gender\":\"female\",\"quality\":100,\"lastname\":\"Rojas\",\"citizenid\":\"FYM93459\"},\"name\":\"id_card\"},{\"amount\":500,\"slot\":4,\"type\":\"item\",\"created\":1771491057,\"info\":{\"quality\":100},\"name\":\"cash\"}]"
+                }
+            ],
+            "player_houses": [],
+            "player_peds": [
+                {
+                    "peds": "[]",
+                    "citizenid": "FYM93459"
+                }
+            ]
         },
         "meta": {
             "date": "2026-02-25 17:02:06",
-            "license": "license:license:5215556ff8c0ac23ae90b4f18dca4333a90f91aa",
             "citizenid": "FYM93459",
-            "admin": "DonMaderos"
+            "admin": "DonMaderos",
+            "license": "license:license:5215556ff8c0ac23ae90b4f18dca4333a90f91aa"
         }
     }
 ]

@@ -1546,11 +1546,8 @@ RegisterNUICallback('toggleAction', function(data, cb)
         })
 
         if state then
-            QBCore.Functions.Notify("DEV TOOL: Activada. Usa 'J' para cursor.", "success")
             RunEntityInfoLoop()
         else
-            QBCore.Functions.Notify("DEV TOOL: Desactivada.", "error")
-
             if not isMenuOpen then
                 SetNuiFocus(false, false)
                 SetNuiFocusKeepInput(false)

@@ -482,12 +482,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- HUD DE ENTIDADES (DEV TOOL) ---
         } else if (data.type === "toggleEntityUI") {
             const hud = document.getElementById('entity-info-hud');
-            // Si data.show es true, mostramos block. Si no, none.
-            hud.style.display = data.show ? "block" : "none";
 
-            // Si activamos el HUD, cerramos el menú grande para que no estorbe
+            // Cambiamos clases en lugar de display para permitir la animación CSS
             if (data.show) {
+                hud.classList.remove('entity-panel-hidden');
+                hud.classList.add('entity-panel-visible');
+
+                // Si activamos el HUD, cerramos el menú grande para que no estorbe
                 fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST', body: '{}' });
+            } else {
+                hud.classList.remove('entity-panel-visible');
+                hud.classList.add('entity-panel-hidden');
             }
 
         } else if (data.type === "updateEntityInfo") {
@@ -867,7 +872,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isVisible('confirm-sanction-modal')) { closeConfirmSanctionModal(); return; }
 
             // --- B. CERRAR HUD DE ENTIDADES (DEV TOOL) ---
-            if (document.getElementById('entity-info-hud') && document.getElementById('entity-info-hud').style.display !== 'none') {
+            const entityHud = document.getElementById('entity-info-hud');
+            if (entityHud && entityHud.classList.contains('entity-panel-visible')) {
                 toggleAction('entity_info');
                 return;
             }
@@ -897,34 +903,87 @@ document.addEventListener('DOMContentLoaded', () => {
         else hideAllLicenses();
     });
 
-    // ==========================================================================
-    // 6. MÓDULO: JUGADORES
+    /// ==========================================================================
+    // 6. MÓDULO: JUGADORES (CON MODO PRUEBAS CORREGIDO)
     // ==========================================================================
     const playerListContainer = document.querySelector('#home .scroll-list');
+    
+    // ⚠️ CAMBIA ESTO A FALSE CUANDO TERMINES LAS PRUEBAS
+    const TEST_MODE = false; 
+    
+    // Aquí guardaremos a los bots para que no cambien en cada búsqueda
+    let cachedDummyPlayers = null; 
 
-    function renderPlayerList(list) {
+    const fakeNames = [
+        'Bunier37', 'CabezaEscarlata', 'palomitasconqueso', 'Akka.Noja', 'Vinsxtorm', 
+        'Spaguettisaurusrex', 'xX_Destructor_Xx', 'TacosAlPastor', 'GatoCosmico', 
+        'NinjaOculto99', 'SrPeloDeGoma', 'ZanahoriaAsesina', 'capitan_salchicha', 
+        'LordPanchito', 'PatoConZapatos', 'CebollaTactica', 'ManoloTrucker', 
+        'ChorizoNinja', 'DonPimpom', 'RayoLaser', 'FideoSupremo', 'TioMachete', 
+        'AguaDeLimon', '_DarkShadow_', 'PinguinoTactico', 'HeladoDePollo', 
+        'ChocoKrisis', 'VengadorAnonimo', 'ElBarto', 'CroquetaNuclear', 
+        'Juanpa_2008', 'DarthVaderFake', 'PancetaLoca', 'AsesinoDeCereal'
+    ];
+
+    // Función que mezcla los reales con los bots (o devuelve los reales si TEST_MODE es false)
+    function getCombinedPlayers(realList) {
+        if (!TEST_MODE) return realList;
+
+        // Si los bots no existen aún, los creamos UNA SOLA VEZ
+        if (!cachedDummyPlayers) {
+            cachedDummyPlayers = [];
+            let usedIds = new Set(realList.map(p => p.id));
+
+            for (let i = 0; i < 30; i++) {
+                let randomId;
+                do {
+                    randomId = Math.floor(Math.random() * 150) + 3;
+                } while (usedIds.has(randomId));
+                usedIds.add(randomId);
+
+                let randomName = fakeNames[Math.floor(Math.random() * fakeNames.length)] + Math.floor(Math.random() * 99);
+
+                cachedDummyPlayers.push({
+                    id: randomId,
+                    name: randomName,
+                    charName: "Personaje de Prueba",
+                    job: "unemployed - 0",
+                    ping: Math.floor(Math.random() * 60) + 15
+                });
+            }
+        }
+
+        // Combinamos tu jugador real con los bots cacheados
+        const combined = [...realList, ...cachedDummyPlayers];
+        return combined.sort((a, b) => a.id - b.id);
+    }
+
+    // Le añadimos un parámetro extra para saber si estamos buscando o no
+    function renderPlayerList(list, isSearching = false) {
+        // Si estamos buscando, no volvemos a inyectar, solo pintamos los filtrados
+        const finalPlayersList = isSearching ? list : getCombinedPlayers(list);
+
         const totalPlayersCounter = document.getElementById('total-players');
         if (totalPlayersCounter) {
-            totalPlayersCounter.innerText = `${list ? list.length : 0}`;
+            totalPlayersCounter.innerText = `${finalPlayersList ? finalPlayersList.length : 0}`;
         }
 
         playerListContainer.innerHTML = '';
 
-        if (!list || list.length === 0) {
-            playerListContainer.innerHTML = '<div style="padding:15px; color:#888;">No hay nadie conectado :(</div>';
+        if (!finalPlayersList || finalPlayersList.length === 0) {
+            playerListContainer.innerHTML = '<div style="padding:15px; color:#888;">No hay resultados :(</div>';
             return;
         }
 
-        list.forEach(player => {
+        finalPlayersList.forEach(player => {
             const card = document.createElement('div');
             card.className = 'player-card';
 
-            // Evento onclick pasando los datos
             card.onclick = function () {
                 openPlayerDetails({
                     id: player.id,
                     name: player.name,
-                    charName: player.charName || "Desconocido" // Aseguramos que tenga nombre
+                    charName: player.charName || "Desconocido" 
                 });
             };
 
@@ -933,15 +992,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Lógica del Buscador
     document.querySelector('#home .search-bar input').addEventListener('input', (e) => {
         const text = e.target.value.toLowerCase();
-        const filtered = allPlayers.filter(p => p.name.toLowerCase().includes(text) || p.id.toString().includes(text));
-        renderPlayerList(filtered);
+        
+        // Agarramos la lista completa (Reales + Bots generados previamente)
+        const currentList = getCombinedPlayers(allPlayers);
+        
+        // Filtramos por ID o Nombre
+        const filtered = currentList.filter(p => p.name.toLowerCase().includes(text) || p.id.toString().includes(text));
+        
+        // Renderizamos con isSearching en true (para que no vuelva a mezclar nada)
+        renderPlayerList(filtered, true); 
     });
 
+    // Lógica del Botón Limpiar
     document.querySelector('#home .clear-btn').addEventListener('click', () => {
         document.querySelector('#home .search-bar input').value = '';
-        renderPlayerList(allPlayers);
+        renderPlayerList(allPlayers, false);
     });
 
     // ==========================================================================
@@ -1839,16 +1907,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const valInput = document.getElementById(`val-${target}-id`);
 
         if (category === 'normal') {
-            pickerBtn.style.display = 'flex'; listWrapper.style.display = 'none';
+            pickerBtn.style.display = 'flex';
+            listWrapper.style.display = 'none';
         } else {
-            pickerBtn.style.display = 'none'; listWrapper.style.display = 'block';
+            pickerBtn.style.display = 'none';
+            listWrapper.style.display = 'block';
+
             const colors = gtaPaintData[category] || [];
             listContainer.innerHTML = '';
-            if (colors.length > 0) { listTrigger.querySelector('span').textContent = colors[0].name; valInput.value = colors[0].id; }
+
+            // 1. Guardamos el valor que ya tiene el input (el que generó el aleatorio)
+            let currentValue = parseInt(valInput.value);
+            let foundMatch = false;
+
+            // 2. Construimos la lista
             colors.forEach(col => {
-                const opt = document.createElement('span'); opt.className = 'custom-option'; opt.setAttribute('data-value', col.id); opt.textContent = col.name;
+                const opt = document.createElement('span');
+                opt.className = 'custom-option';
+                opt.setAttribute('data-value', col.id);
+                opt.textContent = col.name;
+
+                // Si este color coincide con el que ya teníamos guardado, lo marcamos
+                if (col.id === currentValue) {
+                    opt.classList.add('selected');
+                    listTrigger.querySelector('span').textContent = col.name;
+                    foundMatch = true;
+                }
+
                 listContainer.appendChild(opt);
             });
+
+            // 3. Si por algún motivo el color no está en esta categoría, ENTONCES ponemos el primero por defecto
+            if (!foundMatch && colors.length > 0) {
+                listTrigger.querySelector('span').textContent = colors[0].name;
+                valInput.value = colors[0].id;
+                listContainer.firstChild.classList.add('selected');
+            }
+
             setupTuningSelect(`wrap-${target}-list`, `trig-${target}-list`, `val-${target}-id`);
         }
     }
@@ -1962,10 +2057,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const typeInput = document.getElementById(`val-${target}-type`);
                 const typeTrigger = document.getElementById(`trig-${target}-type`);
 
+                // Cambiamos el select de Categoría
                 typeInput.value = randomType;
                 const typeOption = typeWrapper.querySelector(`.custom-option[data-value="${randomType}"]`);
                 if (typeOption) typeTrigger.querySelector('span').textContent = typeOption.textContent;
 
+                // 1º PRIMERO ACTUALIZAMOS LA INTERFAZ PARA QUE CARGUE LA LISTA DE ESA CATEGORÍA
+                updatePaintUI(target, randomType);
+
+                // 2º DESPUÉS APLICAMOS EL COLOR ALEATORIO (así sobreescribe al primero de la lista)
                 if (randomType === 'normal') {
                     const randomColor = getRandomHex();
                     document.getElementById(`val-col-${target}`).value = randomColor;
@@ -1978,7 +2078,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById(`trig-${target}-list`).querySelector('span').textContent = randomPaint.name;
                     }
                 }
-                updatePaintUI(target, randomType);
             };
 
             randomizePaintSection('primary');
@@ -4174,7 +4273,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Renderiza la lista izquierda
+    // 1. Renderiza la lista izquierda (Jobs)
     function renderSimpleJobGrades() {
         const container = document.getElementById('job-grades-list-container');
         if (!container) return;
@@ -4192,46 +4291,82 @@ document.addEventListener('DOMContentLoaded', () => {
             if (job.grades) gradesCount = Object.keys(job.grades).length;
 
             const row = document.createElement('div');
-            row.className = 'accordion-header job-item-row';
+            row.className = 'job-item-row';
 
-            // Evento Click
+            // ESTILOS BASE
+            row.style.cssText = `
+                background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+                display: flex;
+                align-items: center;
+                padding: 10px 12px;
+                gap: 12px;
+                margin-bottom: 3px;
+                border-left: 2px solid transparent; 
+                animation: slideInUp 0.5s ease-out forwards;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            `;
+
+            // EVENTO HOVER
+            row.onmouseover = function () {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'rgba(255, 255, 255, 0.06)';
+                    this.style.paddingLeft = '15px';
+                    this.style.borderLeft = '2px solid #444444';
+                }
+            };
+            row.onmouseout = function () {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                    this.style.paddingLeft = '12px';
+                    this.style.borderLeft = '2px solid transparent';
+                }
+            };
+
+            // Evento Click (ACTIVE)
             row.onclick = function () {
-                document.querySelectorAll('.job-item-row').forEach(r => r.classList.remove('active'));
+                // Limpiamos activos
+                document.querySelectorAll('.job-item-row').forEach(r => {
+                    r.classList.remove('active');
+                    r.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                    r.style.paddingLeft = '12px';
+                    r.style.borderLeft = '2px solid transparent';
+                });
+
+                // Activamos este
                 this.classList.add('active');
+                this.style.background = 'rgba(255, 255, 255, 0.06)';
+                this.style.paddingLeft = '15px';
+                this.style.borderLeft = '2px solid var(--primary)';
+
                 openJobDetailsPanel(job);
             };
 
+            // HTML INTERNO
             row.innerHTML = `
-            <span class="id-badge" style="padding:2px 0; text-transform:none; width:90px; text-align:center; background:#0f3443; color:#4dd0e1; border-radius: 4px; font-family:monospace; font-size:11px;">
+            <span class="id-badge" style="padding:4px 0; text-transform:none; width:90px; min-width: 90px; text-align:center; background:rgba(255,255,255,0.05); color:#aaa; border-radius: 4px; font-family:monospace; font-size:11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);">
                 ${job.name}
             </span> 
-            <span style="font-weight:600; color:#e0e0e0; font-size: 13px; margin-left: 12px;">
+            
+            <span style="font-weight:900; color:#fff; font-size: 13px; letter-spacing: 0.5px; flex: 1;">
                 ${job.label}
             </span>
-            <span class="online-count-badge" style="margin-left: auto; background: rgba(255, 165, 0, 0.1); color: #ffa726; border: 1px solid rgba(255, 165, 0, 0.2); font-size:10px; padding: 2px 8px;">
-                ${gradesCount} <span class="iconify" data-icon="mdi:chevron-right" style="vertical-align:middle; margin-left:2px;"></span>
+
+            <span class="online-count-badge" style="background: rgba(0, 0, 0, 0.4); color: var(--primary); border: 1px solid rgba(255, 255, 255, 0.05); font-size:11px; padding: 3px 10px; font-weight: 900; white-space: nowrap;">
+                ${gradesCount} <span class="iconify" data-icon="mdi:chevron-right" style="vertical-align:middle; margin-left:4px; font-size: 14px;"></span>
             </span>
         `;
             container.appendChild(row);
         });
     }
 
-    // Expande el modal y rellena la derecha
+    // 2. Expande el modal y rellena la derecha (Rangos)
     function openJobDetailsPanel(jobData) {
         const modalBox = document.getElementById('job-modal-box');
-        const title = document.getElementById('grade-list-title');
         const container = document.getElementById('specific-grades-list');
 
-        // Título dinámico
-        title.innerHTML = `
-            <span class="grade-title-prefix">RANGOS DE:</span> 
-            <span class="grade-title-job" title="${jobData.label.toUpperCase()}">${jobData.label.toUpperCase()}</span>
-        `;
-
-        // Expandir
         modalBox.classList.add('expanded');
 
-        // Limpiar y Rellenar
         container.innerHTML = '';
         let gradesArray = [];
         if (jobData.grades) {
@@ -4247,46 +4382,75 @@ document.addEventListener('DOMContentLoaded', () => {
         gradesArray.sort((a, b) => a.level - b.level);
 
         if (gradesArray.length === 0) {
-            container.innerHTML = '<div style="padding:30px; color:#666; text-align:center;">Sin rangos configurados.</div>';
+            container.innerHTML = '<div style="padding:30px; color:#666; text-align:center; font-weight: bold;">Sin rangos configurados.</div>';
         } else {
             gradesArray.forEach(grade => {
                 const row = document.createElement('div');
-                // Estilo de fila de rango
+
+                // ESTILOS DE LA FILA DE LA DERECHA
                 row.style.cssText = `
-                display: flex; 
-                justify-content: space-between; 
-                padding: 10px 15px; 
-                border-bottom: 1px solid rgba(255,255,255,0.03); 
-                align-items: center;
-                font-size: 13px;
-            `;
+                    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+                    display: flex;
+                    align-items: center;
+                    padding: 10px 12px;
+                    gap: 12px;
+                    margin-bottom: 3px;
+                    border-left: 2px solid #444444; 
+                    animation: slideInUp 0.5s ease-out forwards;
+                    transition: all 0.2s ease;
+                `;
+
+                // Hover
+                row.onmouseover = () => {
+                    row.style.background = 'rgba(255, 255, 255, 0.06)';
+                    row.style.paddingLeft = '15px';
+                };
+                row.onmouseout = () => {
+                    row.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                    row.style.paddingLeft = '12px';
+                };
 
                 row.innerHTML = `
-                <span class="id-badge" style="padding:2px 0; text-transform:none; width:50px; text-align:center; border-radius: 4px; font-family:monospace; font-size:11px;">
-                    ${grade.level}
-                </span>
-                <span style="font-weight:600; color:#e0e0e0; font-size: 13px; margin-left: 12px;">
-                    ${grade.name}
-                </span>
-                <div style="color: #2ecc71; font-family: monospace; font-weight:bold;">
-                    $${grade.salary.toLocaleString()}
-                </div>
-            `;
+                    <span style="width:90px; text-align:center; min-width:90px;">
+                        <span class="id-badge" style="padding:4px 15px; background:rgba(255,255,255,0.1); color:#fff; border-radius: 4px; font-family:monospace; font-size:12px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);">
+                            ${grade.level}
+                        </span>
+                    </span>
+
+                    <span style="font-weight:900; color:#ddd; font-size: 13px; letter-spacing: 0.5px; flex: 1; margin-left: 10px;">
+                        ${grade.name}
+                    </span>
+
+                    <div style="color: #2ecc71; font-family: monospace; font-weight:bold; width: 80px; text-align: right;">
+                        $${grade.salary.toLocaleString()}
+                    </div>
+                `;
                 container.appendChild(row);
             });
         }
     }
 
-    // Cerrar y Resetear
+    // 3. Cerrar Paso a Paso y Resetear
     window.closeJobGradesModal = function () {
         const modalBox = document.getElementById('job-modal-box');
         const overlay = document.getElementById('job-grades-modal');
-        overlay.style.display = 'none';
 
-        setTimeout(() => {
+        if (modalBox.classList.contains('expanded')) {
+            // PASO 1: Contraemos
             modalBox.classList.remove('expanded');
-            document.querySelectorAll('.job-item-row.active').forEach(r => r.classList.remove('active'));
-        }, 100); // Reset rápido al cerrar
+
+            // Limpiamos con los nuevos estilos bases
+            document.querySelectorAll('.job-item-row.active').forEach(r => {
+                r.classList.remove('active');
+                r.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                r.style.paddingLeft = '12px';
+                r.style.borderLeft = '2px solid transparent';
+            });
+
+        } else {
+            // PASO 2: Cerramos todo
+            overlay.style.display = 'none';
+        }
     }
 
     // --- LOGICA BANDAS (GANGS) ---
@@ -4316,72 +4480,77 @@ document.addEventListener('DOMContentLoaded', () => {
             if (gang.grades) gradesCount = Object.keys(gang.grades).length;
 
             const row = document.createElement('div');
-            row.className = 'accordion-header gang-item-row';
+            row.className = 'gang-item-row';
 
-            // Estilos base
+            // TUS ESTILOS BASE
             row.style.cssText = `
-            padding: 4px 5px; 
-            margin-bottom: 5px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center;
-            border-left: 3px solid transparent;
-            transition: all 0.2s ease;
-        `;
+                background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+                display: flex;
+                align-items: center;
+                padding: 10px 12px;
+                gap: 12px;
+                margin-bottom: 3px;
+                border-left: 2px solid transparent; /* Transparente por defecto, se activa en hover/click */
+                animation: slideInUp 0.5s ease-out forwards;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            `;
 
-            // Evento Click
+            // EVENTO HOVER
+            row.onmouseover = function () {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'rgba(255, 255, 255, 0.06)';
+                    this.style.paddingLeft = '15px';
+                    this.style.borderLeft = '2px solid #444444';
+                }
+            };
+            row.onmouseout = function () {
+                if (!this.classList.contains('active')) {
+                    this.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                    this.style.paddingLeft = '12px';
+                    this.style.borderLeft = '2px solid transparent';
+                }
+            };
+
+            // Evento Click (ACTIVE)
             row.onclick = function () {
-                // Limpiamos activos anteriores
+                // Limpiamos activos anteriores (Volvemos al estado inactivo)
                 document.querySelectorAll('.gang-item-row').forEach(r => {
                     r.classList.remove('active');
-                    r.style.backgroundColor = '';
-                    r.style.borderLeft = '3px solid transparent';
+                    r.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                    r.style.paddingLeft = '12px';
+                    r.style.borderLeft = '2px solid transparent';
                 });
 
                 // Activamos este
                 this.classList.add('active');
-                this.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                this.style.borderLeft = '3px solid #d32f2f'; // Borde Rojo activo
+                this.style.background = 'rgba(255, 255, 255, 0.06)';
+                this.style.paddingLeft = '15px';
+                this.style.borderLeft = '2px solid var(--primary)'; // Lo pintamos con el color primario para que destaque sobre el hover normal
 
                 openGangDetailsPanel(gang);
             };
 
             // HTML INTERNO
-            // La etiqueta (Badge) es ROJA (#5a1a1a)
             row.innerHTML = `
-            <span class="id-badge" style="padding:2px 0; text-transform:none; width:90px; text-align:center; background:#5a1a1a; color:#ff8a80; border-radius: 4px; font-family:monospace; font-size:11px;">
+            <span class="id-badge" style="padding:4px 0; text-transform:none; width:90px; min-width: 90px; text-align:center; background:rgba(255,255,255,0.05); color:#aaa; border-radius: 4px; font-family:monospace; font-size:11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);">
                 ${gang.name}
             </span> 
             
-            <span style="font-weight:600; color:#e0e0e0; font-size: 13px; margin-left: 12px;">
-                ${gang.label}
-            </span>
+            <span style="font-weight:900; color:#fff; font-size: 13px; letter-spacing: 0.5px; flex: 1;">${gang.label}</span>
 
-            <span class="online-count-badge" style="margin-left: auto; background: rgba(211, 47, 47, 0.15); color: #ff5252; border: 1px solid rgba(211, 47, 47, 0.3); font-size:10px; padding: 2px 8px;">
-                ${gradesCount} <span class="iconify" data-icon="mdi:chevron-right" style="vertical-align:middle; margin-left:2px;"></span>
+            <span class="online-count-badge" style="background: rgba(0, 0, 0, 0.4); color: var(--primary); border: 1px solid rgba(255, 255, 255, 0.05); font-size:11px; padding: 3px 10px; font-weight: 900; white-space: nowrap;">
+                ${gradesCount} <span class="iconify" data-icon="mdi:chevron-right" style="vertical-align:middle; margin-left:4px; font-size: 14px;"></span>
             </span>
         `;
             container.appendChild(row);
         });
     }
 
-    // 2. Expande el modal y rellena la derecha (SIN SALARIO y COLOR CORREGIDO)
+    // 2. Expande el modal y rellena la derecha (Rangos)
     function openGangDetailsPanel(gangData) {
         const modalBox = document.getElementById('gang-modal-box');
-        const title = document.getElementById('gang-grade-list-title');
         const container = document.getElementById('specific-gang-grades-list');
-
-        // --- CORRECCIÓN DE COLOR ---
-        // Usamos 'important' para sobrescribir el azul del CSS de trabajos
-        title.style.setProperty('background-color', '#5a1a1a', 'important');
-        title.style.setProperty('color', '#ff8a80', 'important');
-
-        // Título dinámico
-        title.innerHTML = `
-        <span class="grade-title-prefix">RANGOS DE:</span> 
-        <span class="grade-title-job" style="color: #ff8a80;" title="${gangData.label.toUpperCase()}">${gangData.label.toUpperCase()}</span>
-    `;
 
         modalBox.classList.add('expanded');
 
@@ -4399,50 +4568,67 @@ document.addEventListener('DOMContentLoaded', () => {
         gradesArray.sort((a, b) => a.level - b.level);
 
         if (gradesArray.length === 0) {
-            container.innerHTML = '<div style="padding:30px; color:#666; text-align:center;">Sin rangos configurados.</div>';
+            container.innerHTML = '<div style="padding:30px; color:#666; text-align:center; font-weight: bold;">Sin rangos configurados.</div>';
         } else {
             gradesArray.forEach(grade => {
                 const row = document.createElement('div');
 
-                // CSS: Alineado a la izquierda (flex-start)
+                // MISMOS ESTILOS EXACTOS PARA LA DERECHA
                 row.style.cssText = `
-                display: flex; 
-                align-items: center; 
-                padding: 10px 15px; 
-                border-bottom: 1px solid rgba(255,255,255,0.03); 
-                font-size: 13px;
-            `;
+                    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+                    display: flex;
+                    align-items: center;
+                    padding: 10px 12px;
+                    gap: 12px;
+                    margin-bottom: 3px;
+                    border-left: 2px solid #444444; /* Aquí lo dejamos fijo porque no hay clicks */
+                    animation: slideInUp 0.5s ease-out forwards;
+                    transition: all 0.2s ease;
+                `;
+
+                // Hover para la derecha
+                row.onmouseover = () => {
+                    row.style.background = 'rgba(255, 255, 255, 0.06)';
+                    row.style.paddingLeft = '15px';
+                };
+                row.onmouseout = () => {
+                    row.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                    row.style.paddingLeft = '12px';
+                };
 
                 row.innerHTML = `
-                <span class="id-badge" style="padding:2px 0; text-transform:none; width:60px; text-align:center; border-radius: 4px; font-family:monospace; font-size:11px; background:rgba(255,255,255,0.1); color:#fff;">
-                    ${grade.level}
-                </span>
+                    <span class="id-badge" style="padding:4px 0; text-transform:none; width:60px; min-width:60px; text-align:center; background:rgba(255,255,255,0.05); color:#aaa; border-radius: 4px; font-family:monospace; font-size:11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);">
+                        ${grade.level}
+                    </span>
 
-                <span style="font-weight:600; color:#e0e0e0; font-size: 13px; margin-left: 50px;">
-                    ${grade.name}
-                </span>
-            `;
+                    <span style="font-weight:900; color:#ddd; font-size: 13px; letter-spacing: 0.5px; flex: 1;margin-left: 20px;"> ${grade.name}</span>
+                `;
                 container.appendChild(row);
             });
         }
     }
 
-    // 3. Cerrar y Resetear
+    // 3. Cerrar Paso a Paso y Resetear
     window.closeGangGradesModal = function () {
         const modalBox = document.getElementById('gang-modal-box');
         const overlay = document.getElementById('gang-grades-modal');
 
-        overlay.style.display = 'none';
-
-        setTimeout(() => {
+        if (modalBox.classList.contains('expanded')) {
+            // PASO 1: Contraemos
             modalBox.classList.remove('expanded');
-            // Limpiamos selección visual
+
+            // Limpiamos con los nuevos estilos bases
             document.querySelectorAll('.gang-item-row.active').forEach(r => {
                 r.classList.remove('active');
-                r.style.backgroundColor = '';
-                r.style.borderLeft = '3px solid transparent';
+                r.style.background = 'linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)';
+                r.style.paddingLeft = '12px';
+                r.style.borderLeft = '2px solid transparent';
             });
-        }, 100);
+
+        } else {
+            // PASO 2: Cerramos todo
+            overlay.style.display = 'none';
+        }
     }
 
     // =======================================================
@@ -4959,31 +5145,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let originalScale = 90;
 
     window.previewScale = (val) => {
-    val = parseInt(val);
-    if (isNaN(val)) return;
+        val = parseInt(val);
+        if (isNaN(val)) return;
 
-    // BLOQUEO DE SEGURIDAD
-    if (val < 70) val = 70;
-    if (val > 117) val = 117;
+        // BLOQUEO DE SEGURIDAD
+        if (val < 70) val = 70;
+        if (val > 117) val = 117;
 
-    currentScale = val;
+        currentScale = val;
 
-    const slider = document.getElementById('scale-slider');
-    const numberInput = document.getElementById('scale-number');
+        const slider = document.getElementById('scale-slider');
+        const numberInput = document.getElementById('scale-number');
 
-    slider.value = val;
-    numberInput.value = val;
+        slider.value = val;
+        numberInput.value = val;
 
-    const percentage = ((val - 70) / 47) * 100;
-    slider.style.background = `linear-gradient(90deg, var(--primary) ${percentage}%, rgba(0,0,0,0.6) ${percentage}%)`;
+        const percentage = ((val - 70) / 47) * 100;
+        slider.style.background = `linear-gradient(90deg, var(--primary) ${percentage}%, rgba(0,0,0,0.6) ${percentage}%)`;
 
-    const menu = document.getElementById('admin-menu');
-    if (menu) {
-        // CAMBIA ESTA LÍNEA DE 'center center' A 'top left'
-        menu.style.transformOrigin = 'top left'; 
-        menu.style.transform = `scale(${val / 100})`;
-    }
-};
+        const menu = document.getElementById('admin-menu');
+        if (menu) {
+            // CAMBIA ESTA LÍNEA DE 'center center' A 'top left'
+            menu.style.transformOrigin = 'top left';
+            menu.style.transform = `scale(${val / 100})`;
+        }
+    };
 
     window.openScaleModal = () => {
         originalScale = currentScale;

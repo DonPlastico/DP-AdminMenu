@@ -1431,26 +1431,48 @@ end)
 RegisterNetEvent('DP-AdminMenu:server:giveItemToPlayer', function(data)
     local src = source
     local Target = QBCore.Functions.GetPlayer(tonumber(data.targetId))
+    
     if Target then
         local amount = tonumber(data.amount) or 1
         local itemData = QBCore.Shared.Items[data.item]
-        if not itemData then
-            return
-        end
+        
+        if not itemData then return end
 
         if itemData.type == 'weapon' then
+            -- 1. Dar las armas
             for i = 1, amount do
                 Target.Functions.AddItem(data.item, 1, nil, nil)
             end
+            
+            -- 2. Lógica para dar 5 cargadores
             if data.withAmmo and data.ammoType then
-                -- (Aquí va tu lógica de munición, resumida para no superar límites de caracteres pero funcional)
-                -- ... Mantenemos tu lógica original de munición ...
+                -- Convertimos "AMMO_PISTOL" a "pistol_ammo"
+                local formatAmmoName = string.lower(data.ammoType)
+                local ammoItemName = formatAmmoName:gsub("ammo_", "") .. "_ammo"
+                
+                -- Comprobamos si el ítem de munición existe en la base de datos
+                if QBCore.Shared.Items[ammoItemName] then
+                    local ammoAmount = 5 * amount -- 5 cargadores multiplicados por la cantidad de armas
+                    Target.Functions.AddItem(ammoItemName, ammoAmount)
+                    TriggerClientEvent('inventory:client:ItemBox', Target.PlayerData.source, QBCore.Shared.Items[ammoItemName], "add")
+                else
+                    -- Aviso por si el arma usa una munición con nombre no estándar en tu servidor
+                    TriggerClientEvent('QBCore:Notify', src, 'Arma entregada, pero no existe el ítem de munición: ' .. ammoItemName, 'error')
+                end
             end
         else
+            -- Es un ítem normal
             Target.Functions.AddItem(data.item, amount)
         end
+        
+        -- Notificaciones y cajas de inventario finales
         TriggerClientEvent('inventory:client:ItemBox', Target.PlayerData.source, itemData, "add")
-        TriggerClientEvent('QBCore:Notify', src, 'Enviaste ' .. amount .. 'x ' .. itemData.label, 'success')
+        
+        local msg = 'Enviaste ' .. amount .. 'x ' .. itemData.label
+        if itemData.type == 'weapon' and data.withAmmo then
+            msg = msg .. ' + Munición'
+        end
+        TriggerClientEvent('QBCore:Notify', src, msg, 'success')
     end
 end)
 
@@ -1547,7 +1569,7 @@ QBCore.Functions.CreateCallback('DP-AdminMenu:server:getStatusData', function(so
                             maxPlayers = maxPlayers,
                             admins = adminsCount,
                             uptime = string.format("%dh %02dm", hours, mins),
-                            reportsCount = currentReports or 0, -- <--- MODIFICADO: Ahora usa el conteo real de la DB
+                            reportsCount = currentReports or 0,
                             logs = logs or {},
                             stats = statsData or {},
                             myStaffMode = myState,

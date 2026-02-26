@@ -2027,16 +2027,6 @@ span#live-weather-text {
     width: 100%;
 }
 
-.IroBox,
-.IroSlider {
-    width: 435px !important;
-    border-radius: 8px !important;
-}
-
-.IroSliderGradient {
-    border-radius: 8px !important;
-}
-
 .tab-btn {
     flex: 1;
     background: none;
@@ -2514,10 +2504,13 @@ span#live-weather-text {
 }
 
 /* ----- 4. MODALES DINÁMICOS DE RANGOS ----- */
+
+/* 1. Estado Cerrado (Solo lista izquierda) */
 .dynamic-modal {
-    width: 370px;
-    transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-    overflow: hidden;
+    width: 400px !important;
+    min-width: 400px !important;
+    transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), min-width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    overflow: hidden !important;
     padding: 0 !important;
     display: flex;
     flex-direction: column;
@@ -2526,115 +2519,27 @@ span#live-weather-text {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.dual-panel-wrapper {
-    display: flex;
-    width: 720px;
-    height: 100%;
+/* 2. Estado Abierto (Se estira a 750px) */
+.dynamic-modal.expanded {
+    width: 750px !important;
+    min-width: 750px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
 }
 
-.panel-left {
-    width: 370px;
-    min-width: 370px;
-    display: flex;
-    flex-direction: column;
-    background: #151515;
-    z-index: 2;
-    border-right: 1px solid transparent;
-    transition: border-right 0.5s ease;
-}
-
-.header-left {
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    transition: border-radius 0.5s ease;
-}
-
+/* 3. Panel Derecho Oculto por defecto */
 .panel-right {
-    width: 350px;
-    min-width: 350px;
-    display: flex;
-    flex-direction: column;
-    background: #111;
     opacity: 0;
     transform: translateX(-30px);
     transition: opacity 0.4s ease, transform 0.4s ease;
     pointer-events: none;
 }
 
-.header-right {
-    border-top-right-radius: 8px;
-    border-top-left-radius: 0px;
-    background-color: #1a1a1a !important;
-    color: #fff !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.grade-title-prefix {
-    opacity: 0.5;
-    margin-right: 6px;
-    font-size: 12px;
-    flex-shrink: 0;
-    text-transform: uppercase;
-}
-
-.grade-title-job {
-    color: #fff;
-    font-weight: 700;
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    letter-spacing: 0.5px;
-}
-
-.dynamic-modal.expanded {
-    width: 720px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.dynamic-modal.expanded .panel-left {
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.dynamic-modal.expanded .header-left {
-    border-top-right-radius: 0px;
-}
-
+/* 4. Panel Derecho Visible (Cuando tiene la clase expanded) */
 .dynamic-modal.expanded .panel-right {
     opacity: 1;
     transform: translateX(0);
     pointer-events: all;
     transition-delay: 0.1s;
-}
-
-#job-grades-list-container .accordion-header,
-#gang-grades-list-container .accordion-header {
-    padding: 8px 10px;
-    display: flex;
-    align-items: center;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-    margin-bottom: 5px;
-    border-radius: 6px;
-    border-left: 3px solid transparent;
-    background: rgba(255, 255, 255, 0.02);
-}
-
-#job-grades-list-container .accordion-header:hover,
-#gang-grades-list-container .accordion-header:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    transform: translateX(3px);
-    border-left: 3px solid #888;
-}
-
-.job-item-row.active {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    border-left: 3px solid #fff !important;
 }
 
 /* ==========================================================================
@@ -6102,7 +6007,30 @@ span#live-weather-text {
     box-shadow: 0 0 15px var(--primary), 0 0 30px rgba(255, 255, 255, 0.5);
 }
 
+/* ==========================================================================
+   ANIMACIONES HUD ENTIDADES (DEV TOOL)
+   ========================================================================== */
 
+/* Estado inicial / Oculto (Fuera de la pantalla a la derecha) */
+#entity-info-hud.entity-panel-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) translateX(120%) !important;
+    /* Al ocultarse, usamos un 'ease-in' suave para que salga rápido sin hacer el rebote inverso */
+    transition: transform 0.5s ease-in, opacity 0.4s ease !important;
+    /* FUNDAMENTAL: Anular la animación genérica también al salir */
+    animation: none !important; 
+}
+
+/* Estado Visible (En su posición normal) */
+#entity-info-hud.entity-panel-visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(-50%) translateX(0) !important;
+    /* Al entrar, sí usamos el cubic-bezier para que haga el rebote chulo */
+    transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.4s ease !important;
+    animation: none !important;
+}
 
 
 
