@@ -96,11 +96,19 @@ Este script está diseñado para funcionar nativamente con el entorno QB.
 <h2 align="center"> 🖼️ Vistas Previas</h2>
 Explora el poder y el diseño de las distintas secciones del panel.
 
-<p align="center">
-<summary><h2 align="center">Lista de jugadores activos</h2></summary>
-<img width="600" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home.png" />
-<img width="600" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home disable.png" />
-</p>
+<summary><h2>Lista de jugadores activos</h2></summary>
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home.png" />
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/home disable.png" />
+<br><br>
+
+<summary><h2>Lista de jugadores activos</h2></summary>
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions 1" />
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions 2.png" />
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions clima modal.png" />
+<img width="800" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal tactic map.png" />
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal vehicle color picker.png" />
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal vehicle color.png" />
+<img width="400" height="auto" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" src="Images (Can Remove it if u want)/actions modal vehicle upgrade.png" />
 <br><br>
 
 <h2 align="center"> 🎥 Video Demostrativo</h2>
