@@ -167,7 +167,7 @@ Explora el poder y el diseño de las distintas secciones del panel.
 <h2 align="center"> 🎥 Video Demostrativo</h2>
 <p align="center">
 <summary><h2 align="center">Ver Funcionamiento</h2></summary>
-<a href="https://youtu.be/TU_ENLACE_DE_YOUTUBE">
+<a href="">
 <img width="959" height="auto" alt="Video Demostrativo DP-AdminMenu" src="Images (Can Remove it if u want)/Miniaturas YT.png" />
 </a>
 </p>
