@@ -186,6 +186,7 @@ El panel ya es increíblemente robusto, pero el roadmap de desarrollo contempla 
 | **Permisos Granulares (ACL)** | Permitir que ciertos roles (ej. Moderador) solo vean ciertas pestañas y no el root.|
 | **Sistema Multi-Idioma** | Configuración rápida de traducciones (EN, ES, FR, DE) desde el config.lua.         |
 | **Notas de Administrador** | Un bloc de notas interno asociado a cada jugador que solo el Staff pueda leer.     |
+| **Coger las imagenes de la nube | En vez de tener todas las imagenes en -png dentro del script, subirlo a la nube, y que las coga de allí.     |
 
 </details>
 

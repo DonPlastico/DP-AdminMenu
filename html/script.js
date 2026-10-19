@@ -59,7 +59,7 @@ const actionStates = {
 };
 
 // Configuración Externa
-const imgbbApiKey = "PONE_AQUI_TU_API_KEY_DE_IMGBB";
+const imgbbApiKey = "3171000eda16cef09aa593f4cc1ede01"; // Clave de API para imgbb (subida de imágenes)
 
 // Formateo de Fechas (Español)
 const dateOptions = {
@@ -5003,7 +5003,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
 
     const dragContainer = document.getElementById('admin-menu');
-    const saveBtn = document.getElementById('save-pos-btn');
 
     // 1. Activar Modo Edición
     window.enableDragMode = () => {

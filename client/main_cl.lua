@@ -2311,10 +2311,10 @@ RegisterNetEvent('DP-AdminMenu:client:receiveScreenshot', function(base64Data)
 end)
 
 -- ==========================================================================
---      APERTURA DE INVENTARIO (PUENTE DIRECTO)
+--       APERTURA DE INVENTARIO (PUENTE DIRECTO CON EXPORT)
 -- ==========================================================================
 RegisterNetEvent('DP-AdminMenu:client:execOpenInventory', function(targetId)
-    -- 1. Cerrar menú admin
+    -- 1. Cerrar menú admin (Liberamos el ratón y ocultamos la UI)
     SetNuiFocus(false, false)
     SendNUIMessage({
         action = "close"
@@ -2323,11 +2323,16 @@ RegisterNetEvent('DP-AdminMenu:client:execOpenInventory', function(targetId)
         type = "closeMenu"
     })
 
-    -- 2. Esperar para que el foco NUI se limpie
+    -- 2. Esperar para que el foco NUI se limpie (250ms es el tiempo ideal)
     SetTimeout(250, function()
-        -- 3. Llamamos al nuevo evento que creamos en el servidor del inventario
-        -- IMPORTANTE: Asegúrate de que el nombre coincide con el del paso 1
-        TriggerServerEvent("qb-inventory:server:adminForceOpen", tonumber(targetId))
+
+        -- 3. ¡LA MAGIA! Llamamos al EXPORT de nuestro DP-Inventory
+        if targetId then
+            exports['DP-Inventory']:OpenPlayerInventory(tonumber(targetId))
+        else
+            QBCore.Functions.Notify("No se ha proporcionado una ID válida", "error")
+        end
+
     end)
 end)
 
