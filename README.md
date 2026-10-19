@@ -107,7 +107,7 @@ Explora el poder y el diseño de las distintas secciones del panel.
 <img width="350" height="auto" src="Images (Can Remove it if u want)/actions clima modal.png" />
 <img width="350" height="auto" src="Images (Can Remove it if u want)/actions modal vehicle upgrade.png" />
 <img width="350" height="auto" src="Images (Can Remove it if u want)/actions modal vehicle color.png" />
-<img width="959" height="auto" src="Images (Can Remove it if u want)/actions modal vehicle color picker.png" />
+<img width="350" height="auto" src="Images (Can Remove it if u want)/actions modal vehicle color picker.png" />
 <br><br>
 
 <summary><h2>Lista de reportes activos</h2></summary>
@@ -157,17 +157,17 @@ Explora el poder y el diseño de las distintas secciones del panel.
 <br><br>
 
 <summary><h2>OTROS</h2></summary>
-<img width="350" height="auto" src="Images (Can Remove it if u want)/announce.png" />
-<img width="350" height="auto" src="Images (Can Remove it if u want)/actions modal tactic map.png" />
-<img width="350" height="auto" src="Images (Can Remove it if u want)/entity.png" />
-<img width="350" height="auto" src="Images (Can Remove it if u want)/superspeed, superjump, tags, noclip.png" />
-<img width="350" height="auto" src="Images (Can Remove it if u want)/report modal.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/announce.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/actions modal tactic map.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/entity.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/superspeed, superjump, tags, noclip.png" />
+<img width="959" height="auto" src="Images (Can Remove it if u want)/report modal.png" />
 <br><br>
 
 <h2 align="center"> 🎥 Video Demostrativo</h2>
 <p align="center">
 <summary><h2 align="center">Ver Funcionamiento</h2></summary>
-<a href="https://youtu.be/TU_ENLACE_DE_YOUTUBE">
+<a href="https://youtu.be/42eWu4zxueQ">
 <img width="959" height="auto" alt="Video Demostrativo DP-AdminMenu" src="Images (Can Remove it if u want)/Miniaturas YT.png" />
 </a>
 </p>
