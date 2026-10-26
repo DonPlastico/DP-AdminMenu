@@ -1431,43 +1431,47 @@ end)
 RegisterNetEvent('DP-AdminMenu:server:giveItemToPlayer', function(data)
     local src = source
     local Target = QBCore.Functions.GetPlayer(tonumber(data.targetId))
-    
+
     if Target then
         local amount = tonumber(data.amount) or 1
         local itemData = QBCore.Shared.Items[data.item]
-        
-        if not itemData then return end
+
+        if not itemData then
+            return
+        end
 
         if itemData.type == 'weapon' then
             -- 1. Dar las armas
             for i = 1, amount do
                 Target.Functions.AddItem(data.item, 1, nil, nil)
             end
-            
+
             -- 2. Lógica para dar 5 cargadores
             if data.withAmmo and data.ammoType then
                 -- Convertimos "AMMO_PISTOL" a "pistol_ammo"
                 local formatAmmoName = string.lower(data.ammoType)
                 local ammoItemName = formatAmmoName:gsub("ammo_", "") .. "_ammo"
-                
+
                 -- Comprobamos si el ítem de munición existe en la base de datos
                 if QBCore.Shared.Items[ammoItemName] then
                     local ammoAmount = 5 * amount -- 5 cargadores multiplicados por la cantidad de armas
                     Target.Functions.AddItem(ammoItemName, ammoAmount)
-                    TriggerClientEvent('inventory:client:ItemBox', Target.PlayerData.source, QBCore.Shared.Items[ammoItemName], "add")
+                    TriggerClientEvent('inventory:client:ItemBox', Target.PlayerData.source,
+                        QBCore.Shared.Items[ammoItemName], "add")
                 else
                     -- Aviso por si el arma usa una munición con nombre no estándar en tu servidor
-                    TriggerClientEvent('QBCore:Notify', src, 'Arma entregada, pero no existe el ítem de munición: ' .. ammoItemName, 'error')
+                    TriggerClientEvent('QBCore:Notify', src,
+                        'Arma entregada, pero no existe el ítem de munición: ' .. ammoItemName, 'error')
                 end
             end
         else
             -- Es un ítem normal
             Target.Functions.AddItem(data.item, amount)
         end
-        
+
         -- Notificaciones y cajas de inventario finales
         TriggerClientEvent('inventory:client:ItemBox', Target.PlayerData.source, itemData, "add")
-        
+
         local msg = 'Enviaste ' .. amount .. 'x ' .. itemData.label
         if itemData.type == 'weapon' and data.withAmmo then
             msg = msg .. ' + Munición'
@@ -2286,4 +2290,20 @@ end)
 
 AddEventHandler('QBCore:Server:OnGangUpdate', function()
     GlobalRefresh()
+end)
+
+QBCore.Functions.CreateCallback('dp-admin:server:GetPlayersCoords', function(source, cb)
+    local playersInfo = {}
+    for _, playerId in ipairs(QBCore.Functions.GetPlayers()) do
+        local ped = GetPlayerPed(playerId)
+        if DoesEntityExist(ped) then
+            local coords = GetEntityCoords(ped)
+            table.insert(playersInfo, {
+                id = tonumber(playerId),
+                name = GetPlayerName(playerId),
+                coords = coords
+            })
+        end
+    end
+    cb(playersInfo)
 end)

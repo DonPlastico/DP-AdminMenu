@@ -411,6 +411,7 @@ local function RunJumpLoop()
     end)
 end
 
+-- Versión corregida y blindada para el administrador
 local function RunBlipsLoop()
     if isBlipsRunning then
         return
@@ -419,43 +420,91 @@ local function RunBlipsLoop()
 
     Citizen.CreateThread(function()
         while blipsActive do
-            local players = GetActivePlayers()
-            for _, player in ipairs(players) do
-                local ped = GetPlayerPed(player)
-                if DoesEntityExist(ped) then
-                    if not DoesBlipExist(createdBlips[player]) then
-                        local blip = AddBlipForEntity(ped)
-                        SetBlipSprite(blip, 1)
-                        SetBlipColour(blip, 0)
-                        SetBlipScale(blip, 0.85)
-                        SetBlipShowCone(blip, true)
-                        SetBlipCategory(blip, 7)
-                        BeginTextCommandSetBlipName("STRING")
-                        AddTextComponentString(GetPlayerName(player))
-                        EndTextCommandSetBlipName(blip)
-                        createdBlips[player] = blip
+            -- Pedimos al servidor la lista de todos los jugadores conectados y sus coordenadas
+            QBCore.Functions.TriggerCallback('dp-admin:server:GetPlayersCoords', function(playersList)
+                if playersList then
+                    local currentActivePlayers = {}
+
+                    for _, playerData in ipairs(playersList) do
+                        local serverId = playerData.id
+                        local coords = playerData.coords
+                        local playerName = playerData.name
+
+                        -- Evitamos crearnos el blip a nosotros mismos
+                        if serverId ~= GetPlayerServerId(PlayerId()) then
+                            currentActivePlayers[serverId] = true
+
+                            local existingData = createdBlips[serverId]
+                            local blipExists = existingData and DoesBlipExist(existingData.blipHandle)
+
+                            if not blipExists then
+                                local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+                                SetBlipSprite(blip, 1)
+                                SetBlipColour(blip, 0)
+                                SetBlipScale(blip, 0.85)
+                                SetBlipShowCone(blip, true)
+
+                                BeginTextCommandSetBlipName("STRING")
+                                AddTextComponentString(playerName)
+                                EndTextCommandSetBlipName(blip)
+
+                                -- Guardamos la estructura limpia con el blip y su nombre asociado
+                                createdBlips[serverId] = {
+                                    blipHandle = blip,
+                                    name = playerName
+                                }
+
+                                pcall(function()
+                                    exports['DP-PauseMenu']:RegisterCustomBlipName(blip, playerName,
+                                        "ADMINISTRACIÓN Y EVENTOS")
+                                end)
+                            else
+                                -- Si ya existe, actualizamos su posición en tiempo real y aseguramos que el nombre coincida
+                                SetBlipCoords(createdBlips[serverId].blipHandle, coords.x, coords.y, coords.z)
+                            end
+                        end
+                    end
+
+                    -- Limpiar blips de jugadores que ya se desconectaron o ya no están en la lista
+                    for serverId, data in pairs(createdBlips) do
+                        if not currentActivePlayers[serverId] then
+                            if data and DoesBlipExist(data.blipHandle) then
+                                RemoveBlip(data.blipHandle)
+                            end
+                            createdBlips[serverId] = nil
+                        end
                     end
                 end
-            end
-            -- Limpiar blips de desconectados
-            for player, blip in pairs(createdBlips) do
-                if not NetworkIsPlayerActive(player) or not DoesEntityExist(GetPlayerPed(player)) then
-                    RemoveBlip(blip)
-                    createdBlips[player] = nil
-                end
-            end
+            end)
+
             Wait(1000)
         end
-        -- Cleanup al salir
-        for _, blip in pairs(createdBlips) do
-            if DoesBlipExist(blip) then
-                RemoveBlip(blip)
+
+        -- Cleanup al salir del modo blips
+        for _, data in pairs(createdBlips) do
+            if data and DoesBlipExist(data.blipHandle) then
+                RemoveBlip(data.blipHandle)
             end
         end
         createdBlips = {}
         isBlipsRunning = false
     end)
 end
+
+-- ==========================================================
+-- Grito de re-sincronización limpio (Soluciona el problema del **Invalid**)
+-- ==========================================================
+AddEventHandler('DP-PauseMenu:ClientReady', function()
+    for serverId, data in pairs(createdBlips) do
+        if data and DoesBlipExist(data.blipHandle) then
+            pcall(function()
+                exports['DP-PauseMenu']:RegisterCustomBlipName(data.blipHandle, data.name, "ADMINISTRACIÓN Y EVENTOS")
+            end)
+        else
+            createdBlips[serverId] = nil
+        end
+    end
+end)
 
 local function RunTagsLoop()
     if isTagsRunning then
