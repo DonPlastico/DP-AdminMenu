@@ -1221,8 +1221,10 @@ RegisterNetEvent('DP-AdminMenu:server:updateWeather', function(weather, hour, ex
     exports['qb-weathersync']:setTime(hour, 0)
     exports['qb-weathersync']:setTimeFreeze(extras.freezeTime)
 
-    -- [NUEVO] Llamamos al apagón
+    -- Llamamos al apagón
     exports['qb-weathersync']:setBlackout(extras.blackout)
+
+    TriggerClientEvent('dp-phone:client:setBlackout', -1, extras.blackout)
 
     TriggerClientEvent('QBCore:Notify', src, 'Tiempo y Clima sincronizados.', 'success')
 end)

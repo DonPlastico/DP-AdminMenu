@@ -86,7 +86,7 @@ Este script está diseñado para funcionar nativamente con el entorno QB.
 | <img src="https://placehold.co/20x20/555555/FFFFFF?text=QB" alt="QB"> **qb-core** | 🔴 OBLIGATORIO       |
 | <img src="https://placehold.co/20x20/555555/FFFFFF?text=SQL" alt="SQL"> **oxmysql** | 🔴 OBLIGATORIO       |
 | <img src="https://placehold.co/20x20/555555/FFFFFF?text=DP" alt="DP"> **DP-Garages** | 🟢 OPCIONAL          |
-| <img src="https://placehold.co/20x20/555555/FFFFFF?text=DP" alt="DP"> **DP-Notify** | 🟢 OPCIONAL          |
+| <img src="https://placehold.co/20x20/555555/FFFFFF?text=DP" alt="DP"> **DP-Hud:Notify** | 🟢 OPCIONAL          |
 | <img src="https://placehold.co/20x20/555555/FFFFFF?text=DP" alt="DP"> **DP-Fuelv2** | 🟢 OPCIONAL          |
 | <img src="https://placehold.co/20x20/555555/FFFFFF?text=DP" alt="DP"> **DP-Propiedades** | 🟢 OPCIONAL          |
 
